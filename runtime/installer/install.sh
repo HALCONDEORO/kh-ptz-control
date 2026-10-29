@@ -371,6 +371,11 @@ elif [[ "${DEV_MODE}" == "false" ]]; then
         info "Stopping ${SERVICE_NAME} while the new release is copied..."
         systemctl stop "${SERVICE_NAME}"
         SERVICE_WAS_ACTIVE=1
+        # Si CUALQUIER paso posterior falla (rsync, chown, launcher, config...),
+        # set -e aborta el script y el servicio quedaría parado: el trap lo
+        # rearranca con la versión anterior y conserva el exit de fallo.
+        # Se desarma tras el rearranque planificado del final del install.
+        trap '_rc=$?; trap - EXIT; if [[ "${SERVICE_WAS_ACTIVE:-0}" == "1" ]]; then echo "[ERROR] install failed (exit $_rc) — restarting ${SERVICE_NAME} (was running before the install)" >&2; systemctl start "${SERVICE_NAME}" 2>/dev/null || true; fi' EXIT
     fi
     # --delete makes /opt/khptz an exact mirror of the release being installed.
     # Without it a downgrade (rollback.sh re-deploys an older ref) would leave
@@ -861,6 +866,7 @@ fi
 if [[ "${DEV_MODE}" == "false" && "${SERVICE_WAS_ACTIVE:-0}" == "1" ]]; then
     info "Restarting ${SERVICE_NAME} (was running before the update)..."
     systemctl start "${SERVICE_NAME}" || warn "Service did not restart — check: journalctl -u ${SERVICE_NAME} -n 50"
+    trap - EXIT   # install completado: el trap de aborto queda desarmado
 fi
 info ""
 warn "VALIDATION REQUIRED: test this installation on a real Raspberry Pi."

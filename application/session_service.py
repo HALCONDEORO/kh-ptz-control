@@ -115,8 +115,10 @@ class SessionService:
     def start(self) -> None:
         """Envía Power ON a todas las cámaras. QTimer para Home lo gestiona SessionController."""
         self._session_id = f"session-{uuid.uuid4().hex[:12]}"
-        self._power_thread = self._power_on_all_async()
+        # _active ANTES de lanzar el hilo: si no, el chequeo de cancelación del
+        # arranque podría ver la sesión aún inactiva y no encender nada.
         self._active = True
+        self._power_thread = self._power_on_all_async()
         self._sync_active(True)
         self._store_session_started()
         try:
@@ -126,15 +128,44 @@ class SessionService:
         logger.info("SessionService: sesión iniciada session_id=%s", self._session_id)
         self._record_event("SessionStarted", result="succeeded")
 
-    def _power_on_all(self) -> None:
-        """Power ON secuencial de todas las cámaras (logging por fallo)."""
+    def _standby_all(self) -> None:
+        """Standby secuencial de todas las cámaras (siempre ambas: apagar es
+        la operación segura; no se cancela a mitad)."""
         for cam_id in self._camera_ids:
+            result = self._port.standby(cam_id)
+            if result is not None and hasattr(result, "ok") and not result.ok:
+                logger.warning(
+                    "SessionService: standby falló en %s: %s",
+                    cam_id, getattr(result, "message", "unknown"),
+                )
+
+    def _standby_all_async(self) -> threading.Thread:
+        t = threading.Thread(
+            target=self._standby_all, daemon=True, name="SessionStandby")
+        t.start()
+        return t
+
+    def _power_on_all(self) -> None:
+        """Power ON secuencial de todas las cámaras (logging por fallo).
+
+        Contrato de cancelación del arranque: un STOP del operador (o un fallo
+        de encendido) CANCELA el resto de la secuencia — si cam1 no enciende,
+        cam2 no recibe órdenes a ciegas. La sesión permanece activa (el
+        operador la ve y puede reintentar o terminarla), pero no se acumulan
+        comandos de encendido sobre una cámara en estado desconocido.
+        """
+        for cam_id in self._camera_ids:
+            if not self._active:
+                # Sesión terminada (o STOP global) mientras encendía la anterior.
+                logger.info("SessionService: arranque cancelado antes de %s", cam_id)
+                return
             result = self._port.power_on(cam_id)
             if result is not None and hasattr(result, "ok") and not result.ok:
                 logger.warning(
-                    "SessionService: power_on falló en %s: %s",
+                    "SessionService: power_on falló en %s: %s — secuencia de arranque abortada",
                     cam_id, getattr(result, "message", "unknown"),
                 )
+                return
 
     def _power_on_all_async(self) -> threading.Thread:
         """Lanza _power_on_all en un hilo daemon y lo devuelve.
@@ -160,16 +191,14 @@ class SessionService:
 
     def end(self, reason: str = "manual") -> None:
         """Envía Standby a todas las cámaras."""
+        # _active=False primero: cancela un arranque aún en curso (el hilo de
+        # power_on no envía los encendidos que queden). Los standby, al igual
+        # que los power_on, son confirmados y pueden bloquear segundos por
+        # cámara: fuera del hilo llamante (ToggleSession viene de la UI).
+        self._active = False
         for cam_id in self._camera_ids:
             self._port.cancel_polls(cam_id)
-        for cam_id in self._camera_ids:
-            result = self._port.standby(cam_id)
-            if result is not None and hasattr(result, "ok") and not result.ok:
-                logger.warning(
-                    "SessionService: standby falló en %s: %s",
-                    cam_id, getattr(result, "message", "unknown"),
-                )
-        self._active = False
+        self._standby_thread = self._standby_all_async()
         self._sync_active(False)
         self._chairman = None
         self._sync_chairman(None)

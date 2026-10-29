@@ -148,3 +148,20 @@ Recorded for the pending security review, not a confirmed defect:
 - The desktop user joins the `khptz` group (can read `config.yaml` and
   `install-state.env`).
 - The secret key is derived from the world-readable `/etc/machine-id`.
+
+### Blocking semantics of confirmed camera commands (v7/v8 scope)
+Confirmed commands (power, standby, focus, preset recall/save) block their
+caller until the camera answers, bounded by fast-connect (3 immediate
+attempts) + read timeout (~10 s worst case when the camera is down), and a
+STOP interrupts them with immediate failure.
+- Session power on/off runs on background threads (`SessionPowerOn` /
+  `SessionStandby`) — the UI never freezes on session start/end.
+- Power-on cancellation contract: a failed or STOP-interrupted `power_on`
+  aborts the rest of the sequence (cam2 is never commanded blindly), and
+  ending the session mid-startup cancels the remaining power-ons. Standby
+  always completes both cameras (off is the safe operation).
+- The config-page preset test runner is threaded already.
+- Remaining synchronous callers on the UI thread, accepted scope for the
+  field test: the right-panel focus buttons (single bounded command each,
+  STOP-interruptible). Moving them off-thread requires reworking how their
+  results update button state — tracked as post-test work.

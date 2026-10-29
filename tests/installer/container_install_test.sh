@@ -276,6 +276,59 @@ else
     bad "--check did not report the existing /opt/khptz"
 fi
 
+# ── Abort-trap fixture: failed update restarts a previously-running service ───
+#
+# install.sh stops khptz-control before the rsync mirror and restarts it at
+# the end — but any failure in between must not leave the service down. Force
+# exactly that: systemctl reports the service active, rsync fails, and the
+# installer must (a) exit non-zero and (b) attempt a service start AFTER the
+# stop. Stub binaries on PATH record the call order.
+
+echo
+echo "== Abort trap: failed update restarts the service =="
+
+STUB_BIN="/tmp/trap-stubs"
+mkdir -p "${STUB_BIN}"
+SYSCTL_LOG="/tmp/trap-systemctl.log"
+: > "${SYSCTL_LOG}"
+
+cat > "${STUB_BIN}/systemctl" <<'STUB'
+#!/bin/sh
+echo "$*" >> /tmp/trap-systemctl.log
+if [ "$1" = "is-active" ]; then
+    exit 0   # service running before the update
+fi
+exit 0
+STUB
+chmod 0755 "${STUB_BIN}/systemctl"
+
+cat > "${STUB_BIN}/rsync" <<'STUB'
+#!/bin/sh
+echo "[stub rsync] forced failure" >&2
+exit 1
+STUB
+chmod 0755 "${STUB_BIN}/rsync"
+
+set +e
+PATH="${STUB_BIN}:$PATH" bash "${INSTALLER}" > /tmp/trap-install.out 2>&1
+trap_rc=$?
+set -e
+
+if [[ ${trap_rc} -ne 0 ]]; then
+    ok "failed update exits non-zero (rc=${trap_rc})"
+else
+    bad "failed update exited 0 — the rsync failure was swallowed"
+fi
+
+stop_line=$(grep -n "^stop ${SERVICE_NAME:-khptz-control}$" "${SYSCTL_LOG}" | head -1 | cut -d: -f1)
+# A start AFTER that stop = the abort trap fired.
+if [[ -n "${stop_line}" ]] && tail -n +$((stop_line + 1)) "${SYSCTL_LOG}" | grep -q "^start "; then
+    ok "abort trap restarted the service after the failed rsync"
+else
+    bad "no service start after the stop — abort trap missing or disarmed early"
+    cat "${SYSCTL_LOG}" >&2
+fi
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 
 echo

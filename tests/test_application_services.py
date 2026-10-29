@@ -318,6 +318,7 @@ class TestSessionService:
         port.calls.clear()
 
         svc.end()
+        svc._standby_thread.join(timeout=5)
 
         assert svc.active is False
         assert svc._chairman is None

@@ -450,3 +450,53 @@ def test_start_does_not_block_on_slow_power_on():
     assert svc.active is True
     assert ("power_on", "cam1") in port.calls
     assert ("power_on", "cam2") in port.calls
+
+
+# ── v8: contrato de cancelación del arranque ─────────────────────────────────
+
+def test_power_on_sequence_aborts_after_first_failure():
+    """STOP global o fallo en cam1 cancela el resto del arranque: cam2 no
+    recibe órdenes a ciegas sobre una secuencia ya fallida."""
+    svc, port = _svc()
+    orig = port.power_on
+
+    def failing(camera_id):
+        orig(camera_id)
+        if camera_id == "cam1":
+            r = MagicMock()
+            r.ok = False
+            r.message = "interrupted by STOP"
+            return r
+        return orig(camera_id)
+
+    port.power_on = failing
+    svc.start()
+    svc._power_thread.join(timeout=5)
+    assert ("power_on", "cam1") in port.calls
+    assert ("power_on", "cam2") not in port.calls
+    assert svc.active is True  # la sesión queda activa; el operador decide
+
+
+def test_end_cancels_remaining_power_on():
+    """end() durante el arranque cancela los encendidos pendientes."""
+    import time as _time
+
+    svc, port = _svc()
+    release = threading.Event()
+    orig = port.power_on
+
+    def slow(camera_id):
+        release.wait(5)
+        return orig(camera_id)
+
+    port.power_on = slow
+    svc.start()
+    _time.sleep(0.1)  # el hilo está dentro del power_on de cam1
+    svc.end()
+    release.set()
+    svc._power_thread.join(timeout=5)
+    svc._standby_thread.join(timeout=5)
+    assert ("power_on", "cam2") not in port.calls
+    # El standby sí completa ambas cámaras: apagar es la operación segura.
+    assert ("standby", "cam1") in port.calls
+    assert ("standby", "cam2") in port.calls
