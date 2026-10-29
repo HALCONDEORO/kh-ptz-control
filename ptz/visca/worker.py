@@ -300,6 +300,11 @@ class CameraWorker:
         if connected != prev_connected:
             self.signals.connection_changed.emit(connected)
 
+    @property
+    def is_connected(self) -> bool:
+        """True si la sesión TCP con la cámara está activa (solo lectura)."""
+        return self._is_connected
+
     def _set_connected(self, connected: bool) -> None:
         """Wrapper bool para compatibilidad; delega en _set_state."""
         self._set_state(

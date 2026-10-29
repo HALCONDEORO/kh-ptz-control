@@ -141,6 +141,14 @@ class CameraManager:
             self._on_worker_ready(w)
         return w
 
+    def is_connected(self, ip: str) -> bool:
+        """True si hay worker para esa IP y está conectado. NO crea workers."""
+        if not ip:
+            return False
+        with self._workers_lock:
+            w = self._workers.get(ip)
+        return bool(w is not None and w.is_connected)
+
     def worker_by_key(self, key: int) -> CameraWorker:
         """Devuelve el worker por clave entera (1 o 2) sin necesidad de la IP global."""
         ip = self._cam1_ip if key == 1 else self._cam2_ip

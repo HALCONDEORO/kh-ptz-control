@@ -260,11 +260,17 @@ class ViscaCameraAdapter:
 
     def get_status(self, camera_id: str) -> CameraStatus:
         idx = self._index(camera_id)
+        # connected refleja la sesión TCP real del worker (antes se
+        # devolvía siempre True y el diagnóstico mentía con la cámara caída).
+        try:
+            ip = self._cam_info(camera_id)[0]
+        except ValueError:
+            ip = ""
         return CameraStatus(
             camera_id=camera_id,
             role="main" if idx == 1 else "comments",
             adapter_type="visca",
-            connected=True,
+            connected=self._mgr.is_connected(ip),
             moving=False,
             last_error="",
         )

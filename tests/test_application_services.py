@@ -148,6 +148,10 @@ class _Manager:
     def invalidate_zoom(self, ip):
         self.invalidated.append(ip)
 
+    def is_connected(self, ip):
+        w = self.workers.get(ip)
+        return bool(w is not None and getattr(w, "connected", False))
+
 
 class TestViscaCameraAdapterCommands:
 

@@ -32,6 +32,10 @@ class _StubWorker:
 
 
 class _StubManager:
+    def is_connected(self, ip: str) -> bool:
+        w = self.workers.get(ip)
+        return bool(w is not None and getattr(w, "connected", False))
+
     def __init__(self):
         self.workers: dict[str, _StubWorker] = {}
         self.invalidated: list[str] = []

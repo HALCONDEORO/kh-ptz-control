@@ -22,6 +22,10 @@ class _StubWorker:
 
 
 class _StubManager:
+    def is_connected(self, ip: str) -> bool:
+        w = self.workers.get(ip)
+        return bool(w is not None and getattr(w, "connected", False))
+
     def __init__(self):
         self.workers: dict[str, _StubWorker] = {}
 
@@ -96,3 +100,17 @@ class TestPtzPositionReplyByte:
 
     def test_variant_reply_0x58(self):
         assert parser.ptz_position(self._frame(0x58)) == (0x123, -1)
+
+
+# Finding 6: get_status reports the real TCP session state.
+class TestGetStatusConnected:
+    def test_disconnected_by_default(self):
+        adapter, mgr = _adapter(_TWO_CAMS)
+        assert adapter.get_status("cam1").connected is False
+
+    def test_connected_when_worker_is(self):
+        adapter, mgr = _adapter(_TWO_CAMS)
+        w = mgr.worker("10.0.0.1")
+        w.connected = True
+        assert adapter.get_status("cam1").connected is True
+        assert adapter.get_status("cam2").connected is False
