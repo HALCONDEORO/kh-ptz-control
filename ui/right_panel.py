@@ -656,8 +656,9 @@ class RightPanel:
 class _IndicatorButton(QPushButton):
     """QPushButton con dos indicadores pintados:
       - Esquina superior derecha: punto rojo cuando está seleccionado (checked).
-      - Esquina superior izquierda: LED verde/rojo de estado.
+      - Esquina superior izquierda: LED verde/ámbar/rojo de estado.
         Verde = cámara encendida (sesión activa) y conectada en red.
+        Ámbar = reconexión en curso: la app está recuperando la cámara.
         Rojo  = cámara apagada (sesión inactiva) o sin conexión de red.
     """
 
@@ -666,10 +667,17 @@ class _IndicatorButton(QPushButton):
         self._connected: bool = False
         self._powered: bool = False
         self._on_air: bool = False
+        self._connecting: bool = False
 
     def set_connected(self, connected: bool):
         if connected != self._connected:
             self._connected = connected
+            self.update()
+
+    def set_connecting(self, connecting: bool):
+        """Ámbar en el LED mientras el worker intenta (re)conectar la cámara."""
+        if connecting != self._connecting:
+            self._connecting = connecting
             self.update()
 
     def set_powered(self, powered: bool):
@@ -696,6 +704,12 @@ class _IndicatorButton(QPushButton):
             outer_halo = QColor(35, 170, 70, 46)
             inner_halo = QColor(35, 170, 70, 102)
             core_color = QColor(95, 217, 127, 230)
+        elif self._connecting and not self._connected:
+            # Ámbar: (re)conexión en curso — el operador ve que la app está
+            # recuperando la cámara sin tocar nada.
+            outer_halo = QColor(210, 150, 20, 46)
+            inner_halo = QColor(210, 150, 20, 115)
+            core_color = QColor(240, 190, 60, 230)
         else:
             outer_halo = QColor(190, 35, 35, 46)
             inner_halo = QColor(190, 35, 35, 115)
