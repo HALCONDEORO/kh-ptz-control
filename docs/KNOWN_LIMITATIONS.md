@@ -116,3 +116,35 @@ Treat the current codebase as:
 good enough for controlled QA and release-candidate preparation
 not yet good enough for unattended customer deployment without validation
 ```
+
+## Pre-release review follow-ups (2026-10-29)
+
+### Crashing GUI stays down after three failures
+`khptz-control.service` gives up after 3 failures in 60 s (StartLimitBurst).
+The display-ready path resets the unit at the next login, but mid-meeting the
+operator recovers it by hand:
+
+    systemctl reset-failed khptz-control && systemctl start khptz-control
+
+Rehearse this once before relying on it. Deliberate: an aggressive restart
+loop can hide a crash loop behind a flickering display.
+
+### Python 3.11 / 3.13 support level
+The installer warns (does not refuse) on interpreters other than the tested
+baseline. Python 3.13 removed stdlib modules and ships different PyQt5 builds.
+Before running on an OS with a non-baseline Python, validate by hand:
+`khptz doctor` and a full GUI session. The VISCA layer itself is 3.9-safe.
+
+### Password files in `--gui-mode user`
+The `*.enc` password files stay `0600` owned by the `khptz` service user. In
+user GUI mode the GUI runs as the desktop user and may not be able to verify
+logins. Until this path is reviewed, provisioned installs should stay on
+`--gui-mode system` (the default).
+
+### Provisioning privilege boundary (review notes)
+Recorded for the pending security review, not a confirmed defect:
+- `/run/khptz` is owned by the desktop user and a root oneshot consumes
+  `request.json` from it; symlink/TOCTOU handling lives in `provision.py`.
+- The desktop user joins the `khptz` group (can read `config.yaml` and
+  `install-state.env`).
+- The secret key is derived from the world-readable `/etc/machine-id`.

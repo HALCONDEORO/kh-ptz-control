@@ -48,9 +48,12 @@ while [[ $# -gt 0 ]]; do
         --dev)   DEV_MODE=true; shift ;;
         --atem)  INSTALL_ATEM=true; shift ;;
         --check) CHECK_MODE=true; shift ;;
-        --wizard-user) WIZARD_USER="${2:-}"; shift 2 ;;
+        --wizard-user)
+            [[ $# -ge 2 ]] || { echo "--wizard-user requires a value" >&2; exit 1; }
+            WIZARD_USER="$2"; shift 2 ;;
         --gui-mode)
-            GUI_MODE="${2:-}"; shift 2
+            [[ $# -ge 2 ]] || { echo "--gui-mode requires a value" >&2; exit 1; }
+            GUI_MODE="$2"; shift 2
             [[ "${GUI_MODE}" == "system" || "${GUI_MODE}" == "user" ]] \
                 || { echo "Invalid --gui-mode '${GUI_MODE}' (expected: system | user)" >&2; exit 1; }
             ;;
@@ -360,6 +363,15 @@ if [[ "${REPO_ROOT}" == "${INSTALL_DIR}" ]]; then
     # best and, with --delete, actively dangerous.
     info "Source and install directory are the same (${INSTALL_DIR}) — skipping copy."
 elif [[ "${DEV_MODE}" == "false" ]]; then
+    # A running app lazily imports modules from this tree: copying over it can
+    # hand it a half-written file. Stop the service for the duration of the
+    # copy and restart it once the new tree is fully in place.
+    SERVICE_WAS_ACTIVE=0
+    if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
+        info "Stopping ${SERVICE_NAME} while the new release is copied..."
+        systemctl stop "${SERVICE_NAME}"
+        SERVICE_WAS_ACTIVE=1
+    fi
     # --delete makes /opt/khptz an exact mirror of the release being installed.
     # Without it a downgrade (rollback.sh re-deploys an older ref) would leave
     # files from the newer release behind, so the running install would be a
@@ -449,10 +461,52 @@ KHPTZ_LAUNCHER="/usr/local/bin/khptz"
 # sys.path no matter the caller's cwd. Invoking cli.py by path would only put
 # runtime/ on sys.path, so `khptz setup` from the desktop session (autostart /
 # menu) would fail with ModuleNotFoundError: app_version.
-cat > "${KHPTZ_LAUNCHER}" <<LAUNCHER
+if [[ "${DEV_MODE}" == "false" ]]; then
+    # Canonical UTF-8 launcher — the same one repair_rpi_runtime.sh installs.
+    # Writing the plain one-liner here too would let an installer re-run strip
+    # the UTF-8 environment and the khptz-user delegation the repair added.
+    cat > "${KHPTZ_LAUNCHER}" <<LAUNCHER
+#!/usr/bin/env bash
+set -Eeuo pipefail
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+export PYTHONUTF8=1
+export PYTHONIOENCODING=utf-8
+
+subcommand="\${1:-}"
+if [[ "\$(id -u)" -ne 0 && "\$(id -un)" != "${APP_USER}" ]]; then
+    case "\${subcommand}" in
+        status|uptime|cameras|doctor|fingerprint|known-good|maintenance|installability|supportability|support-bundle|backup|network-report|verify-install)
+            exec /usr/bin/sudo -u ${APP_USER} -H env \
+                LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+                PYTHONUTF8=1 PYTHONIOENCODING=utf-8 \
+                /bin/bash -c 'cd ${INSTALL_DIR} && exec /usr/bin/python3 -m runtime.cli "\$@"' \
+                khptz-cli "\$@"
+            ;;
+        restore)
+            exec /usr/bin/sudo env \
+                LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+                PYTHONUTF8=1 PYTHONIOENCODING=utf-8 \
+                /bin/bash -c 'cd ${INSTALL_DIR} && exec /usr/bin/python3 -m runtime.cli "\$@"' \
+                khptz-cli "\$@"
+            ;;
+        setup|demo)
+            state_root="\${XDG_STATE_HOME:-\${HOME}/.local/state}"
+            export KHPTZ_LOG_DIR="\${KHPTZ_LOG_DIR:-\${state_root}/khptz/log}"
+            mkdir -p "\${KHPTZ_LOG_DIR}"
+            ;;
+    esac
+fi
+
+cd ${INSTALL_DIR}
+exec /usr/bin/python3 -m runtime.cli "\$@"
+LAUNCHER
+else
+    cat > "${KHPTZ_LAUNCHER}" <<LAUNCHER
 #!/usr/bin/env bash
 cd "${INSTALL_DIR}" && exec python3 -m runtime.cli "\$@"
 LAUNCHER
+fi
 chmod +x "${KHPTZ_LAUNCHER}"
 info "khptz CLI installed at ${KHPTZ_LAUNCHER}"
 
@@ -803,6 +857,10 @@ else
     info "  2. Run: python3 -m runtime.setup_password"
     info "  3. Run: systemctl start ${SERVICE_NAME}"
     info "  4. Run: khptz doctor"
+fi
+if [[ "${DEV_MODE}" == "false" && "${SERVICE_WAS_ACTIVE:-0}" == "1" ]]; then
+    info "Restarting ${SERVICE_NAME} (was running before the update)..."
+    systemctl start "${SERVICE_NAME}" || warn "Service did not restart — check: journalctl -u ${SERVICE_NAME} -n 50"
 fi
 info ""
 warn "VALIDATION REQUIRED: test this installation on a real Raspberry Pi."
