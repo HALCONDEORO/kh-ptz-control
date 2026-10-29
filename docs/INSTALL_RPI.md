@@ -86,6 +86,24 @@ Recommended baseline for current MVP validation:
 - local network access to cameras;
 - SSH access only when authorised for installation/support.
 
+Known limits on newer OS releases (Bullseye is the validated path):
+
+- **Bookworm/Trixie default to Wayland** (wayfire/labwc). The GUI units assume
+  X11 (`DISPLAY=:0`, `xhost`). Switch the session to X11
+  (`raspi-config` -> Advanced -> Wayland -> X11) before installing, or treat
+  the run as exploratory.
+- **Do not use `--atem` or `--dev` on Bookworm/Trixie**: those options use
+  `pip3`, which PEP 668 blocks there (`externally-managed-environment`), and
+  the install aborts halfway. On Bullseye they are unaffected.
+- Install from a **git clone at an approved tag**, not from a copied source
+  snapshot: a snapshot has no identifiable revision and rollback cannot work.
+  Before installing, run `git remote -v` and `git status --ignored` in the
+  clone so no local leftovers (config.yaml, PTZ*IP.txt, password.*, backups)
+  get copied into `/opt/khptz`.
+- `x11-xserver-utils` (`xhost`) must be installed **before** the setup wizard
+  runs; on an offline Pi a missing `xhost` aborts provisioning and rolls the
+  configuration back.
+
 Install system dependencies:
 
 ```bash

@@ -58,7 +58,12 @@ def ptz_position(data: bytes) -> Optional[tuple[int, int]]:
     negative camera positions (e.g. 0xFFFF = -1) are correctly represented.
     Devuelve None si los nibbles de payload son inválidos.
     """
-    frame = _find_completion_frame(data, response_byte=0x58, payload_len=8)
+    # El estándar VISCA responde y0 50 ...; algunas cámaras usan la variante
+    # y0 58 ... — se aceptan ambas (antes solo 0x58 y la posición siempre
+    # devolvía None con cámaras estándar).
+    frame = _find_completion_frame(data, response_byte=0x50, payload_len=8)
+    if frame is None:
+        frame = _find_completion_frame(data, response_byte=0x58, payload_len=8)
     if frame is None:
         return None
     if not _valid_nibble_bytes(frame, [2, 3, 4, 5, 6, 7, 8, 9]):

@@ -128,6 +128,12 @@ class ViscaCameraAdapter:
 
     def stop_move(self, camera_id: str) -> CommandResult:
         ip, cam_id_hex = self._cam_info(camera_id)
+        if not ip:
+            # Cámara no instalada (p.ej. sala de 1 cámara): sin worker hacia
+            # una IP vacía — en Linux ("", 5678) conecta con localhost.
+            logger.warning("stop_move: %s has no IP configured", camera_id)
+            return self._result("stop_move", camera_id, False, None,
+                                message="camera has no IP configured")
         # STOP must halt ALL motion, not only pan/tilt. A zoom-stop emitted on
         # zoom release is an ordinary coalesced command and can be lost (queue
         # drain on priority, or still sitting behind an in-flight command), so
@@ -143,9 +149,11 @@ class ViscaCameraAdapter:
         if speed == 0:
             zoom_byte = 0x00
         elif speed > 0:
-            zoom_byte = 0x20 | min(self.zoom_drive_cap, abs(speed))
+            # 0x7 es el nibble máximo del estándar VISCA: un cap de config más
+            # alto corrompería el byte de dirección (0x30 = zoom OUT).
+            zoom_byte = 0x20 | min(0x7, self.zoom_drive_cap, abs(speed))
         else:
-            zoom_byte = 0x30 | min(self.zoom_drive_cap, abs(speed))
+            zoom_byte = 0x30 | min(0x7, self.zoom_drive_cap, abs(speed))
         self._send_queued(camera_id, ip, bytes.fromhex(cam_id_hex + f"010407{zoom_byte:02X}FF"), coalesce=True)
         return self._result("zoom", camera_id, True, None)
 
@@ -229,6 +237,13 @@ class ViscaCameraAdapter:
         failures: list[str] = []
         for camera_id in list(_CAMERA_INDEX):
             try:
+                idx = _CAMERA_INDEX[camera_id]
+                if self._cam_configs is not None and idx not in self._cam_configs:
+                    logger.info("stop_all: %s not configured, skipping", camera_id)
+                    continue
+                if not self._cam_info(camera_id)[0]:
+                    logger.info("stop_all: %s has no IP, skipping", camera_id)
+                    continue
                 result = self.stop_move(camera_id)
                 if not result.ok:
                     failures.append(camera_id)
