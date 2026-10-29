@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests-and-critical-lint:
+    runs-on: ubuntu-latest
+
+    env:
+      QT_QPA_PLATFORM: offscreen
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pyqt5 python3-pyqt5.qtsvg xvfb \
+            libegl1 libgl1 libxkbcommon-x11-0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Critical lint
+        run: ruff check .
+
+      # See tests.yml for why --forked is required (issue #873 — native SIGABRT
+      # deep inside Qt's offscreen widget constructor from a resource leak that
+      # accumulates across tests in one process) and why these two files are
+      # excluded and run separately, unforked.
+      - name: Run tests
+        run: >
+          pytest --forked
+          --ignore=tests/test_login_countdown_integration.py
+          --ignore=tests/test_setup_wizard.py
+          --ignore=tests/test_setup_wizard_rpi_pages.py
+          --ignore=tests/test_sim_debug_panel.py
+          --ignore=tests/test_digital_joystick.py
+          --ignore=tests/test_main_window_smoke.py
+          --ignore-glob=tests/test_config_pages_*.py
+      - name: Run tests (real widget trees, unforked)
+        run: >
+          pytest
+          tests/test_login_countdown_integration.py
+          tests/test_setup_wizard.py
+          tests/test_setup_wizard_rpi_pages.py
+          tests/test_sim_debug_panel.py
+          tests/test_digital_joystick.py
+          tests/test_config_pages_session_tab.py
+          tests/test_config_pages_data_tab.py
+          tests/test_config_pages_test_tab.py
+          tests/test_config_pages_access_tab.py
+          tests/test_config_pages_cameras_tab.py
+          tests/test_config_pages_atem_tab.py
+          tests/test_config_pages_sections.py
+          tests/test_main_window_smoke.py
+

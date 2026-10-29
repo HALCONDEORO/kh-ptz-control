@@ -1,0 +1,54 @@
+name: ShellCheck
+
+on:
+  push:
+    paths:
+      - "**/*.sh"
+      - ".github/workflows/shellcheck.yml"
+  pull_request:
+    paths:
+      - "**/*.sh"
+      - ".github/workflows/shellcheck.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shellcheck-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v7
+
+      # `bash -n` is a distinct gate from ShellCheck: it is the real interpreter
+      # rejecting a script it cannot parse, which is exactly the class of
+      # breakage that strands a half-installed appliance. #891 requires both.
+      # Runs first so a syntax error is reported before lint noise.
+      - name: Validate shell syntax (bash -n)
+        run: |
+          set -euo pipefail
+          status=0
+          while IFS= read -r script; do
+            if bash -n "${script}"; then
+              echo "ok    ${script}"
+            else
+              echo "FAIL  ${script}" >&2
+              status=1
+            fi
+          done < <(find . -type f -name '*.sh' -not -path './.git/*')
+          exit "${status}"
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: "."
+          severity: warning
+

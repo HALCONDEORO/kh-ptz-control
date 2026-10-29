@@ -1,0 +1,49 @@
+name: Dependency Audit
+
+# Run pip-audit on every PR and weekly schedule.
+# Fails CI on known vulnerable dependencies.
+# See scripts/check_secrets.py for secret-scanning CI (separate workflow).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"   # Every Monday at 06:00 UTC
+  workflow_dispatch:        # Manual trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dep-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pip-audit:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+          cache: "pip"
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install "pip-audit>=2.7,<3"
+
+      - name: Install project dependencies
+        run: pip install -r requirements.txt || true
+
+      - name: Run dependency vulnerability audit
+        run: pip-audit --strict -r requirements.txt
+

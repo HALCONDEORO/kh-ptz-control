@@ -1,0 +1,40 @@
+name: Repo Hygiene
+
+# Run filename-based hygiene check and secret content scan on every push and PR.
+# See scripts/check_repo_hygiene.py and scripts/check_secrets.py for details.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repo-hygiene-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repo-hygiene:
+    name: repo-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+
+      - name: Run repo hygiene check (filename-based)
+        run: python scripts/check_repo_hygiene.py
+
+      - name: Run secret content scan
+        run: python scripts/check_secrets.py --all
+

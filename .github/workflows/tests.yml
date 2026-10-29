@@ -1,0 +1,96 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install system dependencies for PyQt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      # The full suite in one pytest process reliably aborts CI with SIGABRT (see
+      # issue #873): a native resource leak in Qt's offscreen QPA platform that
+      # deleteLater()/processEvents()/gc.collect() cannot reclaim — confirmed by
+      # reproducing it locally down to a single ~110-test file. Not tied to any
+      # one test file: excluding one crashing file just moved the crash to the
+      # next real-Qt-widget test. --forked (pytest-forked) runs each test in its
+      # own throwaway subprocess so the leak can never accumulate across tests.
+      - name: Run pytest
+        run: >
+          python -m pytest --forked
+          --ignore=tests/test_login_countdown_integration.py
+          --ignore=tests/test_setup_wizard.py
+          --ignore=tests/test_setup_wizard_rpi_pages.py
+          --ignore=tests/test_sim_debug_panel.py
+          --ignore=tests/test_digital_joystick.py
+          --ignore=tests/test_main_window_smoke.py
+          --ignore-glob=tests/test_config_pages_*.py
+
+      # test_login_countdown_integration.py and test_setup_wizard.py each abort
+      # under --forked for a different reason than the rest of the suite: they
+      # build a full real widget tree (LoginScreen / SetupWizard, many children,
+      # layouts, timers), and something about that combined with a freshly
+      # forked child's Qt/offscreen initialization aborts every time — even
+      # though each test already gets its own throwaway process. Both files
+      # pass cleanly run together, unforked, in one shared process (verified
+      # locally and previously in CI before --forked was introduced), so run
+      # them that way instead of digging further into pytest-forked internals.
+      #
+      # The config-page tab tests, the Pi wizard-page tests and the sim debug
+      # panel tests are in the same category — each builds a real widget tree
+      # (a ConfigDialog stand-in with its tab contents, QWizardPage subclasses,
+      # a live QTimer) — so they run here rather than risking the same abort.
+      - name: Run pytest (real widget trees, unforked)
+        run: >
+          python -m pytest
+          tests/test_login_countdown_integration.py
+          tests/test_setup_wizard.py
+          tests/test_setup_wizard_rpi_pages.py
+          tests/test_sim_debug_panel.py
+          tests/test_digital_joystick.py
+          tests/test_config_pages_session_tab.py
+          tests/test_config_pages_data_tab.py
+          tests/test_config_pages_test_tab.py
+          tests/test_config_pages_access_tab.py
+          tests/test_config_pages_cameras_tab.py
+          tests/test_config_pages_atem_tab.py
+          tests/test_config_pages_sections.py
+          tests/test_main_window_smoke.py
+

@@ -1,0 +1,49 @@
+name: Bandit Security Scan
+
+# Static security analysis with Bandit on every push and PR.
+# Scans Python source files for common security anti-patterns.
+# Tests excluded (they contain deliberate fake patterns for test purposes).
+# See pyproject.toml [tool.bandit] for skipped checks and justifications.
+#
+# Run locally:
+#   bandit -r . -x tests -c pyproject.toml
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bandit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bandit:
+    name: bandit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+          cache: "pip"
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install Bandit
+        run: |
+          python -m pip install --upgrade pip
+          # [toml] extra is required for bandit to parse the pyproject.toml config
+          # on Python < 3.11 (no stdlib tomllib); without it bandit exits 2.
+          pip install "bandit[toml]>=1.8,<2"
+
+      - name: Run Bandit static security analysis
+        run: bandit -r . -x tests -c pyproject.toml --severity-level medium
+

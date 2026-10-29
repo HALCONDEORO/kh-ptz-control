@@ -1,0 +1,76 @@
+name: Installer (Bullseye container)
+
+# Write-side coverage for runtime/installer/install.sh (#888/#891).
+#
+# The readiness gate (install.sh --check) is covered on any host by
+# tests/test_install_sh_readiness.py. This workflow covers what that cannot:
+# a real product-mode install on Debian Bullseye / Python 3.9.2 — the supported
+# Raspberry Pi baseline — asserting service-user creation, directory ownership
+# and modes, the rsync payload, the rendered unit, and that re-running never
+# destroys an existing config.yaml.
+#
+# Path-filtered on purpose: it builds a Debian image, so it should only run when
+# something it actually covers changes.
+
+on:
+  push:
+    paths:
+      - "runtime/installer/**"
+      - "runtime/systemd/**"
+      - "config/defaults/**"
+      - "tests/installer/**"
+      - ".github/workflows/installer-container.yml"
+  pull_request:
+    paths:
+      - "runtime/installer/**"
+      - "runtime/systemd/**"
+      - "config/defaults/**"
+      - "tests/installer/**"
+      - ".github/workflows/installer-container.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-container-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-on-bullseye:
+    name: install.sh on Debian Bullseye
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v7
+
+      - name: Build the Bullseye test image
+        run: >
+          docker build
+          -f tests/installer/Dockerfile.bullseye
+          -t khptz-install-test
+          .
+
+      - name: Run a real product-mode install and assert the contract
+        run: docker run --rm khptz-install-test
+
+      # Proves the suite can actually fail (#891 asks for a deliberately broken
+      # fixture). Shadowing useradd with a no-op stub — /usr/local/sbin precedes
+      # /usr/sbin in root's PATH — means the service user is never created, so
+      # the run must exit non-zero. A suite that still passes here is not
+      # verifying anything.
+      - name: Prove the assertions detect a regression
+        run: |
+          set -euo pipefail
+          if docker run --rm --entrypoint /bin/bash khptz-install-test -c \
+               'printf "#!/bin/sh\nexit 0\n" > /usr/local/sbin/useradd
+                chmod +x /usr/local/sbin/useradd
+                /src/tests/installer/container_install_test.sh'
+          then
+            echo "::error::sabotaged install still reported success — assertions are not effective"
+            exit 1
+          fi
+          echo "Sabotaged install correctly failed the assertions."
+
