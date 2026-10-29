@@ -6,7 +6,7 @@
 # (Raspberry Pi OS Bullseye) and CI runs on 3.9. pytest 8.x supports 3.9.
 # Do not bump to 9.x without dropping the 3.9 target. See dependabot.yml ignore.
 pytest>=8.4.2,<9
-ruff>=0.17.1,<1
+ruff>=0.17.2,<1
 
 # Runs each test in its own forked subprocess (Linux only — CI runners are
 # ubuntu-latest). Works around a native resource leak in Qt's offscreen QPA
