@@ -149,8 +149,8 @@ class TestProductModeDependencyPolicy:
         """
         sh_lines = _sh().splitlines()
         req_lines = [
-            (i, l) for i, l in enumerate(sh_lines)
-            if "requirements.txt" in l and not l.strip().startswith("#")
+            (i, line) for i, line in enumerate(sh_lines)
+            if "requirements.txt" in line and not line.strip().startswith("#")
         ]
         for lineno, line in req_lines:
             context_above = "\n".join(sh_lines[max(0, lineno - 25) : lineno])
@@ -241,7 +241,7 @@ class TestServiceFileConsistency:
         """App code in /opt/khptz must not appear in ReadWritePaths."""
         svc = _svc()
         rw_line = next(
-            (l for l in svc.splitlines() if l.strip().startswith("ReadWritePaths")),
+            (line for line in svc.splitlines() if line.strip().startswith("ReadWritePaths")),
             None,
         )
         assert rw_line is not None, "ReadWritePaths not found in service file"
@@ -611,7 +611,7 @@ class TestSetupWizardAutostart:
     def test_autostart_desktop_has_no_force(self):
         """Autostart entry must self-suppress once provisioned — no --force."""
         text = SETUP_DESKTOP.read_text(encoding="utf-8")
-        exec_line = next(l for l in text.splitlines() if l.startswith("Exec="))
+        exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
         assert exec_line == "Exec=khptz setup"
         assert "Type=Application" in text
 

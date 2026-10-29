@@ -42,15 +42,6 @@ class TestDemoResetSafety:
 
     def test_refuses_khptz_data_dir_override(self, tmp_path, monkeypatch):
         """When KHPTZ_DATA_DIR is set, that path is also treated as production (#600)."""
-        override = tmp_path / "custom_prod"
-        monkeypatch.setenv("KHPTZ_DATA_DIR", str(override))
-        svc = DemoResetService(demo_data_dir=override)
-        result = svc.reset()
-        assert not result.success
-        assert "production" in result.error.lower()
-
-    def test_refuses_khptz_data_dir_override(self, tmp_path, monkeypatch):
-        """When KHPTZ_DATA_DIR is set, that path is also treated as production (#600)."""
         override = tmp_path / "legacy_prod"
         monkeypatch.setenv("KHPTZ_DATA_DIR", str(override))
         svc = DemoResetService(demo_data_dir=override)

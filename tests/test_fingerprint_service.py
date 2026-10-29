@@ -117,7 +117,7 @@ class TestHumanSummary:
         fp = InstallationFingerprint()
         lines = fp.human_summary()
         assert isinstance(lines, list)
-        assert all(isinstance(l, str) for l in lines)
+        assert all(isinstance(line, str) for line in lines)
 
     def test_contains_installation_id(self):
         fp = InstallationFingerprint(installation_id="khptz-2026-0042")
@@ -135,7 +135,7 @@ class TestHumanSummary:
         fp = InstallationFingerprint()
         lines = fp.human_summary()
         # fingerprint hash line should end with "…"
-        hash_line = next(l for l in lines if "Fingerprint hash" in l)
+        hash_line = next(line for line in lines if "Fingerprint hash" in line)
         assert "…" in hash_line
 
     def test_camera_roles_appear_in_summary(self):
@@ -225,7 +225,7 @@ class TestFileSha256:
             tmp.unlink(missing_ok=True)
 
     def test_same_content_same_hash(self):
-        with tempfile.NamedTemporaryFile(delete=False) as f1, \
+        with tempfile.NamedTemporaryFile(delete=False) as f1,\
              tempfile.NamedTemporaryFile(delete=False) as f2:
             f1.write(b"deterministic")
             f2.write(b"deterministic")
@@ -423,6 +423,6 @@ class TestFingerprintCLI:
             )
             main(["fingerprint"])
         captured = capsys.readouterr()
-        lines = [l for l in captured.out.splitlines() if l.strip()]
+        lines = [line for line in captured.out.splitlines() if line.strip()]
         assert len(lines) >= 5
 

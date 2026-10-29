@@ -82,7 +82,7 @@ class TestSupportabilitySummaryResult:
         r = SupportabilitySummaryResult()
         lines = r.human_summary()
         assert isinstance(lines, list)
-        assert all(isinstance(l, str) for l in lines)
+        assert all(isinstance(line, str) for line in lines)
 
     def test_human_summary_contains_installation_id(self):
         r = SupportabilitySummaryResult(installation_id="khptz-2026-0042")

@@ -60,7 +60,7 @@ class TestWarrantyStateResult:
         r = WarrantyStateResult(state=WarrantyState.VALIDATED, reason="OK")
         lines = r.human_summary()
         assert isinstance(lines, list)
-        assert all(isinstance(l, str) for l in lines)
+        assert all(isinstance(line, str) for line in lines)
 
 
 # ── WarrantyStateService ──────────────────────────────────────────────────────

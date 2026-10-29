@@ -91,8 +91,8 @@ def test_bundle_includes_recent_events(tmp_path):
     with zipfile.ZipFile(path) as zf:
         assert "blackbox/recent_events.jsonl" in zf.namelist()
         content = zf.read("blackbox/recent_events.jsonl").decode("utf-8")
-    lines = [l for l in content.splitlines() if l.strip()]
-    event_types = [json.loads(l)["event_type"] for l in lines]
+    lines = [line for line in content.splitlines() if line.strip()]
+    event_types = [json.loads(line)["event_type"] for line in lines]
     assert "DoctorRun" in event_types
     assert "BackupCreated" in event_types
 

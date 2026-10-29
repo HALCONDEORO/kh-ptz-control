@@ -129,12 +129,6 @@ class TestEnvironmentOverrides:
         del os.environ["KHPTZ_CONFIG_DIR"]
 
     def test_khptz_data_dir_override(self, tmp_path):
-        os.environ["KHPTZ_DATA_DIR"] = str(tmp_path / "data")
-        r = RuntimePathResolver()
-        assert r.data_dir == tmp_path / "data"
-        del os.environ["KHPTZ_DATA_DIR"]
-
-    def test_khptz_data_dir_override(self, tmp_path):
         os.environ["KHPTZ_DATA_DIR"] = str(tmp_path / "legacy")
         r = RuntimePathResolver()
         assert r.data_dir == tmp_path / "legacy"

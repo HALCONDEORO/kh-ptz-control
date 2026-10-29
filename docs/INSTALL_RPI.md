@@ -651,9 +651,8 @@ Before leaving site:
 - explain support process;
 - record known limitations.
 
-Use [Customer handover](CUSTOMER_HANDOVER.md) for the customer-facing summary,
-and [First customer checklist](FIRST_CUSTOMER_CHECKLIST.md) for the full
-first-install/handover preparation.
+Close the visit with a customer-facing summary and a full
+first-install/handover review before leaving the site.
 
 ---
 

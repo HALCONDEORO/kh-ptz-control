@@ -80,7 +80,7 @@ class TestMaintenanceStatusResult:
         r = MaintenanceStatusResult()
         lines = r.human_summary()
         assert isinstance(lines, list)
-        assert all(isinstance(l, str) for l in lines)
+        assert all(isinstance(line, str) for line in lines)
 
     def test_human_summary_shows_never_when_no_record(self):
         r = MaintenanceStatusResult(last_completed_at=None)
@@ -266,7 +266,7 @@ class TestInstallabilityService:
         result = self.svc.assess()
         lines = result.human_summary()
         assert isinstance(lines, list)
-        assert all(isinstance(l, str) for l in lines)
+        assert all(isinstance(line, str) for line in lines)
 
 
 # ── CLI integration ───────────────────────────────────────────────────────────

@@ -89,7 +89,7 @@ class TestKnownGoodSnapshot:
         )
         lines = snap.human_summary()
         assert isinstance(lines, list)
-        assert all(isinstance(l, str) for l in lines)
+        assert all(isinstance(line, str) for line in lines)
 
     def test_human_summary_contains_installation_id(self):
         snap = KnownGoodSnapshot(installation_id="khptz-2026-0042")
@@ -110,7 +110,7 @@ class TestKnownGoodSnapshot:
     def test_human_summary_omits_note_when_empty(self):
         snap = KnownGoodSnapshot(mark_note="")
         lines = snap.human_summary()
-        assert not any("Note:" in l for l in lines)
+        assert not any("Note:" in line for line in lines)
 
 
 # ── StateDiff ─────────────────────────────────────────────────────────────────
@@ -150,12 +150,12 @@ class TestStateDiff:
     def test_human_summary_no_known_good(self):
         diff = StateDiff(has_known_good=False, no_known_good_reason="none recorded")
         lines = diff.human_summary()
-        assert any("none recorded" in l for l in lines)
+        assert any("none recorded" in line for line in lines)
 
     def test_human_summary_clean(self):
         diff = StateDiff(has_known_good=True, changes=[])
         lines = diff.human_summary()
-        assert any("no changes" in l.lower() for l in lines)
+        assert any("no changes" in line.lower() for line in lines)
 
     def test_human_summary_dirty_shows_field_name(self):
         diff = StateDiff(
@@ -235,7 +235,7 @@ class TestKnownGoodStateServiceMark:
         paths = _make_paths(tmp_path)
         svc = KnownGoodStateService(paths=paths)
         fp = _fake_fp()
-        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]), \
+        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]),\
              patch("application.fingerprint_service.FingerprintService") as mock_svc:
             mock_svc.return_value.generate.return_value = fp
             result = svc.mark()
@@ -246,7 +246,7 @@ class TestKnownGoodStateServiceMark:
         paths = _make_paths(tmp_path)
         svc = KnownGoodStateService(paths=paths)
         fp = _fake_fp()
-        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]), \
+        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]),\
              patch("application.fingerprint_service.FingerprintService") as mock_svc:
             mock_svc.return_value.generate.return_value = fp
             svc.mark()
@@ -258,7 +258,7 @@ class TestKnownGoodStateServiceMark:
         paths = _make_paths(tmp_path)
         svc = KnownGoodStateService(paths=paths)
         fp = _fake_fp(installation_id="khptz-2026-0042", app_version="3.18.0")
-        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]), \
+        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]),\
              patch("application.fingerprint_service.FingerprintService") as mock_svc:
             mock_svc.return_value.generate.return_value = fp
             svc.mark()
@@ -276,7 +276,7 @@ class TestKnownGoodStateServiceMark:
         )
         svc = KnownGoodStateService(paths=paths)
         fp = _fake_fp()
-        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]), \
+        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]),\
              patch("application.fingerprint_service.FingerprintService") as mock_svc:
             mock_svc.return_value.generate.return_value = fp
             result = svc.mark()
@@ -299,7 +299,7 @@ class TestKnownGoodStateServiceMark:
         svc = KnownGoodStateService(paths=paths)
         fp = _fake_fp()
         with patch("application.known_good_state_service.KnownGoodStateService._find_blockers",
-                   return_value=["data_dir"]), \
+                   return_value=["data_dir"]),\
              patch("application.fingerprint_service.FingerprintService") as mock_svc:
             mock_svc.return_value.generate.return_value = fp
             result = svc.mark(force=True)
@@ -309,7 +309,7 @@ class TestKnownGoodStateServiceMark:
         paths = _make_paths(tmp_path)
         svc = KnownGoodStateService(paths=paths)
         fp = _fake_fp()
-        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]), \
+        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]),\
              patch("application.fingerprint_service.FingerprintService") as mock_svc:
             mock_svc.return_value.generate.return_value = fp
             svc.mark(note="post-install validation")
@@ -320,7 +320,7 @@ class TestKnownGoodStateServiceMark:
         paths = _make_paths(tmp_path)
         svc = KnownGoodStateService(paths=paths)
         fp = _fake_fp()
-        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]), \
+        with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]),\
              patch("application.fingerprint_service.FingerprintService") as mock_svc:
             mock_svc.return_value.generate.return_value = fp
             result = svc.mark()

@@ -6,3 +6,4 @@ PTZ2IP.txt
 sim_ip_backup.json
 *.log
 .DS_Store
+.pytest-runtime/
