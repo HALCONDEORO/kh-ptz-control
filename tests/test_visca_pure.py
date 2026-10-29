@@ -203,9 +203,15 @@ class TestParserPTZPosition:
         assert vparse.ptz_position(bytes(5)) is None
 
     def test_wrong_header_returns_none(self):
+        # 0x50 (estándar) y 0x58 (variante) se aceptan; cualquier otro byte no.
         data = self._make_ptz_response(0x1234, 0x5678)
-        bad = bytes([0x90, 0x50]) + data[2:]
+        bad = bytes([0x90, 0x51]) + data[2:]
         assert vparse.ptz_position(bad) is None
+
+    def test_spec_header_0x50_accepted(self):
+        data = self._make_ptz_response(0x1234, 0x5678)
+        spec = bytes([0x90, 0x50]) + data[2:]
+        assert vparse.ptz_position(spec) == (0x1234, 0x5678)
 
     # Signed two's-complement tests (#189)
     def test_negative_pan_ffff_equals_minus_one(self):
