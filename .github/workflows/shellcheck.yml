@@ -26,7 +26,9 @@ jobs:
 
     steps:
       - name: Download repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       # `bash -n` is a distinct gate from ShellCheck: it is the real interpreter
       # rejecting a script it cannot parse, which is exactly the class of
@@ -47,7 +49,7 @@ jobs:
           exit "${status}"
 
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         with:
           scandir: "."
           severity: warning
