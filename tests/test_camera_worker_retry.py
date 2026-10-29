@@ -398,6 +398,42 @@ class TestSentinelLeakOnFailedRestarts(unittest.TestCase):
                       "el STOP encolado durante la avería se perdió en el relevo")
 
 
+class TestAtomicDrainOnRestart(unittest.TestCase):
+    """P1c: el drenaje de sentinels en restart() es atómico frente a la UI."""
+
+    def test_concurrent_move_cannot_overtake_preserved_stop(self):
+        w = _ControlledWorker([COMPLETION])
+        # Hilo muerto: restart() llega directo al drenaje.
+        w._thread = threading.Thread(target=lambda: None, daemon=True)
+        # Cola: sentinel sobrante de una parada fallida + STOP conservado.
+        w._sentinel_pending = True
+        w._queue.put_nowait(None)
+        w._queue.put_nowait(ViscaCommand(camera=1, payload=PT_STOP, priority=True))
+        # Productor UI concurrente: en el hueco no atómico (código viejo:
+        # extraer con get_nowait y reinsertar con put_nowait) cuela un MOVE
+        # delante del STOP retenido. En el código nuevo el drenaje es in situ
+        # y este hook nunca dispara.
+        real_put = w._queue.put_nowait
+        injected = []
+        def racy_put(item, *a, **kw):
+            if not injected:
+                injected.append(True)
+                real_put(ViscaCommand(camera=1, payload=MOVE))
+            return real_put(item, *a, **kw)
+        w._queue.put_nowait = racy_put
+        self.assertTrue(w.restart())
+        self.addCleanup(w.stop)
+        if not injected:
+            # Drenaje atómico: el MOVE llega ahora por la vía normal.
+            w.send(ViscaCommand(camera=1, payload=MOVE))
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline and len(w.sent_payloads) < 2:
+            time.sleep(0.02)
+        self.assertEqual(w.sent_payloads[:2], [PT_STOP, MOVE],
+                         "un MOVE concurrente se coló delante del STOP conservado "
+                         "(drenaje no atómico) o el STOP se perdió")
+
+
 class TestSingleFailureNotification(unittest.TestCase):
     """P2: on_failure se llama exactamente una vez por comando fallido."""
 
