@@ -753,6 +753,22 @@ class MainWindow(QMainWindow):
             lambda ok, _ip=worker.ip: self._on_cam_connected(ok, _ip))
         worker.signals.connection_changed.connect(
             lambda ok, _ip=worker.ip: self._on_cam_connection_changed(ok, _ip))
+        worker.signals.connection_state_changed.connect(
+            lambda state, _ip=worker.ip: self._on_cam_connection_state_changed(state, _ip))
+
+    def _on_cam_connection_state_changed(self, state, ip: str) -> None:
+        """LED ámbar mientras el worker intenta (re)conectar con la cámara.
+
+        Se cablea para CADA worker, igual que connection_changed, para que el
+        indicador siga al worker actual tras un cambio de IP.
+        """
+        from domain.camera_state import CameraConnectionState
+        try:
+            cam_key = self._cameras.cam_key(ip)
+        except ValueError:
+            return
+        (self.Cam1 if cam_key == 1 else self.Cam2).set_connecting(
+            state is CameraConnectionState.CONNECTING)
 
     def _on_cam_connection_changed(self, ok: bool, ip: str) -> None:
         """Refleja el estado de conexión del worker en el LED de la cámara.
@@ -1411,14 +1427,17 @@ class MainWindow(QMainWindow):
 
         # Los lambdas capturan el objeto worker (no la variable local), así que
         # seguirán apuntando al mismo worker aunque _build_supervisor ya haya retornado.
+        # Salud = hilo vivo Y con señales de vida recientes: un hilo bloqueado
+        # (p.ej. un callback que no retorna) también se reinicia.
+        from config import WORKER_STUCK_TIMEOUT_S as _stuck_s
         sup.registrar(
             "camera_worker_cam1",
-            lambda: cam1._thread.is_alive(),
+            lambda: cam1._thread.is_alive() and cam1.progress_age() < _stuck_s,
             cam1.restart,
         )
         sup.registrar(
             "camera_worker_cam2",
-            lambda: cam2._thread.is_alive(),
+            lambda: cam2._thread.is_alive() and cam2.progress_age() < _stuck_s,
             cam2.restart,
         )
         # El lambda evalúa self._atem_monitor en tiempo de ejecución, por lo que
