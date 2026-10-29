@@ -332,6 +332,72 @@ class TestSupervisorRestartRoute(unittest.TestCase):
                          "el zombie no reenvió nada; el worker nuevo sí envía")
 
 
+class TestSentinelLeakOnFailedRestarts(unittest.TestCase):
+    """P1b: reinicios fallidos no dejan sentinels None que maten al relevo."""
+
+    def test_failed_restarts_then_recovery_keeps_new_thread_alive(self):
+        w = _ControlledWorker([COMPLETION])
+        entered = threading.Event()
+        gate = threading.Event()
+        original_read = w._read_visca_response
+        def blocking_read(sock):
+            entered.set()
+            gate.wait(5.0)  # hilo colgado hasta abrir la puerta
+            return original_read(sock)
+        w._read_visca_response = blocking_read
+        _start(w, self)
+        zombie = w._thread
+        w.send(ViscaCommand(camera=1, payload=MOVE))
+        self.assertTrue(entered.wait(timeout=2.0))
+        self.assertFalse(w.restart())  # intento 1: el hilo no muere
+        self.assertFalse(w.restart())  # intento 2: idem
+        nones = sum(1 for it in list(w._queue.queue) if it is None)
+        self.assertLessEqual(nones, 1,
+                             "cada restart fallido añadía otro sentinel None")
+        gate.set()
+        zombie.join(timeout=3.0)
+        self.assertFalse(zombie.is_alive())
+        # Recuperación: el hilo nuevo NO debe morir por un sentinel sobrante.
+        self.assertTrue(w.restart())
+        new_thread = w._thread
+        time.sleep(0.3)
+        self.assertTrue(new_thread.is_alive(),
+                        "un sentinel sobrante mató al hilo recién creado")
+        w.send(ViscaCommand(camera=1, payload=MOVE))
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline and w.sent_payloads.count(MOVE) < 2:
+            time.sleep(0.02)
+        self.assertEqual(w.sent_payloads.count(MOVE), 2,
+                         "el worker recuperado debe procesar comandos")
+
+    def test_sentinels_drained_without_losing_queued_stops(self):
+        w = _ControlledWorker([COMPLETION])
+        entered = threading.Event()
+        gate = threading.Event()
+        original_read = w._read_visca_response
+        def blocking_read(sock):
+            entered.set()
+            gate.wait(5.0)
+            return original_read(sock)
+        w._read_visca_response = blocking_read
+        _start(w, self)
+        zombie = w._thread
+        w.send(ViscaCommand(camera=1, payload=MOVE))
+        self.assertTrue(entered.wait(timeout=2.0))
+        self.assertFalse(w.restart())
+        self.assertFalse(w.restart())
+        # Un STOP encolado durante la avería debe sobrevivir al drenaje.
+        w.send_priority(ViscaCommand(camera=1, payload=PT_STOP))
+        gate.set()
+        zombie.join(timeout=3.0)
+        self.assertTrue(w.restart())
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline and PT_STOP not in w.sent_payloads:
+            time.sleep(0.02)
+        self.assertIn(PT_STOP, w.sent_payloads,
+                      "el STOP encolado durante la avería se perdió en el relevo")
+
+
 class TestSingleFailureNotification(unittest.TestCase):
     """P2: on_failure se llama exactamente una vez por comando fallido."""
 
