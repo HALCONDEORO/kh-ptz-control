@@ -522,3 +522,32 @@ class TestSetPipState:
         stub._pip_label.hide.assert_called_once()
         stub._pip_label.show.assert_not_called()
 
+
+
+class TestIndicatorButtonConnecting:
+    """_IndicatorButton.set_connecting drives the amber reconnecting LED state."""
+
+    def _btn(self, connected=False, connecting=False, powered=True):
+        from types import SimpleNamespace
+        btn = SimpleNamespace(
+            _connected=connected, _connecting=connecting, _powered=powered,
+            update=MagicMock(),
+        )
+        return btn
+
+    def test_set_connecting_enables_amber_state(self):
+        btn = self._btn()
+        _rp._IndicatorButton.set_connecting(btn, True)
+        assert btn._connecting is True
+        btn.update.assert_called_once()
+
+    def test_set_connecting_no_repaint_when_unchanged(self):
+        btn = self._btn(connecting=False)
+        _rp._IndicatorButton.set_connecting(btn, False)
+        btn.update.assert_not_called()
+
+    def test_set_connecting_clears_on_state_change(self):
+        btn = self._btn(connecting=True)
+        _rp._IndicatorButton.set_connecting(btn, False)
+        assert btn._connecting is False
+        btn.update.assert_called_once()
