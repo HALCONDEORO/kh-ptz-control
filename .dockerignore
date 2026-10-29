@@ -1,0 +1,33 @@
+# Build context for tests/installer/Dockerfile.bullseye.
+#
+# Keep the context small and platform-clean: a local venv holds Windows/host
+# binaries that are meaningless inside a Debian image, and the caches below are
+# regenerated anyway.
+#
+# .git is deliberately NOT excluded. install.sh's rsync excludes it when copying
+# to /opt/hallptz, and container_install_test.sh asserts /opt/hallptz/.git is absent —
+# shipping repository history to a customer appliance would leak it. That
+# assertion is only meaningful if .git actually exists in the build context.
+# CI checks out shallow, so it stays small there.
+
+venv/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.pytest-runtime/
+.ruff_cache/
+.mypy_cache/
+
+# Local runtime output — never part of an install.
+logs/
+backups/
+graphify-out/
+
+# Editor/OS noise
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+

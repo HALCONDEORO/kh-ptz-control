@@ -1,0 +1,8 @@
+scripts/__pycache__/check_secrets.cpython-310.pyc:private-key:34
+scripts/check_secrets.py:private-key:112
+tests/test_check_secrets.py:private-key:147
+tests/test_check_secrets.py:private-key:167
+tests/test_redaction_guard.py:private-key:34
+tests/test_redaction_guard.py:private-key:90
+tests/test_redaction_service.py:private-key:162
+tests/test_redaction_service.py:private-key:60

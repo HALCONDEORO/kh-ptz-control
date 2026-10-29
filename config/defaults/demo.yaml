@@ -1,0 +1,31 @@
+# Hall PTZ Control — Demo profile
+# Used for sales/training sessions with no real hardware.
+# Data is stored in ~/.config/hallptz-demo/ and never touches production config.
+
+site:
+  name: "Demo Venue"
+  contact: "demo"
+  installation_profile: "demo"
+
+cameras:
+  - id: platform
+    role: platform
+    ip: "127.0.0.1"
+    visca_id: "81"
+  - id: comments
+    role: comments
+    ip: "127.0.0.1"
+    visca_id: "82"
+
+atem:
+  ip: ""
+
+runtime:
+  data_dir: ""
+  connectivity_mode: "offline"
+  mode: "demo"
+
+features:
+  atem_enabled: false
+  simulation: true
+  allow_real_hardware_in_demo: false

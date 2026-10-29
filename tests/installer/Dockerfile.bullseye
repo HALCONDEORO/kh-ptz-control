@@ -1,0 +1,78 @@
+# Copyright (c) 2026 MACD Adaptive Limited.
+# Licensed under the MIT License. See LICENSE in the repository root.
+#
+# tests/installer/Dockerfile.bullseye — write-side coverage for install.sh (#888/#891)
+#
+# Debian Bullseye is the Raspberry Pi OS baseline and ships Python 3.9.2, the
+# exact supported target. The readiness gate (install.sh --check) is covered by
+# readiness_harness.sh on any host; this image covers what that cannot: the
+# write side — service user creation, directory ownership and modes, the rsync
+# copy, config preservation and the rendered systemd unit.
+#
+# Product mode takes all runtime dependencies from apt (never pip), so the
+# install itself needs no network — only this build does.
+#
+# Build:  docker build -f tests/installer/Dockerfile.bullseye -t hallptz-install-test .
+# Run:    docker run --rm hallptz-install-test
+
+FROM debian:bullseye-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Exactly what docs/INSTALL_RPI.md tells an operator to apt-install, plus the
+# tools install.sh requires (git, rsync) and passwd for useradd.
+#
+# python3-yaml is not optional: product mode installs no pip packages, and
+# config/loader.py imports the module at import time, so the appliance cannot
+# start without it. It was missing from both the documented apt line and this
+# image, which is why an install could report success and then fail with
+# ModuleNotFoundError the first time it was used. install.sh now refuses to
+# install without it, so this image would fail the build-side test too.
+#
+# x11-xserver-utils (xhost) is deliberately NOT installed: there is no X server
+# here, and its absence exercises the readiness check's WARN branch — the one
+# that tells an operator to pre-install it rather than let the wizard reach for
+# apt mid-provisioning.
+# Debian Bullseye is EOL: deb.debian.org stopped re-signing its Release files
+# (bullseye-security's InRelease expired in early September 2026 and broke this
+# build), and archive.debian.org does not carry bullseye-security at all - yet
+# the debian:bullseye-slim base image already contains packages from it (e.g.
+# perl-base 5.32.1-4+deb11u5), so the plain archive cannot satisfy dependencies.
+# The complete final state of both suites lives on snapshot.debian.org, so pin
+# the dated 2026-09-01 snapshot of bullseye, bullseye-updates AND
+# bullseye-security. A pinned snapshot also makes this build reproducible.
+# Valid-Until checks stay disabled because archived Release files are expired.
+# This is a hermetic installer test image - never copy these sources into
+# appliance or docs instructions for a deployed system.
+RUN printf '%s\n' \
+        'deb http://snapshot.debian.org/archive/debian/20260901T000000Z bullseye main' \
+        'deb http://snapshot.debian.org/archive/debian/20260901T000000Z bullseye-updates main' \
+        'deb http://snapshot.debian.org/archive/debian-security/20260901T000000Z bullseye-security main' \
+        > /etc/apt/sources.list \
+    && printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99no-valid-until
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pyqt5 \
+        python3-pyqt5.qtsvg \
+        python3-yaml \
+        git \
+        rsync \
+        passwd \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# systemd does not run inside this container, so `systemctl daemon-reload`
+# (unguarded in install.sh, and correctly so — on a real Pi a failing
+# daemon-reload IS an error) would abort the install. Stub it rather than
+# weakening the installer to accommodate a test environment. The unit file's
+# *content* contract is covered separately by tests/test_systemd_install_contract.py.
+RUN printf '#!/bin/sh\necho "[stub systemctl] $*"\nexit 0\n' > /usr/local/bin/systemctl \
+    && chmod 0755 /usr/local/bin/systemctl
+
+WORKDIR /src
+COPY . /src
+
+RUN chmod +x /src/tests/installer/container_install_test.sh
+CMD ["/src/tests/installer/container_install_test.sh"]
+

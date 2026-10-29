@@ -1,0 +1,46 @@
+[tool.ruff]
+# Configuración inicial y prudente para no bloquear el proyecto por deuda legacy.
+# La idea es detectar errores obvios ahora y endurecer reglas más adelante.
+target-version = "py39"
+line-length = 100
+
+extend-exclude = [
+    ".git",
+    ".github",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+# E/F detectan errores básicos de pyflakes/pycodestyle.
+# I ordena imports, pero no lo activamos todavía para evitar ruido legacy.
+select = ["E", "F"]
+
+# Reglas ignoradas temporalmente para evitar ruido en código legacy.
+# Se pueden retirar gradualmente cuando el código esté más limpio.
+ignore = [
+    "E501",  # longitud de línea; ya hay líneas largas en legacy y docs embebidos
+    "E402",  # imports no situados arriba; hay imports diferidos por PyQt/simulación
+]
+
+[tool.bandit]
+# Bandit static security analysis configuration.
+# Run locally: bandit -r . -x tests -c pyproject.toml
+#
+# Excluded paths: tests/ contains deliberate fake secret patterns;
+# hardware_simulator.py and legacy UI controllers have subprocess usage
+# that is acceptable in context.
+exclude_dirs = ["tests", ".venv", "venv", "build", "dist"]
+
+# Skipped checks (with justification):
+# B101 — assert_used: asserts used in application logic are acceptable
+#         for precondition checks during development.
+# B603 — subprocess_without_shell_equals_true: we use subprocess.run with
+#         explicit arg lists, not shell=True; this rule is over-broad.
+# B404 — import_subprocess: subprocess is used intentionally in runtime/cli
+#         and scripts; import itself is not a risk.
+# B607 — start_process_with_partial_path: acceptable in controlled scripts.
+skips = ["B101", "B603", "B404", "B607"]

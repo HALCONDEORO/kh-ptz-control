@@ -1,0 +1,15 @@
+[Desktop Entry]
+Name=Hall PTZ Control
+Comment=Start the HALLPTZ touchscreen application in this desktop session
+Exec=/usr/local/libexec/hallptz-gui-session
+Icon=video-display
+Terminal=false
+Type=Application
+Categories=AudioVideo;System;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+# Autostart entry installed only by `install.sh --gui-mode user` (#885).
+# It does not launch the GUI directly: it hands the live session environment to
+# the user manager and starts hallptz-gui.service, so systemd owns supervision,
+# logging and restart limits. Starting an already-running unit is a no-op, which
+# is what guarantees exactly one GUI instance per graphical login.

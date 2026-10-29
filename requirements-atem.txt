@@ -1,0 +1,6 @@
+# Optional ATEM monitoring dependency
+#
+# Install this only on systems that use a real Blackmagic ATEM switcher.
+# If this package is missing, atem_monitor.py disables ATEM monitoring and
+# the rest of the application continues to run.
+PyATEMMax

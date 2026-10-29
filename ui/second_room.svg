@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 320" fill="none" stroke="#000" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Marco exterior de la pizarra -->
+  <rect x="18" y="18" width="344" height="248" rx="18"/>
+  <!-- Marco interior (borde interno decorativo) -->
+  <rect x="32" y="32" width="316" height="220" rx="10"/>
+
+  <!-- Soporte eliminado: solo queda el marco cuadrado -->
+
+  <!-- Puntos decorativos izquierda (efecto tiza) -->
+  <circle cx="58" cy="100" r="5" fill="#000" stroke="none"/>
+  <circle cx="58" cy="140" r="5" fill="#000" stroke="none"/>
+
+  <!-- Puntos decorativos derecha -->
+  <circle cx="322" cy="120" r="5" fill="#000" stroke="none"/>
+  <circle cx="322" cy="155" r="5" fill="#000" stroke="none"/>
+  <circle cx="322" cy="175" r="5" fill="#000" stroke="none"/>
+
+  <!-- Número 2 centrado en la pizarra -->
+  <text x="190" y="200" 
+        font-family="Arial, sans-serif" 
+        font-size="140" 
+        font-weight="bold" 
+        fill="#000" 
+        stroke="none" 
+        text-anchor="middle">2</text>
+
+  <!-- Borrador/goma (rectángulo redondeado diagonal abajo derecha del 2) -->
+  <rect x="230" y="210" width="50" height="22" rx="6" transform="rotate(-30, 255, 221)" fill="#000" stroke="#000"/>
+</svg>
+

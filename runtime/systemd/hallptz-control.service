@@ -1,0 +1,61 @@
+# hallptz-control.service — Hall PTZ Control systemd service
+#
+# Installed by runtime/installer/install.sh. Product installs receive the
+# display-ready condition through repair_rpi_runtime.sh's systemd drop-in; the
+# base unit stays usable in --dev mode, where the wizard/display handoff is not
+# installed.
+
+[Unit]
+Description=Hall PTZ Control
+Documentation=https://github.com/HALCONDEORO/hall-ptz-control
+After=graphical.target network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/hallptz/.provisioned
+
+# Restart rate limiting. These are [Unit] directives (systemd >= 229); they were
+# previously in [Service], where systemd ignores them — so the burst cap never
+# applied and a failing GUI could restart forever, the exact loop #885 requires
+# bounded and the bootstrap's NRestarts check assumes exists.
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=hallptz
+Group=hallptz
+WorkingDirectory=/opt/hallptz
+ExecStart=/usr/bin/python3 /opt/hallptz/main.py
+Restart=on-failure
+RestartSec=5
+
+# Raspberry Pi desktop/display contract.
+Environment=DISPLAY=:0
+Environment=QT_QPA_PLATFORM=xcb
+
+# Canonical runtime paths and UTF-8. The latter prevents diagnostics/CLI output
+# from crashing under ISO-8859 desktop locales observed on the pilot Pi.
+Environment=HALLPTZ_DATA_DIR=/var/lib/hallptz
+Environment=LANG=C.UTF-8
+Environment=LC_ALL=C.UTF-8
+Environment=PYTHONUTF8=1
+Environment=PYTHONIOENCODING=utf-8
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hallptz-control
+
+NoNewPrivileges=true
+
+# Qt/XCB needs the real /tmp/.X11-unix socket. PrivateTmp=true hid it and caused
+# the observed xcb abort, so this GUI service deliberately keeps the host /tmp.
+PrivateTmp=false
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/etc/hallptz /var/lib/hallptz /var/log/hallptz /var/backups/hallptz
+CapabilityBoundingSet=
+AmbientCapabilities=
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=graphical.target

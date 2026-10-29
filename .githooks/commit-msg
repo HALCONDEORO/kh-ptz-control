@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Hook commit-msg: bumpa la VERSION según el tipo de mensaje.
+python "$(git rev-parse --show-toplevel)/scripts/bump_version.py" "$1"

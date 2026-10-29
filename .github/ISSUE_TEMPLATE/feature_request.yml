@@ -1,0 +1,163 @@
+name: Feature request
+
+description: Propose a new capability or improvement.
+
+title: "[FEATURE] "
+
+labels: ["enhancement"]
+
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should the user be able to do that they cannot today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: Commercial or operational value. Who benefits and how?
+    validations:
+      required: true
+
+  - type: input
+    id: parent
+    attributes:
+      label: Parent
+      description: Parent issue, epic or roadmap item. Use "None" only when intentional.
+      placeholder: "#239"
+    validations:
+      required: true
+
+  - type: textarea
+    id: depends-on
+    attributes:
+      label: Depends on
+      description: Issues, decisions or prerequisites required before implementation.
+      placeholder: |
+        - #123
+        - None
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocks-related
+    attributes:
+      label: Blocks / Related
+      description: Issues this work blocks, or related issues that must be considered.
+      placeholder: |
+        Blocks:
+        - #124
+
+        Related:
+        - #125
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: Describe the expected UI/API/runtime behaviour.
+    validations:
+      required: false
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: Explicitly list what this feature does NOT include.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: tests-expected
+    attributes:
+      label: Tests expected
+      description: List the automated, manual, hardware or simulation checks expected for this feature. Use "not applicable" only when intentional.
+      value: |
+        - [ ] pytest
+        - [ ] smoke test
+        - [ ] manual simulation test
+        - [ ] manual Raspberry Pi test
+        - [ ] manual hardware test
+        - [ ] not applicable
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+        - Later
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment-risk
+    attributes:
+      label: Customer deployment risk
+      options:
+        - None — no installed system affected
+        - Low — config/data migration not required
+        - Medium — migration script or manual step needed
+        - High — requires coordination with customer
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - needs review
+        - ready
+        - blocked
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - feature
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I removed secrets, customer data and private network details.
+          required: true

@@ -1,0 +1,45 @@
+# CODEOWNERS is advisory unless branch protection requires owner review.
+# Keep owners real GitHub users/teams that will monitor review requests.
+
+# Default repository owner
+* @HALCONDEORO
+
+# Release, CI and repository safety
+.github/ @HALCONDEORO
+.github/workflows/ @HALCONDEORO
+.github/ISSUE_TEMPLATE/ @HALCONDEORO
+.pre-commit-config.yaml @HALCONDEORO
+pyproject.toml @HALCONDEORO
+ruff.toml @HALCONDEORO
+
+# Raspberry Pi deployment and service lifecycle
+runtime/ @HALCONDEORO
+runtime/installer/ @HALCONDEORO
+runtime/systemd/ @HALCONDEORO
+
+# Customer/runtime data safety
+application/*backup* @HALCONDEORO
+application/*restore* @HALCONDEORO
+application/*support* @HALCONDEORO
+application/*diagnostics* @HALCONDEORO
+application/*migration* @HALCONDEORO
+config/ @HALCONDEORO
+config.example/ @HALCONDEORO
+data_paths.py @HALCONDEORO
+secret_manager.py @HALCONDEORO
+
+# Security, privacy, legal and release documentation
+SECURITY.md @HALCONDEORO
+LICENSE @HALCONDEORO
+NOTICE.md @HALCONDEORO
+docs/SECURITY_NOTES.md @HALCONDEORO
+docs/PRIVACY_NOTES.md @HALCONDEORO
+docs/LEGAL_CHECKLIST.md @HALCONDEORO
+docs/RELEASE_CHECKLIST.md @HALCONDEORO
+docs/RELEASE_PROCESS.md @HALCONDEORO
+
+# Camera control and hardware-facing paths
+ptz/ @HALCONDEORO
+adapters/ @HALCONDEORO
+devices/ @HALCONDEORO
+simulation/ @HALCONDEORO

@@ -1,0 +1,34 @@
+# Hall PTZ Control — Minimal valid test fixture
+# SAFE TEST DATA — fake site, RFC1918 example IP, fake ID.
+# Used by test helpers. Do not use as a real customer config.
+
+site:
+  name: "Test Venue"
+  contact: "Test Contact"
+  installation_profile: "starter_1_camera"
+  installation_id: "hallptz-2026-TEST"
+
+cameras:
+  - id: platform
+    role: platform
+    ip: "192.168.30.20"
+    visca_id: "81"
+
+atem:
+  ip: ""
+
+runtime:
+  data_dir: ""
+  connectivity_mode: "offline"
+
+features:
+  atem_enabled: false
+  simulation: false
+
+network:
+  profile: "isolated_av_vlan"
+  av_subnet: "192.168.30.0/24"
+  av_vlan_id: "30"
+  guest_access_allowed: false
+  static_ips: true
+

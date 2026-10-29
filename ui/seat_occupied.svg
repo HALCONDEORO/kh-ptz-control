@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 74 74" width="74" height="74">
+  <!-- reposabrazos izquierdo -->
+  <rect x="0"  y="4"  width="11" height="60" rx="3"
+        fill="#4a1828" stroke="#300e18" stroke-width="1.2"/>
+  <!-- reposabrazos derecho -->
+  <rect x="63" y="4"  width="11" height="60" rx="3"
+        fill="#4a1828" stroke="#300e18" stroke-width="1.2"/>
+  <!-- cuerpo principal del cojín — burdeo oscuro -->
+  <rect x="11" y="0"  width="52" height="70" rx="5"
+        fill="#8c3048" stroke="#6a1e34" stroke-width="1.2"/>
+  <!-- acolchado interior — burdeo más oscuro -->
+  <rect x="16" y="5"  width="42" height="57" rx="4"
+        fill="#72243a" stroke="#561828" stroke-width="0.7"/>
+  <!-- respaldo inferior -->
+  <rect x="11" y="62" width="52" height="12" rx="4"
+        fill="#4a1828" stroke="#300e18" stroke-width="1.2"/>
+</svg>
+

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Technical support
+    url: https://github.com/HALCONDEORO/hall-ptz-control/issues
+    about: For hardware issues or customer deployments, open a Bug report or Ops task.
+  - name: Responsible security reporting
+    url: https://github.com/HALCONDEORO/hall-ptz-control/blob/main/SECURITY.md
+    about: Read this before reporting sensitive security issues or sharing logs.

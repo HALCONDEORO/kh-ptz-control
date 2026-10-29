@@ -1,0 +1,169 @@
+name: Task
+
+description: Focused implementation, refactor, test, documentation or tooling task.
+
+title: "[TASK] "
+
+labels: []
+
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true when this task is complete?
+      placeholder: "Create a validated settings loader without changing current runtime behaviour."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Link related roadmap/epic/issues and explain why this is needed.
+    validations:
+      required: false
+
+  - type: input
+    id: parent
+    attributes:
+      label: Parent
+      description: Parent issue, epic or roadmap item. Use "None" only when intentional.
+      placeholder: "#239"
+    validations:
+      required: true
+
+  - type: textarea
+    id: depends-on
+    attributes:
+      label: Depends on
+      description: Issues, decisions or prerequisites required before implementation.
+      placeholder: |
+        - #123
+        - None
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocks-related
+    attributes:
+      label: Blocks / Related
+      description: Issues this work blocks, or related issues that must be considered.
+      placeholder: |
+        Blocks:
+        - #124
+
+        Related:
+        - #125
+    validations:
+      required: true
+
+  - type: textarea
+    id: allowed-files
+    attributes:
+      label: Allowed files / areas
+      description: List the files or areas that should be touched.
+      placeholder: |
+        - application/
+        - tests/
+        - docs/
+    validations:
+      required: false
+
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden changes
+      description: List areas that should not be changed.
+      placeholder: |
+        - Do not change customer-facing behaviour.
+        - Do not add new dependencies.
+        - Do not touch legacy UI controllers unless necessary.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete checklist for completion.
+      value: |
+        - [ ] Change is small and reviewable.
+        - [ ] Tests added or updated if behaviour changed.
+        - [ ] `python -m pytest` passes.
+        - [ ] `ruff check .` passes.
+        - [ ] Docs updated if usage/configuration changed.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0
+        - P1
+        - P2
+        - Later
+    validations:
+      required: true
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - needs review
+        - ready
+        - blocked
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - bug
+        - feature
+        - task
+        - ops
+        - documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: tests-expected
+    attributes:
+      label: Tests expected
+      description: List the automated, manual, hardware or simulation checks expected for this task. Use "not applicable" only when intentional.
+      value: |
+        - [ ] pytest
+        - [ ] architecture test
+        - [ ] smoke test
+        - [ ] manual simulation test
+        - [ ] manual Raspberry Pi test
+        - [ ] manual hardware test
+        - [ ] not applicable
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: ai
+    attributes:
+      label: AI suitability
+      options:
+        - label: This task is suitable for AI-assisted coding.
+        - label: This task needs human/manual hardware testing.
+        - label: This task must not be handled by AI without human review.

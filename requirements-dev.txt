@@ -1,0 +1,29 @@
+# Development and test dependencies
+-r requirements.txt
+
+# pytest is capped to the 8.x series on purpose: pytest 9.x declares
+# requires_python >= 3.10, but the supported runtime target is Python 3.9.2
+# (Raspberry Pi OS Bullseye) and CI runs on 3.9. pytest 8.x supports 3.9.
+# Do not bump to 9.x without dropping the 3.9 target. See dependabot.yml ignore.
+pytest>=8.4.2,<9
+ruff>=0.17.1,<1
+
+# Runs each test in its own forked subprocess (Linux only — CI runners are
+# ubuntu-latest). Works around a native resource leak in Qt's offscreen QPA
+# platform: enough real-widget construction in a single process eventually
+# aborts it (Fatal Python error: Aborted), even after deleteLater() +
+# processEvents() + gc.collect() — see issue #873. --forked sidesteps it by
+# giving every test a fresh, throwaway process.
+pytest-forked>=1.6,<2
+
+# Security checks — run locally with:
+#   pip-audit --strict -r requirements.txt
+#   bandit -r . -x tests -c pyproject.toml
+#
+# Both are capped below the first release that drops Python 3.9:
+#   - pip-audit 2.10.x requires Python >= 3.10 (last 3.9 series is 2.9.x)
+#   - bandit 1.9.x requires Python >= 3.10 (last 3.9 series is 1.8.x)
+# The supported runtime target is Python 3.9.2 and CI runs on 3.9, so these
+# must stay installable there. Do not bump past the cap without dropping 3.9.
+pip-audit>=2.9,<2.10
+bandit>=1.8.6,<1.9

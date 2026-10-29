@@ -1,0 +1,42 @@
+# Hall PTZ Control — Example: Standard (2 cameras, ATEM switcher)
+#
+# SAFE SAMPLE — fake site name, RFC1918 example IPs, fake installation ID.
+# Do NOT commit real customer configs to the repository.
+# Copy this file to config.yaml and replace with real values before deploying.
+#
+# See docs/NETWORK_ARCHITECTURE.md for recommended IP plan.
+
+site:
+  name: "Example Venue B"
+  contact: "AV Support Team"
+  installation_profile: "standard_2_camera"
+  installation_id: "hallptz-2026-EXAMPLE"
+
+cameras:
+  - id: platform
+    role: platform
+    ip: "192.168.30.20"
+    visca_id: "81"
+  - id: comments
+    role: comments
+    ip: "192.168.30.21"
+    visca_id: "82"
+
+atem:
+  ip: "192.168.30.30"
+
+runtime:
+  data_dir: ""
+  connectivity_mode: "offline"
+
+features:
+  atem_enabled: true
+  simulation: false
+
+network:
+  profile: "isolated_av_vlan"
+  av_subnet: "192.168.30.0/24"
+  av_vlan_id: "30"
+  guest_access_allowed: false
+  internet_required: false
+  static_ips: true

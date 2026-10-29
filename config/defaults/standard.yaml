@@ -1,0 +1,27 @@
+# Hall PTZ Control — Standard install template
+# Two PTZ cameras, optional ATEM monitoring, layout editor enabled.
+# Copy to config.yaml and fill in real IPs / VISCA IDs before first run.
+
+site:
+  name: "My Venue"
+  contact: "IT Support"
+
+cameras:
+  - id: platform
+    role: platform
+    ip: "172.16.1.11"
+    visca_id: "81"
+  - id: comments
+    role: comments
+    ip: "172.16.1.12"
+    visca_id: "82"
+
+atem:
+  ip: "192.168.1.240"
+
+runtime:
+  data_dir: ""
+
+features:
+  atem_enabled: true
+  simulation: false

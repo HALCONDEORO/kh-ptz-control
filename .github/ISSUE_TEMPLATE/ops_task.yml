@@ -1,0 +1,156 @@
+name: Ops / deployment task
+
+description: Infrastructure, deployment, configuration, documentation or process task.
+
+title: "[OPS] "
+
+labels: ["ops"]
+
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or gap
+      description: What operational risk, inconsistency or missing step does this address?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed action
+      description: What should be created, documented, scripted or configured?
+    validations:
+      required: true
+
+  - type: input
+    id: parent
+    attributes:
+      label: Parent
+      description: Parent issue, epic or roadmap item. Use "None" only when intentional.
+      placeholder: "#239"
+    validations:
+      required: true
+
+  - type: textarea
+    id: depends-on
+    attributes:
+      label: Depends on
+      description: Issues, decisions or prerequisites required before implementation.
+      placeholder: |
+        - #123
+        - None
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocks-related
+    attributes:
+      label: Blocks / Related
+      description: Issues this work blocks, or related issues that must be considered.
+      placeholder: |
+        Blocks:
+        - #124
+
+        Related:
+        - #125
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Files, directories, GitHub settings or external systems affected.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+        - Later
+    validations:
+      required: true
+
+  - type: dropdown
+    id: customer-impact
+    attributes:
+      label: Customer impact if skipped
+      options:
+        - Critical — blocks customer deployments
+        - High — increases support burden or deployment risk
+        - Medium — affects consistency or process quality
+        - Low — nice to have
+    validations:
+      required: true
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - needs review
+        - ready
+        - blocked
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - ops
+        - documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: tests-expected
+    attributes:
+      label: Tests expected
+      description: List the documentation, deployment, automated or manual checks expected for this task. Use "not applicable" only when intentional.
+      value: |
+        - [ ] pytest
+        - [ ] docs check
+        - [ ] smoke test
+        - [ ] manual deployment test
+        - [ ] manual Raspberry Pi test
+        - [ ] not applicable
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I removed secrets, customer data and private network details.
+          required: true

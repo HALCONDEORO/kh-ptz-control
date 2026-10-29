@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=HALLPTZ Setup
+Comment=Reconfigure Hall PTZ Control (repair / edit settings)
+Exec=hallptz setup --force
+Icon=preferences-system
+Terminal=false
+Type=Application
+Categories=Settings;System;
+StartupNotify=false

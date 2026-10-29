@@ -1,0 +1,6 @@
+# Runtime dependencies for Hall PTZ Control
+#
+# PyQt5 is required for the GUI. On Raspberry Pi OS, installing PyQt5 via apt
+# is usually more reliable than pip; see requirements-rpi.txt and README.md.
+PyQt5>=5.15.11,<6
+PyYAML>=6.0.3,<7

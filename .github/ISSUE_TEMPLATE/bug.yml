@@ -1,0 +1,161 @@
+name: Bug report
+
+description: Report a reproducible defect.
+
+title: "[BUG] "
+
+labels: ["type: bug"]
+
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is wrong?
+    validations:
+      required: true
+
+  - type: input
+    id: parent
+    attributes:
+      label: Parent
+      description: Parent issue, epic or roadmap item. Use "None" only when intentional.
+      placeholder: "#239"
+    validations:
+      required: true
+
+  - type: textarea
+    id: depends-on
+    attributes:
+      label: Depends on
+      description: Issues, decisions or prerequisites required before implementation.
+      placeholder: |
+        - #123
+        - None
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocks-related
+    attributes:
+      label: Blocks / Related
+      description: Issues this work blocks, or related issues that must be considered.
+      placeholder: |
+        Blocks:
+        - #124
+
+        Related:
+        - #125
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Raspberry Pi hardware
+        - Development machine
+        - Simulation mode
+        - Unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete checklist for completion.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - needs review
+        - ready
+        - blocked
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - bug
+    validations:
+      required: true
+
+  - type: textarea
+    id: tests-expected
+    attributes:
+      label: Tests expected
+      description: List the automated, manual, hardware or simulation checks expected for this fix. Use "not applicable" only when intentional.
+      value: |
+        - [ ] pytest
+        - [ ] smoke test
+        - [ ] manual simulation test
+        - [ ] manual Raspberry Pi test
+        - [ ] manual hardware test
+        - [ ] not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Paste relevant logs. Remove secrets, passwords and customer data.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I removed secrets, customer data and private network details.
+          required: true

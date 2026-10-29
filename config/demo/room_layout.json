@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "room_id": "demo-room",
+  "room_name": "Demo Room",
+  "screen_width": 1440,
+  "screen_height": 1080,
+  "seats": [
+    {"id": "1",   "label": "1",   "preset": 1,  "camera_role": "platform", "x": 744, "y": 30,  "type": "chairman", "visible": true, "locked": false, "calibrated": false},
+    {"id": "2",   "label": "2",   "preset": 2,  "camera_role": "platform", "x": 100, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "3",   "label": "3",   "preset": 3,  "camera_role": "platform", "x": 200, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "4",   "label": "4",   "preset": 4,  "camera_role": "comments", "x": 300, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "5",   "label": "5",   "preset": 5,  "camera_role": "comments", "x": 400, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "6",   "label": "6",   "preset": 6,  "camera_role": "comments", "x": 500, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "7",   "label": "7",   "preset": 7,  "camera_role": "comments", "x": 600, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "8",   "label": "8",   "preset": 8,  "camera_role": "comments", "x": 700, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "9",   "label": "9",   "preset": 9,  "camera_role": "comments", "x": 800, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "10",  "label": "10",  "preset": 10, "camera_role": "comments", "x": 900, "y": 300, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "11",  "label": "11",  "preset": 11, "camera_role": "comments", "x": 100, "y": 400, "type": "delegate", "visible": true, "locked": false, "calibrated": false},
+    {"id": "12",  "label": "12",  "preset": 12, "camera_role": "comments", "x": 200, "y": 400, "type": "delegate", "visible": true, "locked": false, "calibrated": false}
+  ]
+}

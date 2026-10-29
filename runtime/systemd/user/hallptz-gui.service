@@ -1,0 +1,76 @@
+# hallptz-gui.service — Hall PTZ Control GUI, owned by the desktop session (#885)
+#
+# Installed to /etc/systemd/user/ by runtime/installer/install.sh --gui-mode user.
+#
+# WHY THIS EXISTS
+# The system service (hallptz-control.service) runs the Qt GUI as the 'hallptz' system
+# user while the X display, Xauthority, XDG runtime dir and session D-Bus all
+# belong to the logged-in desktop user. Bridging that gap needed a scoped
+# `xhost +SI:localuser:hallptz` helper and a display-ready marker — a deployment
+# workaround, not a process boundary. Running the GUI *inside* the desktop
+# session removes the gap entirely: DISPLAY, XAUTHORITY, XDG_RUNTIME_DIR and
+# DBUS_SESSION_BUS_ADDRESS are the session's own, so there is nothing to grant,
+# no cookie to share and no root involved.
+#
+# HOW IT IS STARTED
+# Deliberately NOT enabled via WantedBy=graphical-session.target: Raspberry Pi
+# OS Bullseye runs LXDE, which does not reliably activate that target, so an
+# enabled unit could simply never start. It is also not WantedBy=default.target,
+# which activates for SSH logins too and would try to run a GUI with no display.
+#
+# Instead the XDG autostart entry (runtime/hallptz-gui.desktop) imports the live
+# session environment into the user manager and starts this unit explicitly.
+# XDG autostart is the dependable "a graphical session just began" signal on
+# LXDE, and it fires exactly once per graphical login — which is what gives the
+# "exactly one GUI instance" guarantee.
+#
+# DATA ACCESS
+# No User=/Group= here: the unit runs as whoever owns the session. That account
+# is added to the 'hallptz' group by install.sh, and --gui-mode user makes the
+# runtime directories setgid group-writable, so the GUI reaches its own data
+# through group membership — an explicit, auditable boundary instead of root.
+# /opt/hallptz stays 0750 root:hallptz (code is readable, never writable) and config
+# writes still go through the provisioning channel.
+
+[Unit]
+Description=Hall PTZ Control (desktop session GUI)
+Documentation=https://github.com/HALCONDEORO/hall-ptz-control
+ConditionPathExists=/etc/hallptz/.provisioned
+
+# Stop with the graphical session when the DE does manage that target; harmless
+# when it does not, because the user manager tears the unit down at logout.
+PartOf=graphical-session.target
+
+# Restart rate limiting — [Unit] directives (systemd >= 229). A GUI that cannot
+# start must fail visibly instead of looping forever.
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/hallptz
+ExecStart=/usr/bin/python3 /opt/hallptz/main.py
+Restart=on-failure
+RestartSec=5
+
+# DISPLAY / XAUTHORITY / XDG_RUNTIME_DIR / DBUS_SESSION_BUS_ADDRESS are
+# deliberately absent: they are imported from the real session by the autostart
+# entry. Hardcoding them here is what made the system unit brittle.
+Environment=QT_QPA_PLATFORM=xcb
+
+# Canonical runtime paths and UTF-8, matching the system unit so diagnostics and
+# CLI output cannot crash under an ISO-8859 desktop locale.
+Environment=HALLPTZ_DATA_DIR=/var/lib/hallptz
+Environment=LANG=C.UTF-8
+Environment=LC_ALL=C.UTF-8
+Environment=PYTHONUTF8=1
+Environment=PYTHONIOENCODING=utf-8
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hallptz-gui
+
+# The process is already unprivileged (it is the desktop user). Sandboxing
+# directives such as ProtectSystem=strict are intentionally omitted: they would
+# block the writes to /var/lib/hallptz and /var/log/hallptz that this unit must make.
+NoNewPrivileges=true

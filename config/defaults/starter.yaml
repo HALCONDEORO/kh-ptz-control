@@ -1,0 +1,37 @@
+# Hall PTZ Control — Starter install template
+# One PTZ camera, no ATEM, minimal features.
+# Copy to config.yaml and fill in real IP / VISCA ID before first run.
+
+site:
+  name: "My Venue"
+  contact: "IT Support"
+  installation_profile: "starter_1_camera"
+  installation_id: ""
+
+cameras:
+  - id: platform
+    role: platform
+    name: "Main Platform"
+    ip: "172.16.1.11"
+    visca_id: "81"
+
+atem:
+  ip: ""
+
+runtime:
+  data_dir: ""
+  connectivity_mode: "offline"
+  mode: "production"
+
+network:
+  profile: "flat_lan"
+  av_subnet: ""
+  av_vlan_id: ""
+  guest_access_allowed: null
+  internet_required: false
+  static_ips: null
+  notes: "Starter template; update after network handover."
+
+features:
+  atem_enabled: false
+  simulation: false

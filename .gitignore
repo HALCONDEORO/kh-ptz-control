@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+PTZ1IP.txt
+PTZ2IP.txt
+sim_ip_backup.json
+*.log
+.DS_Store

@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 MACD Adaptive Limited.
+# Licensed under the MIT License. See LICENSE in the repository root.
+"""Touchscreen setup wizard (graphical first-run installer)."""
+
+from ui.setup_wizard.wizard import SetupWizard
+
+__all__ = ["SetupWizard"]
+

@@ -1,0 +1,8 @@
+# Raspberry Pi runtime dependencies installed via pip
+#
+# Install PyQt5 and QtSvg from Raspberry Pi OS packages instead:
+#   sudo apt update
+#   sudo apt install -y python3-pyqt5 python3-pyqt5.qtsvg
+#
+# This file intentionally stays minimal. Optional ATEM monitoring dependencies
+# live in requirements-atem.txt and should only be installed where needed.

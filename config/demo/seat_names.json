@@ -1,0 +1,19 @@
+{
+  "names": [
+    "PersonA Demo",
+    "PersonB Sample",
+    "PersonC Test",
+    "David Example",
+    "Eve Placeholder",
+    "Frank Mockup",
+    "Grace Dummy",
+    "Hank Fictional"
+  ],
+  "seats": {
+    "4": "PersonA Demo",
+    "5": "PersonB Sample",
+    "6": "PersonC Test",
+    "7": "David Example",
+    "8": "Eve Placeholder"
+  }
+}
