@@ -57,6 +57,11 @@ VISCA_NO_RESPONSE_LIMIT = 3
 # rodaja de espera interrumpible) en este tiempo, se considera bloqueado y se
 # reinicia. Debe superar HEARTBEAT_TIMEOUT y los peores casos de espera.
 WORKER_STUCK_TIMEOUT_S = 30.0
+
+# Reinicio de worker colgado: espera acotada a que el hilo viejo termine
+# antes de crear uno nuevo. Si no muere en este margen NO se crea otro hilo
+# (evita dos workers enviando a la cámara) y la cámara queda en ERROR.
+WORKER_RESTART_JOIN_TIMEOUT_S = 2.0
 BUTTON_COLOR = "black"
 
 PRESET_ZOOM_SETTLE_BASE   = 4.0
