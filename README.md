@@ -45,7 +45,7 @@ wins:
 | | |
 |---|---|
 | ![Operator login](docs/screenshots/02-login.png) | ![Configuration](docs/screenshots/05-config.png) |
-| ![First-run setup wizard](docs/screenshots/06-wizard.png) | |
+| ![First-run setup wizard](docs/screenshots/06-wizard.png) | ![Cameras, VISCA and network discovery](docs/screenshots/08-cameras-atem.png) |
 
 ## Requirements
 
