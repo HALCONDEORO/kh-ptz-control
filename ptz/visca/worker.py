@@ -60,9 +60,10 @@ def _next_cmd_id() -> str:
 from config import (
     VISCA_PORT, CAMERA_QUEUE_MAXSIZE, HEARTBEAT_TIMEOUT,
     CAMERA_CONNECT_TIMEOUT, VISCA_READ_TIMEOUT, VISCA_SLOW_CMD_MS,
+    VISCA_NO_RESPONSE_LIMIT,
 )
 from domain.camera_state import CameraConnectionState
-from domain.retry_policy import RetryPolicy, CAMERA_RETRY_POLICY
+from domain.retry_policy import RetryPolicy, CAMERA_RETRY_POLICY, CAMERA_COMMAND_RETRY_POLICY
 
 # STOP y comandos confirmados no gastan el presupuesto largo de reconexión
 # (backoffs 5/15/30 s): tres intentos inmediatos sin esperas entre ellos.
@@ -149,6 +150,9 @@ class CameraWorker:
         self._shutdown = threading.Event()
 
         self._last_heartbeat: float = time.monotonic()
+        self._last_progress:  float = self._last_heartbeat
+        # Watchdog de respuestas: comandos consecutivos sin trama final VISCA.
+        self._consecutive_no_response = 0
 
         # Thread daemon: muere cuando el proceso principal termina.
         # No hace falta llamar a stop() explícitamente al cerrar la app.
@@ -268,6 +272,12 @@ class CameraWorker:
         """Segundos transcurridos desde la última iteración del bucle; útil para diagnóstico."""
         return time.monotonic() - self._last_heartbeat
 
+    def progress_age(self) -> float:
+        """Segundos desde la última señal de vida del worker (iteración de
+        bucle o rodaja de espera interrumpible). Lo usa el Supervisor para
+        detectar un hilo bloqueado (p.ej. un callback que no retorna)."""
+        return time.monotonic() - getattr(self, '_last_progress', self._last_heartbeat)
+
     def _requeue(self, cmd: ViscaCommand) -> None:
         """
         Devuelve un STOP interrumpido a la cola, detrás del STOP más nuevo que
@@ -342,6 +352,8 @@ class CameraWorker:
         self._interrupt.clear()
         self._close_socket()
         self._last_heartbeat = time.monotonic()
+        self._last_progress  = self._last_heartbeat
+        self._consecutive_no_response = 0
         self._thread = threading.Thread(
             target=self._run, daemon=True, name=f"CamWorker-{self.ip}")
         self._thread.start()
@@ -455,6 +467,7 @@ class CameraWorker:
         while time.monotonic() < deadline:
             if self._interrupt.is_set() or self._shutdown.is_set():
                 return True
+            self._last_progress = time.monotonic()
             time.sleep(0.2)
         return False
 
@@ -582,6 +595,7 @@ class CameraWorker:
         """
         while True:
             self._last_heartbeat = time.monotonic()
+            self._last_progress  = self._last_heartbeat
             # Espera hasta HEARTBEAT_TIMEOUT s; si no hay comando, ejecuta heartbeat y vuelve a esperar
             try:
                 cmd = self._queue.get(timeout=HEARTBEAT_TIMEOUT)
@@ -603,10 +617,23 @@ class CameraWorker:
                         logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
                 continue
 
-            # Intentar hasta 2 veces: 1ª con socket existente, 2ª tras reconectar
+            # Intentos de envío:
+            #  - STOP (priority) y confirmados (fast_connect): 1 reintento
+            #    inmediato tras reconectar, como siempre — un STOP nunca espera
+            #    backoffs de comando y un confirmado nunca se ejecuta tras su
+            #    deadline (expires_at).
+            #  - Comandos normales: reintentos acotados con backoff
+            #    interrumpible — un STOP entrante aborta la espera al momento.
             _succeeded  = False
             _interrupted = self._interrupt.is_set() and not cmd.priority
             send_started_at = 0.0
+
+            if cmd.priority or cmd.fast_connect:
+                max_attempts  = 2
+                cmd_backoffs: tuple = ()
+            else:
+                max_attempts  = CAMERA_COMMAND_RETRY_POLICY.max_attempts
+                cmd_backoffs = CAMERA_COMMAND_RETRY_POLICY.backoffs
 
             if _interrupted:
                 # Ventana cubierta: el worker ya hizo get() de este comando
@@ -629,7 +656,31 @@ class CameraWorker:
                 # join(timeout=3.0) de stop() (bug: filtraba threads en tests).
                 self._interrupt.clear()
 
-            for attempt in range(2):
+            for attempt in range(max_attempts):
+
+                # Backoff interrumpible entre reintentos de comandos normales.
+                if attempt > 0 and cmd_backoffs:
+                    backoff = cmd_backoffs[min(attempt - 1, len(cmd_backoffs) - 1)]
+                    logger.info(
+                        "%s cam=%s reintentando comando en %ds (intento %d/%d)",
+                        cmd.cmd_id, self.ip, backoff, attempt + 1, max_attempts,
+                    )
+                    if self._wait_interruptible(backoff):
+                        _interrupted = True
+                        if cmd.on_failure is not None:
+                            try:
+                                cmd.on_failure()
+                            except Exception as exc:
+                                logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                        break
+                    # Vencido o cancelado durante el backoff: no se reenvía.
+                    if cmd.cancelled.is_set() or (cmd.expires_at and time.monotonic() > cmd.expires_at):
+                        if not cmd.cancelled.is_set() and cmd.on_failure is not None:
+                            try:
+                                cmd.on_failure()
+                            except Exception as exc:
+                                logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                        break
 
                 # --- Fase 1: obtener referencia del socket (con lock breve) ---
                 with self._lock:
@@ -715,10 +766,27 @@ class CameraWorker:
                         # drift permanente). Cerrar el socket fuerza una
                         # reconexión con buffer limpio en el próximo comando.
                         self._close_socket()
-                        break  # _succeeded permanece False
+                        # Watchdog de respuestas: N fallos consecutivos sin
+                        # trama final marcan la cámara en ERROR (el LED lo
+                        # refleja y el log lo registra). La reconexión sigue
+                        # su curso por heartbeat.
+                        self._consecutive_no_response = getattr(
+                            self, '_consecutive_no_response', 0) + 1
+                        if self._consecutive_no_response >= VISCA_NO_RESPONSE_LIMIT:
+                            logger.error(
+                                "%s cam=%s watchdog: %d respuestas VISCA perdidas "
+                                "consecutivas — cámara en ERROR",
+                                cmd.cmd_id, self.ip, self._consecutive_no_response,
+                            )
+                            self._set_state(CameraConnectionState.ERROR)
+                        if cmd.priority or cmd.fast_connect:
+                            break  # _succeeded permanece False
+                        continue  # comando normal: reintento con backoff
 
                     if not CameraWorker._has_completion_frame(response):
-                        # Trama final recibida pero es Error, no Completion.
+                        # Trama final recibida pero es Error, no Completion:
+                        # la cámara respondió — el watchdog de respuestas se resetea.
+                        self._consecutive_no_response = 0
                         self.signals.visca_error.emit(self.ip, cmd_type)
                         logger.warning(
                             "%s cam=%s VISCA error response [%s] %s",
@@ -727,6 +795,7 @@ class CameraWorker:
                         break  # _succeeded permanece False
 
                     _succeeded = True
+                    self._consecutive_no_response = 0
                     break
 
                 except (socket.timeout, socket.error, OSError) as exc:
