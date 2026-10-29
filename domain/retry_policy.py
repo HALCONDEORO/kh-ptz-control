@@ -45,3 +45,8 @@ CAMERA_RETRY_POLICY = RetryPolicy(backoffs=(5, 15, 30))
 
 # ATEM switcher: responds faster; a tighter policy limits startup delay.
 ATEM_RETRY_POLICY = RetryPolicy(backoffs=(2, 5, 15))
+
+# Normal VISCA commands (not STOP, not confirmed): bounded retries with short,
+# interruptible back-offs. A pending STOP aborts the wait immediately
+# (_wait_interruptible), so STOP priority is never degraded by a retry.
+CAMERA_COMMAND_RETRY_POLICY = RetryPolicy(backoffs=(1, 3))

@@ -79,7 +79,6 @@ from ui.mode_border_overlay import ModeBorderOverlay
 
 # ── Arquitectura: AppContext y bootstrap ──────────────────────────────────────
 from core.events import EventType
-from core.supervisor import Supervisor
 from bootstrap import build_app_context
 from domain.preset import PRESET_CHAIRMAN_GENERIC, PLATFORM_PRESETS, PRESET_PLATFORM_2
 from application.call_set_command_policy import CallSetCommandPolicy
@@ -753,6 +752,8 @@ class MainWindow(QMainWindow):
             lambda ok, _ip=worker.ip: self._on_cam_connected(ok, _ip))
         worker.signals.connection_changed.connect(
             lambda ok, _ip=worker.ip: self._on_cam_connection_changed(ok, _ip))
+        from ui.camera_led_wiring import wire_connecting_led
+        wire_connecting_led(self, worker)
 
     def _on_cam_connection_changed(self, ok: bool, ip: str) -> None:
         """Refleja el estado de conexión del worker en el LED de la cámara.
@@ -1401,36 +1402,11 @@ class MainWindow(QMainWindow):
         if btn is not None:
             btn.show_saved()
 
-    def _build_supervisor(self) -> Supervisor:
-        """Registra los workers y arranca el supervisor de threads."""
-        sup = Supervisor()
-
-        # Workers ya creados al conectar señales de connection_changed en __init__.
-        cam1 = self._cameras.worker(self._cameras.ip_for_key(1))
-        cam2 = self._cameras.worker(self._cameras.ip_for_key(2))
-
-        # Los lambdas capturan el objeto worker (no la variable local), así que
-        # seguirán apuntando al mismo worker aunque _build_supervisor ya haya retornado.
-        sup.registrar(
-            "camera_worker_cam1",
-            lambda: cam1._thread.is_alive(),
-            cam1.restart,
-        )
-        sup.registrar(
-            "camera_worker_cam2",
-            lambda: cam2._thread.is_alive(),
-            cam2.restart,
-        )
-        # El lambda evalúa self._atem_monitor en tiempo de ejecución, por lo que
-        # siempre comprueba la instancia activa incluso tras un reinicio.
-        sup.registrar(
-            "atem_monitor",
-            self._atem_monitor_is_healthy,
-            self._restart_atem_monitor,
-        )
-
-        sup.start()
-        return sup
+    def _build_supervisor(self):
+        """Registra los workers y arranca el supervisor de threads
+        (cableado extraído a core/supervisor_wiring.py — presupuesto god-object)."""
+        from core.supervisor_wiring import build_supervisor
+        return build_supervisor(self)
 
     def _restart_atem_monitor(self):
         # Llamado desde el hilo del supervisor: delegar al hilo principal de Qt.

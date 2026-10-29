@@ -39,8 +39,11 @@ BUDGETS: dict[str, tuple[int, int]] = {
     # main_window.py grew by 12 lines to own the CameraConfigService seam (#893);
     # baseline raised once for that reviewed wiring, not for feature bloat;
     # 1828 -> 1816 when the ATEM button-state policy moved to
-    # ui/atem_button_state.py (#921). The ratchet moves down, never up.
-    "ui/main_window.py": (1816, 90),
+    # ui/atem_button_state.py (#921); then down again when the thread-supervisor
+    # wiring moved to core/supervisor_wiring.py and the amber-LED wiring to
+    # ui/camera_led_wiring.py (VISCA robustness review). The ratchet moves
+    # down, never up.
+    "ui/main_window.py": (1792, 90),
     "ui/splash_screen.py": (1332, 53),
 }
 

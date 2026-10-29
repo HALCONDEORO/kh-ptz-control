@@ -333,7 +333,10 @@ class TestSocketAlive(unittest.TestCase):
 
 class TestRestart(unittest.TestCase):
 
-    def test_restart_noop_if_thread_alive(self):
+    def test_restart_replaces_live_thread(self):
+        # Un hilo vivo ya NO es un no-op: restart() lo detiene y lo reemplaza
+        # (fix P1: el supervisor detectaba un hilo colgado pero restart()
+        # devolvía sin hacer nada, y el log decía "reiniciado").
         class _AlwaysConnectedWorker(_BaseTestWorker):
             def _connect(self):
                 return MagicMock()
@@ -344,8 +347,11 @@ class TestRestart(unittest.TestCase):
         self.addCleanup(w.stop)
         original_thread = w._thread
         time.sleep(0.05)
-        w.restart()  # thread vivo → no hace nada
-        self.assertIs(w._thread, original_thread)
+        self.assertTrue(w.restart())
+        self.assertIsNot(w._thread, original_thread)
+        original_thread.join(timeout=3.0)
+        self.assertFalse(original_thread.is_alive(),
+                         "el hilo viejo debe terminar antes de crear el nuevo")
 
     def test_restart_relaunches_dead_thread(self):
         class _QuickDieWorker(_BaseTestWorker):
@@ -527,4 +533,3 @@ class TestResponseClassification(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
-

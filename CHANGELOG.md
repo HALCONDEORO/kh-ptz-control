@@ -10,6 +10,27 @@ This project uses a simple versioning approach while it is still in early produc
 
 ## Unreleased
 
+### Added
+
+- **VISCA robustness: bounded command retries, no-response watchdog and a visible reconnecting state.**
+  Fire-and-forget camera commands (moves, zoom drives, preset recalls) are
+  retried with short, interruptible back-offs (`CAMERA_COMMAND_RETRY_POLICY`,
+  1 s and 3 s) instead of being dropped after a single failed attempt. STOP
+  commands keep their immediate priority path — a pending STOP aborts any
+  retry wait within 0.2 s (the wait polls for it every 200 ms) — and confirmed commands still never execute after their
+  deadline. After several consecutive commands with no VISCA response frame,
+  the worker flags the camera in `ERROR` state (visible on the LED and in the
+  log) while the heartbeat keeps reconnecting; the camera button LED now shows
+  amber while a (re)connection attempt is in progress; and the supervisor
+  restarts a worker thread that shows no signs of life for 30 s instead of
+  only checking that the thread is technically alive. The stuck thread is
+  signalled to stop and only replaced once it has actually exited, so two
+  workers never share one camera session; if it does not stop within a
+  bounded wait, no new thread is started and the camera is flagged
+  `ERROR` instead. Failure callbacks now fire exactly once per failed
+  command (a command expiring during a retry back-off could previously
+  notify failure twice).
+
 ### Fixed
 
 - **Product rollback could never run.** `install.sh` deploys `/opt/khptz` with

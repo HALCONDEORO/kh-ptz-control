@@ -22,7 +22,9 @@ class Supervisor:
     Cada worker se describe con tres argumentos en register():
       nombre    — etiqueta usada en los mensajes de log
       esta_vivo — () -> bool: devuelve True si el worker funciona correctamente
-      reiniciar — () -> None: recrea o reinicia el worker; debe ser idempotente
+      reiniciar — () -> bool | None: recrea o reinicia el worker; debe ser
+                  idempotente. Si devuelve False el reinicio NO ocurrió (se
+                  registra como error en lugar de "reiniciado").
 
     Ambas funciones se invocan desde el hilo daemon del supervisor.
     Si reiniciar() toca objetos Qt, envuélvela con QTimer.singleShot(0, fn)
@@ -65,7 +67,11 @@ class Supervisor:
                 try:
                     if not esta_vivo():
                         logger.warning("Supervisor: %s caído — reiniciando", nombre)
-                        reiniciar()
-                        logger.info("Supervisor: %s reiniciado", nombre)
+                        if reiniciar() is False:
+                            logger.error(
+                                "Supervisor: %s no pudo reiniciarse "
+                                "(hilo colgado que no termina)", nombre)
+                        else:
+                            logger.info("Supervisor: %s reiniciado", nombre)
                 except Exception:
                     logger.exception("Supervisor: error inesperado gestionando %s", nombre)

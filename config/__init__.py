@@ -47,6 +47,21 @@ VISCA_PORT = 5678
 CAMERA_QUEUE_MAXSIZE = 20
 HEARTBEAT_TIMEOUT = 5.0
 VISCA_SLOW_CMD_MS = 300
+
+# Watchdog de respuestas VISCA: nº de comandos consecutivos sin trama final
+# (timeout, EOF o ACK-only) tras el cual el worker marca la cámara en ERROR
+# (visible en el LED y en el log). La reconexión sigue su curso por heartbeat.
+VISCA_NO_RESPONSE_LIMIT = 3
+
+# Supervisor: si un worker no muestra señales de vida (iteración de bucle o
+# rodaja de espera interrumpible) en este tiempo, se considera bloqueado y se
+# reinicia. Debe superar HEARTBEAT_TIMEOUT y los peores casos de espera.
+WORKER_STUCK_TIMEOUT_S = 30.0
+
+# Reinicio de worker colgado: espera acotada a que el hilo viejo termine
+# antes de crear uno nuevo. Si no muere en este margen NO se crea otro hilo
+# (evita dos workers enviando a la cámara) y la cámara queda en ERROR.
+WORKER_RESTART_JOIN_TIMEOUT_S = 2.0
 BUTTON_COLOR = "black"
 
 PRESET_ZOOM_SETTLE_BASE   = 4.0
