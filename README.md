@@ -84,6 +84,8 @@ This points the app at the built-in simulator (no VISCA-IP traffic on your netwo
 so you can rehearse an installation or a meeting end to end. Turn it off with
 `python3 adapters/sim_mode.py off`.
 
+![Simulation mode: both simulated cameras connected](docs/screenshots/07-simulator.png)
+
 ## Status
 
 Working application, installable MVP candidate. Validate it on your own hardware
