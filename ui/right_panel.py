@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+import threading
+
 import logging
 import os
 from typing import ClassVar
@@ -395,6 +397,19 @@ class RightPanel:
         def _active_cam_id() -> str:
             return "cam1" if mw.Cam1.isChecked() else "cam2"
 
+        def _run_off_ui(fn, *args):
+            """Comando confirmado FUERA del hilo UI (daemon thread).
+
+            focus/exposure/backlight son comandos confirmados: esperan la
+            respuesta VISCA y pueden bloquear segundos si la cámara no
+            responde. En el hilo Qt congelarían la app y, lo peor, impedirían
+            pulsar STOP durante la espera. Sin resultado visual dependiente:
+            el feedback de foco llega por el polling de estado.
+            """
+            threading.Thread(
+                target=fn, args=args, daemon=True, name="CameraCmdOffUI",
+            ).start()
+
         def _get_port():
             return getattr(mw, '_camera_port', None)
 
@@ -414,7 +429,7 @@ class RightPanel:
             btn.setStyleSheet(self._btn_focus_base_style)
             btn.clicked.connect(
                 (lambda m=port_method: (
-                    lambda: getattr(_get_port(), m, lambda _: None)(_active_cam_id())
+                    lambda: _run_off_ui(getattr(_get_port(), m, lambda _: None), _active_cam_id())
                 ))()
             )
             focus_row.addWidget(btn)
@@ -434,7 +449,7 @@ class RightPanel:
             btn.setStyleSheet(self._btn_focus_base_style)
             btn.clicked.connect(
                 (lambda m=port_method: (
-                    lambda: getattr(_get_port(), m, lambda _: None)(_active_cam_id())
+                    lambda: _run_off_ui(getattr(_get_port(), m, lambda _: None), _active_cam_id())
                 ))()
             )
             exp_row.addWidget(btn)
@@ -457,7 +472,7 @@ class RightPanel:
         def _on_backlight_clicked():
             port = _get_port()
             if port:
-                port.backlight_toggle(_active_cam_id())
+                _run_off_ui(port.backlight_toggle, _active_cam_id())
 
         mw.BtnBacklight.clicked.connect(_on_backlight_clicked)
 

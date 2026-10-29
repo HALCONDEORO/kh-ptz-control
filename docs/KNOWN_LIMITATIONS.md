@@ -161,7 +161,6 @@ STOP interrupts them with immediate failure.
   ending the session mid-startup cancels the remaining power-ons. Standby
   always completes both cameras (off is the safe operation).
 - The config-page preset test runner is threaded already.
-- Remaining synchronous callers on the UI thread, accepted scope for the
-  field test: the right-panel focus buttons (single bounded command each,
-  STOP-interruptible). Moving them off-thread requires reworking how their
-  results update button state — tracked as post-test work.
+- Right-panel focus/exposure/backlight buttons dispatch their confirmed
+  command on a daemon thread (`CameraCmdOffUI`), so the UI — and the STOP
+  button — stays responsive while the camera answers.

@@ -253,9 +253,9 @@ else
     log "Service was not running — skipping stop."
 fi
 
-# Si el rollback falla DESPUÉS de parar el servicio, la sala no se queda sin
-# aplicación: cualquier salida anómala rearranca el servicio con la versión
-# que sigue desplegada. Un rollback completado desarma el trap al final.
+# Si el rollback falla DESPUÉS de parar el servicio, cualquier salida anómala
+# INTENTA rearrancarlo (disponibilidad, no garantía de árbol íntegro: el
+# re-deploy pudo quedar a medias). Un rollback completado desarma el trap.
 _restart_service_on_abort() {
     local rc=$?
     [[ "$SERVICE_STOPPED" == "1" ]] || return "$rc"

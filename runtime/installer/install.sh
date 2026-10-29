@@ -109,6 +109,20 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 info()  { echo "[INFO]  $*"; }
+
+# Installed as an EXIT trap while a previously-running service is stopped for
+# the update. On any failure it ATTEMPTS to restart the service — the copy may
+# be half-done (rsync --delete is not atomic), so this restores availability,
+# not a guaranteed clean rollback; the operator should re-run the install.
+_restart_stopped_service_on_abort() {
+    local rc=$?
+    trap - EXIT
+    if [[ "${SERVICE_WAS_ACTIVE:-0}" == "1" && "${GUI_MODE}" != "user" ]]; then
+        echo "[ERROR] install failed (exit ${rc}) — attempting to restart ${SERVICE_NAME} (was running before the install)" >&2
+        systemctl start "${SERVICE_NAME}" 2>/dev/null \
+            || echo "[ERROR] restart FAILED — ${SERVICE_NAME} is DOWN; start it by hand: systemctl start ${SERVICE_NAME}" >&2
+    fi
+}
 warn()  { echo "[WARN]  $*" >&2; }
 error() { echo "[ERROR] $*" >&2; exit 1; }
 
@@ -372,10 +386,10 @@ elif [[ "${DEV_MODE}" == "false" ]]; then
         systemctl stop "${SERVICE_NAME}"
         SERVICE_WAS_ACTIVE=1
         # Si CUALQUIER paso posterior falla (rsync, chown, launcher, config...),
-        # set -e aborta el script y el servicio quedaría parado: el trap lo
-        # rearranca con la versión anterior y conserva el exit de fallo.
+        # set -e aborta el script y el servicio quedaría parado: el trap intenta
+        # rearrancarlo (disponibilidad, no rollback atómico) y conserva el exit.
         # Se desarma tras el rearranque planificado del final del install.
-        trap '_rc=$?; trap - EXIT; if [[ "${SERVICE_WAS_ACTIVE:-0}" == "1" && "${GUI_MODE}" != "user" ]]; then echo "[ERROR] install failed (exit $_rc) — restarting ${SERVICE_NAME} (was running before the install)" >&2; systemctl start "${SERVICE_NAME}" 2>/dev/null || echo "[ERROR] restart FAILED — ${SERVICE_NAME} is DOWN; start it by hand: systemctl start ${SERVICE_NAME}" >&2; fi' EXIT
+        trap _restart_stopped_service_on_abort EXIT
     fi
     # --delete makes /opt/khptz an exact mirror of the release being installed.
     # Without it a downgrade (rollback.sh re-deploys an older ref) would leave
@@ -835,6 +849,21 @@ info "  Rollback to   : ${PREVIOUS_REF:-<none — first install>}"
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 
+if [[ "${DEV_MODE}" == "false" && "${SERVICE_WAS_ACTIVE:-0}" == "1" ]]; then
+    trap - EXIT   # el rearranque planificado sustituye al trap de aborto
+    if [[ "${GUI_MODE}" == "user" ]]; then
+        # En modo usuario la GUI corre en la sesión de escritorio: el servicio
+        # de sistema NO se reactiva aunque estuviera corriendo antes.
+        info "GUI runs as the desktop user — not restarting the system service."
+    else
+        info "Restarting ${SERVICE_NAME} (was running before the update)..."
+        if ! systemctl start "${SERVICE_NAME}"; then
+            # Sin "Installation complete": el sistema quedó parado.
+            error "Service did NOT restart after the update — ${SERVICE_NAME} is DOWN. Start it by hand: systemctl start ${SERVICE_NAME}"
+        fi
+    fi
+fi
+
 info ""
 info "Installation complete."
 info "  Install dir : ${INSTALL_DIR}"
@@ -862,19 +891,6 @@ else
     info "  2. Run: python3 -m runtime.setup_password"
     info "  3. Run: systemctl start ${SERVICE_NAME}"
     info "  4. Run: khptz doctor"
-fi
-if [[ "${DEV_MODE}" == "false" && "${SERVICE_WAS_ACTIVE:-0}" == "1" ]]; then
-    trap - EXIT   # el rearranque planificado sustituye al trap de aborto
-    if [[ "${GUI_MODE}" == "user" ]]; then
-        # En modo usuario la GUI corre en la sesión de escritorio: el servicio
-        # de sistema NO se reactiva aunque estuviera corriendo antes.
-        info "GUI runs as the desktop user — not restarting the system service."
-    else
-        info "Restarting ${SERVICE_NAME} (was running before the update)..."
-        if ! systemctl start "${SERVICE_NAME}"; then
-            warn "Service did NOT restart — it is DOWN. Start it by hand: systemctl start ${SERVICE_NAME}"
-        fi
-    fi
 fi
 info ""
 warn "VALIDATION REQUIRED: test this installation on a real Raspberry Pi."
