@@ -10,7 +10,7 @@ hall's displays and on the video stream during the meeting.
 Free and open-source (MIT). Built for a real hall and used in live meetings; any hall
 may use it freely.
 
-![Splash screen](docs/screenshots/01-splash.png)
+![KH PTZ Control banner](docs/screenshots/banner.png)
 
 ## What it does
 
@@ -46,6 +46,8 @@ wins:
 |---|---|
 | ![Operator login](docs/screenshots/02-login.png) | ![Configuration](docs/screenshots/05-config.png) |
 | ![First-run setup wizard](docs/screenshots/06-wizard.png) | ![Cameras, VISCA and network discovery](docs/screenshots/08-cameras-atem.png) |
+| ![Camera moving: pan/tilt speeds live](docs/screenshots/09-moving.png) | ![STOP: both axes halted, speeds at zero](docs/screenshots/10-stop.png) |
+| ![Splash screen](docs/screenshots/01-splash.png) | |
 
 ## Requirements
 
