@@ -92,6 +92,8 @@ class ViscaCommand:
     priority:   bool                          = False
     coalesce:   bool                          = False
     fast_connect: bool                        = False  # conexión inmediata sin backoffs largos
+    expires_at: float                         = 0.0    # monotonic; 0 = sin deadline
+    cancelled:  threading.Event               = field(default_factory=threading.Event, repr=False, compare=False)
     queued_at:  float                         = 0.0    # asignado por send() / send_priority()
     cmd_id:     str                           = field(default_factory=_next_cmd_id)
     on_success: Optional[Callable[[], None]] = None
@@ -212,6 +214,7 @@ class CameraWorker:
             # Un STOP idéntico ya encolado es redundante (idempotente): el
             # nuevo lo sustituye, no se acumulan duplicados.
             kept = []
+            dropped = []
             for c in q:
                 if c is None:
                     # Sentinel de stop(): la petición de apagado del worker
@@ -221,6 +224,8 @@ class CameraWorker:
                       and CameraWorker._is_stop_payload(c.payload)
                       and c.payload != cmd.payload):
                     kept.append(c)
+                else:
+                    dropped.append(c)
             q.clear()
             q.extend(kept)
             if self._queue.maxsize > 0:
@@ -246,6 +251,15 @@ class CameraWorker:
                     del q[idx]
             q.append(cmd)
             self._queue.not_empty.notify()
+        # Fuera del mutex: los comandos descartados por el STOP que tenían un
+        # llamante confirmado reciben fallo INMEDIATO — nunca esperan su
+        # timeout entero por un comando que ya no se va a ejecutar.
+        for c in dropped:
+            if c is not None and c.on_failure is not None:
+                try:
+                    c.on_failure()
+                except Exception as exc:
+                    logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
         logger.debug("%s cam=%s type=%s queued (priority)",
                      cmd.cmd_id, self.ip,
                      CameraWorker._classify_payload(cmd.payload))
@@ -283,10 +297,15 @@ class CameraWorker:
         cmd.on_success = lambda: (box.__setitem__("ok", True), done.set())
         cmd.on_failure = lambda: (box.__setitem__("ok", False), done.set())
         cmd.fast_connect = True
+        cmd.expires_at = time.monotonic() + timeout
         if not self.send(cmd):
             logger.warning("%s cam=%s send_confirmed: cola llena", cmd.cmd_id, self.ip)
             return False
         if not done.wait(timeout):
+            # Cancelar: un comando vencido NUNCA se ejecuta después. El
+            # operador ya recibió False; que el preset salte más tarde
+            # sería una orden fantasma (y un reintento la duplicaría).
+            cmd.cancelled.set()
             logger.warning("%s cam=%s send_confirmed: timeout %.1fs", cmd.cmd_id, self.ip, timeout)
             return False
         return box.get("ok", False)
@@ -573,6 +592,17 @@ class CameraWorker:
             if cmd is None:  # sentinel puesto por stop()
                 break
 
+            # Un comando cancelado (timeout de send_confirmed) o vencido en
+            # cola nunca llega a la cámara. El vencido sin cancelar aún tiene
+            # llamante esperando: recibe fallo inmediato.
+            if cmd.cancelled.is_set() or (cmd.expires_at and time.monotonic() > cmd.expires_at):
+                if not cmd.cancelled.is_set() and cmd.on_failure is not None:
+                    try:
+                        cmd.on_failure()
+                    except Exception as exc:
+                        logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                continue
+
             # Intentar hasta 2 veces: 1ª con socket existente, 2ª tras reconectar
             _succeeded  = False
             _interrupted = self._interrupt.is_set() and not cmd.priority
@@ -622,6 +652,15 @@ class CameraWorker:
                     if cmd.priority:
                         self._requeue(cmd)
                     elif cmd.on_failure is not None:
+                        try:
+                            cmd.on_failure()
+                        except Exception as exc:
+                            logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                    break
+
+                # Vencido o cancelado durante la (re)conexión: no se envía.
+                if cmd.cancelled.is_set() or (cmd.expires_at and time.monotonic() > cmd.expires_at):
+                    if not cmd.cancelled.is_set() and cmd.on_failure is not None:
                         try:
                             cmd.on_failure()
                         except Exception as exc:

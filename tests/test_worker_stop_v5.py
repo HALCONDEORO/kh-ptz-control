@@ -236,3 +236,62 @@ class TestConfirmedViaWorker(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ── v6: cancelación/deadline de confirmados y fallo inmediato en drain ────────
+
+class TestConfirmedCancellation(unittest.TestCase):
+    def test_timed_out_confirmed_is_never_executed(self):
+        """Fixture del servidor: timeout con el worker sin arrancar; el comando
+        cancelado NO debe salir cuando el worker arranca después."""
+        w = _OKWorker()
+        sent = []
+        sock = MagicMock()
+        sock.sendall.side_effect = lambda p: sent.append(bytes(p).hex())
+        w._connect = lambda: sock
+        cmd = ViscaCommand(1, bytes.fromhex("81043f0201ff"))  # preset recall
+        result = w.send_confirmed(cmd, 0.02)
+        self.assertFalse(result)
+        w._queue.put(None)
+        w._run()
+        self.assertNotIn(cmd.payload.hex(), sent, "un confirmado vencido nunca se ejecuta")
+
+    def test_stop_drain_fails_confirmed_immediately(self):
+        """Un STOP que drena un confirmado pendiente lo completa YA con fallo,
+        no tras el timeout entero."""
+        w = _OKWorker()
+        result, done = [], threading.Event()
+        cmd = ViscaCommand(1, bytes.fromhex("81043f0201ff"))
+
+        def call():
+            result.append(w.send_confirmed(cmd, 5.0))
+            done.set()
+
+        t = threading.Thread(target=call)
+        t.start()
+        end = time.monotonic() + 1
+        while time.monotonic() < end and w._queue.empty():
+            time.sleep(0.001)
+        t0 = time.monotonic()
+        w.send_priority(ViscaCommand(1, PT_STOP))
+        self.assertTrue(done.wait(1), "el confirmado drenado debe completar de inmediato")
+        self.assertLess(time.monotonic() - t0, 1.0)
+        t.join(2)
+        self.assertEqual(result, [False])
+
+    def test_expired_queued_command_fails_without_sending(self):
+        """Un comando que vence esperando en cola falla hacia su llamante y
+        nunca se envía."""
+        w = _OKWorker()
+        sent, failed = [], threading.Event()
+        sock = MagicMock()
+        sock.sendall.side_effect = lambda p: sent.append(bytes(p).hex())
+        w._connect = lambda: sock
+        cmd = ViscaCommand(1, MOVE)
+        cmd.expires_at = time.monotonic() - 1  # ya vencido
+        cmd.on_failure = failed.set
+        w._queue.put(cmd)
+        w._queue.put(None)
+        w._run()
+        self.assertTrue(failed.is_set(), "el llamante del vencido recibe fallo")
+        self.assertEqual(sent, [])
