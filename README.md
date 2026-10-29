@@ -7,8 +7,8 @@ Raspberry Pi. The operator taps a seat on a visual layout of the auditorium and 
 cameras frame that person, so friends commenting from the audience can be seen on the
 hall's displays and on the video stream during the meeting.
 
-Free and open-source (MIT). Built for a real hall as an installable MVP candidate;
-hardware validation is still pending. Any hall may use it freely.
+Free and open-source (MIT). Built for a real hall and tested in live meetings; the
+Raspberry Pi installation is still pending. Any hall may use it freely.
 
 ![KH PTZ Control banner](docs/screenshots/banner.png)
 
@@ -118,8 +118,8 @@ una Raspberry Pi. El operador toca un asiento en un plano visual del auditorio y
 cámaras encuadran a esa persona, para que los hermanos que comentan desde el público se
 vean en las pantallas del salón y en la transmisión durante la reunión.
 
-Libre y de código abierto (MIT). Construido para un salón real como candidato MVP
-instalable; la validación en hardware real aún está pendiente. Cualquier salón puede
+Libre y de código abierto (MIT). Construido para un salón real y probado en reuniones
+en directo; la instalación en la Raspberry Pi aún está pendiente. Cualquier salón puede
 usarlo gratis.
 
 ## Qué hace
