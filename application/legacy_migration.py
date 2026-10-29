@@ -23,7 +23,7 @@
 #   If migration overwrites config.yaml and the result is wrong, restore from the
 #   automatically-created backup (.bak file reported in MigrationResult.backup_path).
 #   Run: cp <backup_path> config.yaml
-#   Or use: hallptz restore to restore from a pre-migration backup created by BackupService.
+#   Or use: khptz restore to restore from a pre-migration backup created by BackupService.
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ class MigrationResult:
         if self.backup_path:
             parts.append(f"\nPre-migration backup: {self.backup_path}")
         parts.append("\nRollback: if the result is incorrect, restore from the backup above")
-        parts.append("  or run: hallptz restore <backup-zip> to recover from a full backup.")
+        parts.append("  or run: khptz restore <backup-zip> to recover from a full backup.")
         return " ".join(parts[:2]) + ("\n" + "\n".join(parts[2:]) if len(parts) > 2 else "")
 
     def _dry_run_summary(self) -> str:
@@ -205,7 +205,7 @@ def _build_yaml(
     contact: str | None,
 ) -> str:
     lines: list[str] = [
-        "# Hall PTZ Control — migrated from legacy .txt configuration",
+        "# KH PTZ Control — migrated from legacy .txt configuration",
         "# Generated automatically — review and adjust before first run.",
         "",
         "site:",

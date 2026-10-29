@@ -1,4 +1,4 @@
-# hallptz-control.service — Hall PTZ Control systemd service
+# khptz-control.service — KH PTZ Control systemd service
 #
 # Installed by runtime/installer/install.sh. Product installs receive the
 # display-ready condition through repair_rpi_runtime.sh's systemd drop-in; the
@@ -6,11 +6,11 @@
 # installed.
 
 [Unit]
-Description=Hall PTZ Control
-Documentation=https://github.com/HALCONDEORO/hall-ptz-control
+Description=KH PTZ Control
+Documentation=https://github.com/HALCONDEORO/kh-ptz-control
 After=graphical.target network-online.target
 Wants=network-online.target
-ConditionPathExists=/etc/hallptz/.provisioned
+ConditionPathExists=/etc/khptz/.provisioned
 
 # Restart rate limiting. These are [Unit] directives (systemd >= 229); they were
 # previously in [Service], where systemd ignores them — so the burst cap never
@@ -21,10 +21,10 @@ StartLimitBurst=3
 
 [Service]
 Type=simple
-User=hallptz
-Group=hallptz
-WorkingDirectory=/opt/hallptz
-ExecStart=/usr/bin/python3 /opt/hallptz/main.py
+User=khptz
+Group=khptz
+WorkingDirectory=/opt/khptz
+ExecStart=/usr/bin/python3 /opt/khptz/main.py
 Restart=on-failure
 RestartSec=5
 
@@ -34,7 +34,7 @@ Environment=QT_QPA_PLATFORM=xcb
 
 # Canonical runtime paths and UTF-8. The latter prevents diagnostics/CLI output
 # from crashing under ISO-8859 desktop locales observed on the pilot Pi.
-Environment=HALLPTZ_DATA_DIR=/var/lib/hallptz
+Environment=KHPTZ_DATA_DIR=/var/lib/khptz
 Environment=LANG=C.UTF-8
 Environment=LC_ALL=C.UTF-8
 Environment=PYTHONUTF8=1
@@ -42,7 +42,7 @@ Environment=PYTHONIOENCODING=utf-8
 
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=hallptz-control
+SyslogIdentifier=khptz-control
 
 NoNewPrivileges=true
 
@@ -51,7 +51,7 @@ NoNewPrivileges=true
 PrivateTmp=false
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/etc/hallptz /var/lib/hallptz /var/log/hallptz /var/backups/hallptz
+ReadWritePaths=/etc/khptz /var/lib/khptz /var/log/khptz /var/backups/khptz
 CapabilityBoundingSet=
 AmbientCapabilities=
 LockPersonality=true

@@ -100,7 +100,7 @@ class TestBlackBoxEvent:
             preset="preset-1",
             error_code="VISCA_TIMEOUT",
             duration_ms=120,
-            installation_id="hallptz-2026-0007",
+            installation_id="khptz-2026-0007",
             extra={"attempt": 1},
         )
         d = event.to_dict()
@@ -109,7 +109,7 @@ class TestBlackBoxEvent:
         assert d["preset"] == "preset-1"
         assert d["error_code"] == "VISCA_TIMEOUT"
         assert d["duration_ms"] == 120
-        assert d["installation_id"] == "hallptz-2026-0007"
+        assert d["installation_id"] == "khptz-2026-0007"
         assert d["extra"] == {"attempt": 1}
 
     def test_event_is_frozen(self):
@@ -379,13 +379,13 @@ class TestFlightRecorderInjectable:
 class TestPathResolverBlackboxPaths:
 
     def test_blackbox_dir_under_log_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_LOG_DIR", str(tmp_path / "logs"))
+        monkeypatch.setenv("KHPTZ_LOG_DIR", str(tmp_path / "logs"))
         from runtime.path_resolver import RuntimePathResolver
         resolver = RuntimePathResolver()
         assert resolver.blackbox_dir == tmp_path / "logs" / "blackbox"
 
     def test_blackbox_events_file_under_blackbox_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_LOG_DIR", str(tmp_path / "logs"))
+        monkeypatch.setenv("KHPTZ_LOG_DIR", str(tmp_path / "logs"))
         from runtime.path_resolver import RuntimePathResolver
         resolver = RuntimePathResolver()
         assert resolver.blackbox_events_file == tmp_path / "logs" / "blackbox" / "events.jsonl"

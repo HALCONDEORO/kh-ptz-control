@@ -3,10 +3,10 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # tests/test_legacy_autostart_cleanup.py — legacy startup migration contract (#892)
 #
-# A Pi upgraded in place can still carry the pre-HALLPTZ HallPTZ/PTZ controller's
-# startup entries. If one survives it can cover the HALLPTZ interface, open a second
+# A Pi upgraded in place can still carry the pre-KHPTZ KHPTZ/PTZ controller's
+# startup entries. If one survives it can cover the KHPTZ interface, open a second
 # full-screen app and drive the same cameras with conflicting VISCA commands —
-# while hallptz-control.service looks perfectly healthy.
+# while khptz-control.service looks perfectly healthy.
 #
 # The cleanup script needs root, a Pi and an installed product, so its
 # classification logic is exercised directly by
@@ -97,7 +97,7 @@ class TestSafetyContract:
 
     def test_quarantine_renames_rather_than_deletes(self, script_text):
         """'Legacy program files are never deleted' — recovery must stay possible."""
-        assert "disabled-by-hallptz-" in script_text
+        assert "disabled-by-khptz-" in script_text
 
     def test_roots_crontab_is_reported_not_rewritten(self, script_text):
         """Root's crontab may carry unrelated site automation."""
@@ -107,7 +107,7 @@ class TestSafetyContract:
         """#892: avoid broad `main.py`-only matching. The fallback also requires
         a home-directory path and a camera-domain term."""
         assert "Conservative fallback" in script_text
-        assert "ptz|visca|atem|camera|joystick|dublin|hallptz" in script_text
+        assert "ptz|visca|atem|camera|joystick|hallptz|khptz" in script_text
 
 
 class TestGuiModeAwareness:
@@ -120,17 +120,17 @@ class TestGuiModeAwareness:
         private parse — components disagreeing about the mode is what let the
         provisioning chain re-arm a second launcher."""
         assert "lib/install_state.sh" in script_text
-        assert "hallptz_gui_mode" in script_text
+        assert "khptz_gui_mode" in script_text
 
     def test_does_not_require_the_display_chain_in_user_mode(self, script_text):
-        assert "/etc/systemd/user/hallptz-gui.service" in script_text
+        assert "/etc/systemd/user/khptz-gui.service" in script_text
 
     def test_refuses_to_leave_two_launchers_enabled(self, script_text):
         """System service enabled alongside the session GUI is the two-GUI bug."""
         assert "Two GUIs would compete" in script_text
 
     def test_protects_the_session_gui_artifacts(self, script_text):
-        for artifact in ("hallptz-gui.service", "hallptz-gui.desktop", "hallptz-gui-session"):
+        for artifact in ("khptz-gui.service", "khptz-gui.desktop", "khptz-gui-session"):
             assert artifact in script_text
 
 

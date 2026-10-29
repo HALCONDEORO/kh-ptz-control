@@ -7,8 +7,8 @@
 #
 # is_conflict() decides what gets quarantined on a customer appliance. A false
 # positive disables something the operator needs — including, in the worst case,
-# HALLPTZ's own launcher; a false negative leaves the old HallPTZ/PTZ controller
-# starting instead of HALLPTZ. That logic must be tested, but the script itself
+# KHPTZ's own launcher; a false negative leaves the old KHPTZ/PTZ controller
+# starting instead of KHPTZ. That logic must be tested, but the script itself
 # needs root, a Pi and an installed product to reach it.
 #
 # So extract just the two classification functions and exercise them directly.
@@ -40,9 +40,9 @@ grep -q 'is_canonical()' "${EXTRACT}" || { echo "could not extract is_canonical"
 grep -q 'is_conflict()'  "${EXTRACT}" || { echo "could not extract is_conflict"  >&2; exit 2; }
 
 # Values the classifiers close over, matching what the real script sets.
-DISPLAY_HELPER="/usr/local/libexec/hallptz-display-session"
-AUTOSTART_NAME="hallptz-display-session.desktop"
-HOME_DIR="/home/hallptz"
+DISPLAY_HELPER="/usr/local/libexec/khptz-display-session"
+AUTOSTART_NAME="khptz-display-session.desktop"
+HOME_DIR="/home/khptz"
 # is_conflict() reads EXTRA_PATTERN, but it is sourced from the generated
 # ${EXTRACT} file, so ShellCheck cannot see the use (SC2034 false positive).
 # shellcheck disable=SC2034
@@ -83,48 +83,48 @@ echo " Legacy startup classifier — scripts/cleanup_legacy_rpi_autostart.sh"
 echo "=============================================================="
 
 echo
-echo "==> HALLPTZ's own startup must never be quarantined"
-expect_safe "system service unit"        "/etc/systemd/system/hallptz-control.service"
-expect_safe "provision path unit"        "hallptz-provision.path"
+echo "==> KHPTZ's own startup must never be quarantined"
+expect_safe "system service unit"        "/etc/systemd/system/khptz-control.service"
+expect_safe "provision path unit"        "khptz-provision.path"
 expect_safe "display-session autostart"  "${HOME_DIR}/.config/autostart/${AUTOSTART_NAME}"
 expect_safe "display helper"             "Exec=${DISPLAY_HELPER}"
-expect_safe "display-ready unit"         "hallptz-display-ready.service"
-expect_safe "CLI launcher"               "/usr/local/bin/hallptz setup"
-expect_safe "runtime channel"            "/run/hallptz/request.json"
+expect_safe "display-ready unit"         "khptz-display-ready.service"
+expect_safe "CLI launcher"               "/usr/local/bin/khptz setup"
+expect_safe "runtime channel"            "/run/khptz/request.json"
 # Session-owned GUI (#885) — these did not exist when the classifier was written.
-expect_safe "session GUI unit"           "/etc/systemd/user/hallptz-gui.service"
-expect_safe "session GUI autostart"      "${HOME_DIR}/.config/autostart/hallptz-gui.desktop"
-expect_safe "session GUI launcher"       "Exec=/usr/local/libexec/hallptz-gui-session"
-expect_safe "session GUI desktop body"   "$(printf '%s\n%s' "${HOME_DIR}/.config/autostart/hallptz-gui.desktop" "Exec=/usr/local/libexec/hallptz-gui-session")"
-# The load-bearing case: the unit's own ExecStart names /opt/hallptz/main.py, which
+expect_safe "session GUI unit"           "/etc/systemd/user/khptz-gui.service"
+expect_safe "session GUI autostart"      "${HOME_DIR}/.config/autostart/khptz-gui.desktop"
+expect_safe "session GUI launcher"       "Exec=/usr/local/libexec/khptz-gui-session"
+expect_safe "session GUI desktop body"   "$(printf '%s\n%s' "${HOME_DIR}/.config/autostart/khptz-gui.desktop" "Exec=/usr/local/libexec/khptz-gui-session")"
+# The load-bearing case: the unit's own ExecStart names /opt/khptz/main.py, which
 # the classifier treats as "a direct desktop launch of the installed GUI". The
 # scanners hand it file path + contents together, so without an explicit
-# canonical match HALLPTZ would quarantine its own session launcher and the
+# canonical match KHPTZ would quarantine its own session launcher and the
 # appliance would boot to no GUI at all.
 expect_safe "session GUI unit + contents" "$(printf '%s\n%s\n%s' \
-    "${HOME_DIR}/.config/systemd/user/hallptz-gui.service" \
+    "${HOME_DIR}/.config/systemd/user/khptz-gui.service" \
     "[Service]" \
-    "ExecStart=/usr/bin/python3 /opt/hallptz/main.py")"
+    "ExecStart=/usr/bin/python3 /opt/khptz/main.py")"
 expect_safe "system unit + contents"      "$(printf '%s\n%s' \
-    "/etc/systemd/system/hallptz-control.service" \
-    "ExecStart=/usr/bin/python3 /opt/hallptz/main.py")"
+    "/etc/systemd/system/khptz-control.service" \
+    "ExecStart=/usr/bin/python3 /opt/khptz/main.py")"
 # Control for the two cases above: an identical body under a NON-canonical unit
 # name must still be flagged. Together these prove the canonical list is what
-# saves HALLPTZ's own launchers, rather than them being missed for some other
+# saves KHPTZ's own launchers, rather than them being missed for some other
 # reason — a protection that is never exercised is not a protection.
 expect_conflict "same body, non-canonical unit" "$(printf '%s\n%s' \
     "${HOME_DIR}/.config/systemd/user/legacy-cam.service" \
-    "ExecStart=/usr/bin/python3 /opt/hallptz/main.py")"
+    "ExecStart=/usr/bin/python3 /opt/khptz/main.py")"
 
 echo
-echo "==> Legacy HallPTZ / PTZ controllers must be flagged"
-expect_conflict "HallPTZ desktop entry"  "${HOME_DIR}/.config/autostart/HallPTZ.desktop"
-expect_conflict "hallptz-control"       "Exec=/home/hallptz/hallptz-control/main.py"
+echo "==> Legacy KHPTZ / PTZ controllers must be flagged"
+expect_conflict "KHPTZ desktop entry"  "${HOME_DIR}/.config/autostart/KHPTZ.desktop"
+expect_conflict "khptz-control"       "Exec=/home/khptz/khptz-control/main.py"
 expect_conflict "PTZ control (spaced)"     "Name=PTZ control"
-expect_conflict "PTZ_controller"           "/home/hallptz/PTZ_controller/start.sh"
-expect_conflict "camera controller"        "Exec=python3 /home/hallptz/camera-controller/app.py"
-expect_conflict "old checkout main.py"     "@reboot python3 /home/hallptz/ptz_app/main.py"
-expect_conflict "direct GUI launch"        "Exec=python3 /opt/hallptz/main.py"
+expect_conflict "PTZ_controller"           "/home/khptz/PTZ_controller/start.sh"
+expect_conflict "camera controller"        "Exec=python3 /home/khptz/camera-controller/app.py"
+expect_conflict "old checkout main.py"     "@reboot python3 /home/khptz/ptz_app/main.py"
+expect_conflict "direct GUI launch"        "Exec=python3 /opt/khptz/main.py"
 
 echo
 echo "==> Unrelated software must be left alone"
@@ -133,7 +133,7 @@ expect_safe "screensaver"           "Exec=xscreensaver -no-splash"
 expect_safe "user's own notes app"  "${HOME_DIR}/.config/autostart/notes.desktop"
 expect_safe "generic python script" "${HOME_DIR}/scripts/backup.py"
 expect_safe "unrelated main.py"     "/usr/share/someapp/main.py"
-expect_safe "commented reference"   "a line merely mentioning dublin in prose"
+expect_safe "commented reference"   "a line merely mentioning ptz in prose"
 
 echo
 echo "==> --legacy-pattern extends matching without weakening the defaults"

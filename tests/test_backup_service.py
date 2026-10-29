@@ -189,7 +189,7 @@ def test_default_dest_inside_backup_dir(tmp_path):
     result = svc.create_backup()
 
     assert result.path.parent == tmp_path / "backups"
-    assert result.path.name.startswith("hallptz_backup_")
+    assert result.path.name.startswith("khptz_backup_")
 
 
 def test_default_dest_names_do_not_collide_within_same_second(tmp_path):
@@ -217,7 +217,7 @@ def test_default_config_path_uses_runtime_config_dir(tmp_path, monkeypatch):
         """
 site:
   installation_profile: starter_1_camera
-  installation_id: hallptz-2026-0001
+  installation_id: khptz-2026-0001
 cameras:
   - id: platform
     role: platform
@@ -226,7 +226,7 @@ cameras:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(config_dir))
 
     svc = BackupService(
         install_dir=install_dir,
@@ -238,7 +238,7 @@ cameras:
 
     assert svc._config_path == runtime_config
     assert "config.yaml" in result.included
-    assert result.manifest["installation_id"] == "hallptz-2026-0001"
+    assert result.manifest["installation_id"] == "khptz-2026-0001"
 
 
 # ── version fallback ──────────────────────────────────────────────────────────

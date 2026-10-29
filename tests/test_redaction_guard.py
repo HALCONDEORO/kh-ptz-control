@@ -63,7 +63,7 @@ class TestRedactText:
         assert "<REDACTED>" in result
 
     def test_clean_text_is_unchanged(self):
-        text = "Hall PTZ Control version 3.18.0 — all systems nominal."
+        text = "KH PTZ Control version 3.18.0 — all systems nominal."
         result = _GUARD.redact_text(text)
         assert result == text
 
@@ -166,7 +166,7 @@ class TestScanForSecrets:
 class TestIsSafeForExport:
 
     def test_clean_text_is_safe(self):
-        assert _GUARD.is_safe_for_export("Hall PTZ Control doctor output.")
+        assert _GUARD.is_safe_for_export("KH PTZ Control doctor output.")
 
     def test_text_with_password_is_not_safe(self):
         assert not _GUARD.is_safe_for_export("password=opensesame")
@@ -210,7 +210,7 @@ class TestSupportBundleManifest:
     def test_has_no_secrets_passes_for_safe_manifest(self):
         m = SupportBundleManifest(
             bundle_id="bundle-001",
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
         )
         assert m.has_no_secrets()
@@ -218,7 +218,7 @@ class TestSupportBundleManifest:
     def test_manifest_fields_do_not_contain_password_token_secret(self):
         m = SupportBundleManifest(
             bundle_id="bundle-001",
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
             git_commit="abc1234",
             profile="production",

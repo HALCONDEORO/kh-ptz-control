@@ -119,12 +119,12 @@ def write_advisories(path: Path, advisories: List[str]) -> None:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--config", type=Path, default=Path("/etc/hallptz/config.yaml")
+        "--config", type=Path, default=Path("/etc/khptz/config.yaml")
     )
     parser.add_argument(
         "--advisories",
         type=Path,
-        default=Path("/run/hallptz/rpi-advisories.json"),
+        default=Path("/run/khptz/rpi-advisories.json"),
     )
     args = parser.parse_args(argv)
     advisories = normalize_config(args.config)

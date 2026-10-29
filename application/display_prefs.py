@@ -5,7 +5,7 @@
 #
 # Small persisted preferences that the operator toggles at runtime and that must
 # survive a restart in EVERY profile (production, demo, simulation).  They live
-# in the runtime data dir (/var/lib/hallptz/display_prefs.json), NOT in config.yaml:
+# in the runtime data dir (/var/lib/khptz/display_prefs.json), NOT in config.yaml:
 # config.yaml is installer/site config and is absent in demo/simulation runs.
 #
 # STRUCTURE:

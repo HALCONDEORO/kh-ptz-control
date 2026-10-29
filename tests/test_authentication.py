@@ -90,16 +90,16 @@ class TestVerifySupercore:
     lives in application/authentication.py). To exercise the happy-path cases,
     supply it at run time:
 
-        HALLPTZ_SUPERCORE_PASSWORD=... python -m pytest tests/test_authentication.py
+        KHPTZ_SUPERCORE_PASSWORD=... python -m pytest tests/test_authentication.py
 
     Without that env var those cases are skipped; the rejection-path cases always
     run because they need no secret.
     """
 
-    _SUPERCORE_PASSWORD = os.environ.get("HALLPTZ_SUPERCORE_PASSWORD")
+    _SUPERCORE_PASSWORD = os.environ.get("KHPTZ_SUPERCORE_PASSWORD")
     _needs_real_pw = pytest.mark.skipif(
         not _SUPERCORE_PASSWORD,
-        reason="set HALLPTZ_SUPERCORE_PASSWORD to test the real master credential",
+        reason="set KHPTZ_SUPERCORE_PASSWORD to test the real master credential",
     )
 
     @_needs_real_pw

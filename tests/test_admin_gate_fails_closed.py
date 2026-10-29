@@ -17,7 +17,7 @@
 # elevation overlay.
 #
 # Reachable exactly as the permission defects fixed earlier in this branch:
-# secrets live in /var/lib/hallptz owned hallptz:hallptz, and under --gui-mode user the
+# secrets live in /var/lib/khptz owned khptz:khptz, and under --gui-mode user the
 # GUI runs as the desktop user.
 #
 # The distinction that matters: a genuinely ABSENT admin.enc may still fall back

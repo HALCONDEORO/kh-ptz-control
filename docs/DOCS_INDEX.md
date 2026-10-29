@@ -95,7 +95,7 @@ Do not treat the MVP as customer-ready until #381 and docs/MVP_VALIDATION_REPORT
 | [Raspberry Pi runtime baseline](RPI_RUNTIME_BASELINE.md) | Supported hardware, OS, Python, dependencies and first-pilot validation target. |
 | [Raspberry Pi golden image](RPI_GOLDEN_IMAGE.md) | Step-by-step golden-image preparation and provisioning checklist for a new Pi. |
 | [Raspberry Pi installation guide](INSTALL_RPI.md) | Single end-to-end install guide: prerequisites, installer, systemd, backup/restore, rollback, validation, troubleshooting, manual fallback and handover. |
-| [On-device setup wizard](SETUP_WIZARD.md) | Touchscreen first-run wizard: `hallptz setup`, first-boot autostart, Repair mode, privileged provisioning channel and rollback safety. |
+| [On-device setup wizard](SETUP_WIZARD.md) | Touchscreen first-run wizard: `khptz setup`, first-boot autostart, Repair mode, privileged provisioning channel and rollback safety. |
 | [Network architecture](NETWORK_ARCHITECTURE.md) | Recommended AV VLAN/network design for customer installations (referenced by network diagnostics). |
 | [Update and rollback procedure](UPDATE_ROLLBACK.md) | Safe update and rollback steps on a customer Raspberry Pi. |
 | [Soak test checklist](SOAK_TEST.md) | Real-world day-run soak test before first paid deployment and major releases. |
@@ -121,9 +121,9 @@ Do not treat the MVP as customer-ready until #381 and docs/MVP_VALIDATION_REPORT
 
 | File | Use it for |
 |---|---|
-| [`runtime/cli.py`](../runtime/cli.py) | `hallptz` command-line entry point. |
+| [`runtime/cli.py`](../runtime/cli.py) | `khptz` command-line entry point. |
 | [`domain/supportability.py`](../domain/supportability.py) | `OperationResult`, `OperationCode`, `OperationSeverity` — application-level result contract. `CommandResult` — hardware-level result; convert via `OperationResult.from_command_result()`. |
-| [`runtime/systemd/hallptz-control.service`](../runtime/systemd/hallptz-control.service) | systemd service template. |
+| [`runtime/systemd/khptz-control.service`](../runtime/systemd/khptz-control.service) | systemd service template. |
 | [`runtime/installer/install.sh`](../runtime/installer/install.sh) | installer script. |
 | [`runtime/installer/rollback.sh`](../runtime/installer/rollback.sh) | rollback script. |
 

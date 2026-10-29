@@ -1,4 +1,4 @@
-# Hall PTZ Control — MVP Dependency Map
+# KH PTZ Control — MVP Dependency Map
 
 This document maps the remaining open issues to their technical dependencies and
 gives the recommended implementation order.
@@ -83,7 +83,7 @@ actually wired in CI before relying on this as done.
 
 | Issue | Title | Depends on | Status |
 |---|---|---|---|
-| #499 | Dedicated hallptz user and product directories | #530 | ✓ Closed |
+| #499 | Dedicated khptz user and product directories | #530 | ✓ Closed |
 | #530 | Runtime path, ownership and legacy migration contract | — | ✓ Closed |
 
 **Next action**: #530 is closed and already reflected as done in the "Recommended next

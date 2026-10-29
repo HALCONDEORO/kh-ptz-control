@@ -37,13 +37,13 @@ ICON_DATA      = "data"
 # Sizes expected to be present in assets/icons/png/
 REQUIRED_SIZES = (24, 32, 48)
 
-_STRICT = os.getenv("HALLPTZ_STRICT_ICONS", "0") == "1"
+_STRICT = os.getenv("KHPTZ_STRICT_ICONS", "0") == "1"
 
 
 def get_icon(name: str, size: int = 32):
     """Return a QIcon for the given icon name and pixel size.
 
-    Raises FileNotFoundError in strict mode (HALLPTZ_STRICT_ICONS=1) or
+    Raises FileNotFoundError in strict mode (KHPTZ_STRICT_ICONS=1) or
     during testing when the PNG is missing. In production, logs a warning
     and returns an empty QIcon so the text label remains usable.
     """

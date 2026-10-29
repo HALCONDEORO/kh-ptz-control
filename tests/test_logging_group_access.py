@@ -3,9 +3,9 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # tests/test_logging_group_access.py — both identities can write app.log (#885)
 #
-# Under --gui-mode user two identities log to /var/log/hallptz: the GUI runs as the
-# desktop user, while `hallptz doctor`, `hallptz backup` and the support bundle run as
-# `hallptz`. Python opens log files at the default mode (0644 after a typical
+# Under --gui-mode user two identities log to /var/log/khptz: the GUI runs as the
+# desktop user, while `khptz doctor`, `khptz backup` and the support bundle run as
+# `khptz`. Python opens log files at the default mode (0644 after a typical
 # umask), so whichever creates app.log first owns it and the other gets
 # read-only access — its file logging then degrades silently to console.
 #
@@ -53,7 +53,7 @@ class TestHandlerAppliesTheSharedPolicy:
         assert self._chmod_modes(tmp_path, dir_is_shared=True) == [0o660]
 
     def test_private_directory_leaves_the_default(self, tmp_path):
-        """System mode: only `hallptz` logs, so nothing is widened."""
+        """System mode: only `khptz` logs, so nothing is widened."""
         assert self._chmod_modes(tmp_path, dir_is_shared=False) == []
 
     def test_chmod_failure_never_breaks_logging(self, tmp_path):

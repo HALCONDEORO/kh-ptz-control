@@ -15,7 +15,7 @@ Responsibilities split by privilege:
     runs inside the privileged provisioning step; in tests the paths are env
     overrides pointing at a temp dir.
 
-OS-level steps (create the hallptz user, chown, copy /opt, install + enable the
+OS-level steps (create the khptz user, chown, copy /opt, install + enable the
 systemd unit) are NOT here — they require root and live in the installer
 (runtime/installer) driven by the same answers. plan() lists them so the
 Review screen can show exactly what the privileged step will do.
@@ -87,7 +87,7 @@ class ProvisioningAnswers:
     # admin_password above, which is the NEW admin password being set.
     # Verified by the privileged runtime.provision.run_provision(), never in
     # the wizard's own (unprivileged, desktop-session) process — that process
-    # cannot reliably read the hallptz:hallptz-owned encrypted secret to check it
+    # cannot reliably read the khptz:khptz-owned encrypted secret to check it
     # itself. See PR #867 review.
     current_admin_password: str = ""
 
@@ -245,7 +245,7 @@ class ProvisioningService:
     def answers_from_settings(self, settings: AppSettings) -> ProvisioningAnswers:
         """Inverse of ``to_app_settings``: pre-fill wizard answers from settings.
 
-        Used by Repair mode (``hallptz setup --force`` on a provisioned install) so
+        Used by Repair mode (``khptz setup --force`` on a provisioned install) so
         the operator edits the current values instead of re-entering everything.
         Passwords are NOT recoverable from the encrypted secrets, so they stay
         blank and must be re-confirmed on the Passwords screen.
@@ -361,7 +361,7 @@ class ProvisioningService:
         r = resolver or RuntimePathResolver()
         cam_count = len(answers.cameras)
         artifacts = [
-            PlannedArtifact("user", "hallptz", "dedicated service user"),
+            PlannedArtifact("user", "khptz", "dedicated service user"),
             PlannedArtifact("directory", str(r.config_dir), "site configuration"),
             PlannedArtifact("directory", str(r.data_dir), "runtime data"),
             PlannedArtifact("config", str(r.config_dir / "config.yaml"),
@@ -370,7 +370,7 @@ class ProvisioningService:
                             "operator entry password"),
             PlannedArtifact("secret", str(secret_manager._secret_file(secret_manager.SECRET_ADMIN)),
                             "administrator password"),
-            PlannedArtifact("service", "hallptz-control", "systemd service (enabled)"),
+            PlannedArtifact("service", "khptz-control", "systemd service (enabled)"),
             PlannedArtifact("marker", str(r.provisioned_marker_file),
                             "provisioned sentinel"),
         ]
@@ -390,7 +390,7 @@ class ProvisioningService:
         installation_id is always taken from `existing`, never `settings`: no
         wizard page exposes it for editing, and this runs on the privileged
         (root) side, which can read config.yaml even when the unprivileged
-        wizard process couldn't (e.g. the wizard user's `hallptz` group
+        wizard process couldn't (e.g. the wizard user's `khptz` group
         membership not active yet on first boot — pre-relogin — leaving
         answers.installation_id blank). Silently keeping settings' blank value
         here would discard the stable id diagnostics/backup/licensing key off

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# runtime/logging_setup.py — Production logging configuration for Hall PTZ Control.
+# runtime/logging_setup.py — Production logging configuration for KH PTZ Control.
 #
 # Call setup_logging() once at startup, before any other application code runs.
 #
@@ -14,7 +14,7 @@
 #     or written (never blocks startup).
 #
 # Production use:
-#   log_dir = RuntimePathResolver().log_dir   # /var/log/hallptz/
+#   log_dir = RuntimePathResolver().log_dir   # /var/log/khptz/
 #
 # Dev/test use:
 #   setup_logging()                           # console-only
@@ -49,7 +49,7 @@ def setup_logging(
     level: int = logging.INFO,
 ) -> bool:
     """
-    Configure the root logger for Hall PTZ Control.
+    Configure the root logger for KH PTZ Control.
 
     Parameters
     ----------
@@ -58,7 +58,7 @@ def setup_logging(
         logging falls back to console-only (no error raised).
     version_line:
         Human-readable identity string to emit in the startup banner.
-        Example: "Hall PTZ Control 0.1.0 (a1b2c3d)"
+        Example: "KH PTZ Control 0.1.0 (a1b2c3d)"
     level:
         Root log level. Defaults to INFO.
 
@@ -102,8 +102,8 @@ class _GroupSharedRotatingFileHandler(logging.handlers.RotatingFileHandler):
 
     Python opens log files with the default mode (0644 after a typical umask),
     which is fine while one identity logs. Under --gui-mode user (#885) two do:
-    the GUI runs as the desktop user, while `hallptz doctor`, `hallptz backup` and the
-    support bundle run as `hallptz`. Whichever creates app.log first owns it, and
+    the GUI runs as the desktop user, while `khptz doctor`, `khptz backup` and the
+    support bundle run as `khptz`. Whichever creates app.log first owns it, and
     the other — group member or not — gets read-only access, so its file logging
     silently degrades to console. Production logs are exactly what is needed
     when something goes wrong on an appliance.

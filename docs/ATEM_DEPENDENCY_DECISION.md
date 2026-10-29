@@ -5,7 +5,7 @@ Parent: #545.
 Blocks: #550 (ATEM config schema), #551 (AtemPort/FakeAtemPort), #552 (read-only diagnostics).
 
 This document records the evaluation of commercial ATEM library options and the
-chosen approach for the first installable Hall PTZ Control ATEM integration.
+chosen approach for the first installable KH PTZ Control ATEM integration.
 
 ---
 
@@ -101,15 +101,15 @@ Risk:      Low for commercial distribution.
 Notice:    PyATEMMax must appear in THIRD_PARTY_ASSETS.md and any
            third-party notice shipped with the product.
 Liability: None (MIT). Blackmagic Design is not responsible for
-           PyATEMMax and Hall PTZ Control is not an official Blackmagic product.
+           PyATEMMax and KH PTZ Control is not an official Blackmagic product.
 ```
 
 Customer-facing wording (to use in handover docs and product descriptions):
 
 ```text
-Blackmagic Design and ATEM are third-party products. Hall PTZ Control integrates
+Blackmagic Design and ATEM are third-party products. KH PTZ Control integrates
 with supported and tested ATEM devices using the PyATEMMax open-source library
-(MIT licence). Hall PTZ Control is not an official Blackmagic product or partner
+(MIT licence). KH PTZ Control is not an official Blackmagic product or partner
 unless separately agreed in writing.
 ```
 
@@ -130,8 +130,8 @@ Rules:
 Do not pin to an exact version in requirements-atem.txt for development use,
   but pin to a tested exact version in any customer install lockfile.
 Do not use latest/unpinned PyATEMMax in customer installs.
-hallptz doctor must report the installed PyATEMMax version where available.
-hallptz doctor must report DEPENDENCY_MISSING (not UNKNOWN) when PyATEMMax is absent.
+khptz doctor must report the installed PyATEMMax version where available.
+khptz doctor must report DEPENDENCY_MISSING (not UNKNOWN) when PyATEMMax is absent.
 ```
 
 ---
@@ -153,12 +153,12 @@ Required behaviour for all code paths:
 ```text
 Missing PyATEMMax:          ATEM state → DEPENDENCY_MISSING
                             PTZ camera control continues unaffected.
-                            hallptz doctor reports ATEM DEPENDENCY_MISSING.
+                            khptz doctor reports ATEM DEPENDENCY_MISSING.
                             No crash. No startup gate failure.
 
 Incompatible PyATEMMax:     ATEM state → DEPENDENCY_INCOMPATIBLE
                             Same degraded behaviour as DEPENDENCY_MISSING.
-                            hallptz doctor reports version conflict with installed version.
+                            khptz doctor reports version conflict with installed version.
 
 Wrong ATEM firmware:        ATEM state → OFFLINE or ERROR (connection-time failure).
                             Same degraded behaviour. Not a startup-time crash.

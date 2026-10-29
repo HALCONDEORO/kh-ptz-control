@@ -83,7 +83,7 @@ class TestFileCreation:
         assert json.loads(stats_file.read_text(encoding="utf-8")) == []
 
     def test_missing_parent_directory_is_created(self, tmp_path):
-        nested = tmp_path / "var" / "lib" / "hallptz" / "boot_stats.json"
+        nested = tmp_path / "var" / "lib" / "khptz" / "boot_stats.json"
         BootStatistics(nested)
         assert nested.is_file()
 

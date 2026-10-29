@@ -2,7 +2,7 @@
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
 """
-Tests for application/diagnostics_service.py and `hallptz doctor` CLI command.
+Tests for application/diagnostics_service.py and `khptz doctor` CLI command.
 
 Hardware-free: all tests use tmp_path; no cameras, no ATEM, no Raspberry Pi.
 """
@@ -32,7 +32,7 @@ def _make_service(
     with_config: bool = True,
     with_sim: bool = False,
     installation_profile: str = "starter_1_camera",
-    installation_id: str = "hallptz-2026-0001",
+    installation_id: str = "khptz-2026-0001",
 ) -> DiagnosticsService:
     install_dir = tmp_path / "app"
     install_dir.mkdir()
@@ -305,7 +305,7 @@ class TestDoctorCLI:
         config = {
             "site": {
                 "installation_profile": "starter_1_camera",
-                "installation_id": "hallptz-2026-0001",
+                "installation_id": "khptz-2026-0001",
             },
             "cameras": [
                 {"id": "platform", "role": "platform", "ip": "1.2.3.4", "visca_id": "81"}
@@ -399,11 +399,11 @@ class TestDoctorCLI:
 class TestInstallationIdCheck:
 
     def test_installation_id_present_ok(self, tmp_path):
-        svc = _make_service(tmp_path, installation_id="hallptz-2026-0042")
+        svc = _make_service(tmp_path, installation_id="khptz-2026-0042")
         report = svc.run()
         check = next(c for c in report.checks if c.name == "installation_id")
         assert check.status == Status.OK
-        assert "hallptz-2026-0042" in check.message
+        assert "khptz-2026-0042" in check.message
 
     def test_installation_id_missing_warns(self, tmp_path):
         svc = _make_service(tmp_path, installation_id="")

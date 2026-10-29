@@ -1,0 +1,19 @@
+# khptz-provision.path — fire the provisioning oneshot when the wizard requests it
+#
+# Watches /run/khptz/request.json (tmpfs, written 0600 by the desktop-session
+# wizard). When it appears, systemd starts khptz-provision.service as root. This
+# is the password-free privilege channel: one sudo at bootstrap installs this
+# unit, after which the wizard escalates without any interactive prompt.
+#
+# /run/khptz is created 0750 root:<desktop-user> by tmpfiles.d so only that user
+# can drop a request. Validate on a real Pi (#381).
+
+[Unit]
+Description=Watch for KHPTZ setup provisioning requests
+
+[Path]
+PathExists=/run/khptz/request.json
+Unit=khptz-provision.service
+
+[Install]
+WantedBy=multi-user.target

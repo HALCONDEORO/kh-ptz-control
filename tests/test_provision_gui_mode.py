@@ -4,13 +4,13 @@
 # tests/test_provision_gui_mode.py — provisioning respects the GUI mode (#885)
 #
 # The bug: runtime/provision.py runs as root from the wizard's provisioning
-# channel on EVERY install, and knew nothing about HALLPTZ_GUI_MODE. On a
+# channel on EVERY install, and knew nothing about KHPTZ_GUI_MODE. On a
 # --gui-mode user appliance, completing the wizard therefore
 #
-#   1. re-enabled hallptz-control (a second launcher armed for the next boot),
+#   1. re-enabled khptz-control (a second launcher armed for the next boot),
 #   2. RESTARTED it — putting a second full-screen GUI on the cameras
 #      immediately, while the operator was still in the wizard, and
-#   3. reset /var/lib|log|backups/hallptz to 0750, undoing the group-writable
+#   3. reset /var/lib|log|backups/khptz to 0750, undoing the group-writable
 #      permissions the session GUI needs to save presets at all.
 #
 # The shell half of the same chain (repair_rpi_runtime.sh) was fixed first;
@@ -41,7 +41,7 @@ class _Resolver:
         if mode is None:
             state.unlink(missing_ok=True)
             return
-        state.write_text(f'HALLPTZ_GUI_MODE="{mode}"\n', encoding="utf-8")
+        state.write_text(f'KHPTZ_GUI_MODE="{mode}"\n', encoding="utf-8")
 
 
 @pytest.fixture
@@ -152,20 +152,20 @@ class TestSharedPythonReader:
 
     def test_unquoted_value(self, resolver):
         (resolver.config_dir / "install-state.env").write_text(
-            "HALLPTZ_GUI_MODE=user\n", encoding="utf-8"
+            "KHPTZ_GUI_MODE=user\n", encoding="utf-8"
         )
         assert install_state.gui_mode(resolver) == "user"
 
     def test_state_file_is_parsed_not_sourced(self, resolver):
         """A malformed entry must not be able to execute anything."""
         (resolver.config_dir / "install-state.env").write_text(
-            'HALLPTZ_GUI_MODE="user"; touch /tmp/pwned\n', encoding="utf-8"
+            'KHPTZ_GUI_MODE="user"; touch /tmp/pwned\n', encoding="utf-8"
         )
         # The value is taken literally, so it is not a recognised mode.
         assert install_state.gui_mode(resolver) == "system"
 
     def test_last_occurrence_wins(self, resolver):
         (resolver.config_dir / "install-state.env").write_text(
-            'HALLPTZ_GUI_MODE="system"\nHALLPTZ_GUI_MODE="user"\n', encoding="utf-8"
+            'KHPTZ_GUI_MODE="system"\nKHPTZ_GUI_MODE="user"\n', encoding="utf-8"
         )
         assert install_state.gui_mode(resolver) == "user"

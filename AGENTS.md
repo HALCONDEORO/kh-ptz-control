@@ -1,8 +1,8 @@
 # AI coding agent instructions
 
-This repository is the source of truth for Hall PTZ Control.
+This repository is the source of truth for KH PTZ Control.
 
-Hall PTZ Control is a Raspberry Pi touchscreen application for controlling VISCA-over-IP PTZ cameras from a visual seating layout.
+KH PTZ Control is a Raspberry Pi touchscreen application for controlling VISCA-over-IP PTZ cameras from a visual seating layout.
 
 Current state:
 

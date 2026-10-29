@@ -1,4 +1,4 @@
-# Hall PTZ Control — Release Readiness Checklist
+# KH PTZ Control — Release Readiness Checklist
 
 **Purpose:** Human-readable checklist for calling an installable build
 demo-ready or customer/pilot-ready. Complete this before tagging a release.
@@ -41,7 +41,7 @@ marked NOT_APPLICABLE or NOT_TESTED in automation.
 |---|-------|--------|-------|
 | 1.1 | `VERSION` file present and matches semantic version format | ✅ PASS | `3.38.2` — valid semver |
 | 1.2 | `git tag` matches `VERSION` (annotated tag, not lightweight) | ❌ FAIL | No annotated tag for 3.38.2 — blocks release; tag must be created before pilot |
-| 1.3 | `hallptz version` outputs expected version string | ✅ PASS | `Hall PTZ Control 3.38.2 (8012002)` |
+| 1.3 | `khptz version` outputs expected version string | ✅ PASS | `KH PTZ Control 3.38.2 (8012002)` |
 | 1.4 | `git log --oneline -5` shows clean commit history | ✅ PASS | Recent commits use conventional prefixes; no WIP or debug commits |
 | 1.5 | No `TODO: RELEASE` or `FIXME: RELEASE` markers in codebase | ✅ PASS | `grep -r "TODO: RELEASE"` — no hits in product code |
 
@@ -87,15 +87,15 @@ marked NOT_APPLICABLE or NOT_TESTED in automation.
 
 | # | Check | Status | Notes |
 |---|-------|--------|-------|
-| 5.1 | `hallptz version` exits 0 | ✅ PASS | `Hall PTZ Control 3.38.2 (8012002)` |
-| 5.2 | `hallptz status` exits 0 on healthy install | ⚠️ WARN | WARN on dev machine (no `config.yaml`). Expected on dev. Needs ✅ on Pi with valid install. |
-| 5.3 | `hallptz doctor` exits 0 on clean install (no FAIL) | ⚠️ WARN | WARN on dev (no config). All checks OK or WARN — no FAIL. Needs clean Pi run. |
-| 5.4 | `hallptz doctor --json` produces valid JSON | ✅ PASS | Valid JSON with `overall`, `exit_code`, `checks` keys |
-| 5.5 | `hallptz fingerprint` exits 0 | ✅ PASS | Outputs installation ID, version, commit, profile |
-| 5.6 | `hallptz known-good show` exits as expected | ⚠️ WARN | "No known-good state recorded" — expected on fresh install. Must be run after doctor pass on Pi. |
-| 5.7 | `hallptz supportability --json` produces valid JSON | ✅ PASS | Valid JSON |
-| 5.8 | `hallptz backup` creates a valid ZIP | 🔲 NOT_TESTED | Not run — requires Pi data directory |
-| 5.9 | `hallptz restore` restores correctly from backup | 🔲 NOT_TESTED | Requires Pi hardware |
+| 5.1 | `khptz version` exits 0 | ✅ PASS | `KH PTZ Control 3.38.2 (8012002)` |
+| 5.2 | `khptz status` exits 0 on healthy install | ⚠️ WARN | WARN on dev machine (no `config.yaml`). Expected on dev. Needs ✅ on Pi with valid install. |
+| 5.3 | `khptz doctor` exits 0 on clean install (no FAIL) | ⚠️ WARN | WARN on dev (no config). All checks OK or WARN — no FAIL. Needs clean Pi run. |
+| 5.4 | `khptz doctor --json` produces valid JSON | ✅ PASS | Valid JSON with `overall`, `exit_code`, `checks` keys |
+| 5.5 | `khptz fingerprint` exits 0 | ✅ PASS | Outputs installation ID, version, commit, profile |
+| 5.6 | `khptz known-good show` exits as expected | ⚠️ WARN | "No known-good state recorded" — expected on fresh install. Must be run after doctor pass on Pi. |
+| 5.7 | `khptz supportability --json` produces valid JSON | ✅ PASS | Valid JSON |
+| 5.8 | `khptz backup` creates a valid ZIP | 🔲 NOT_TESTED | Not run — requires Pi data directory |
+| 5.9 | `khptz restore` restores correctly from backup | 🔲 NOT_TESTED | Requires Pi hardware |
 
 ---
 
@@ -103,8 +103,8 @@ marked NOT_APPLICABLE or NOT_TESTED in automation.
 
 | # | Check | Status | Notes |
 |---|-------|--------|-------|
-| 6.1 | `hallptz doctor` — `network_profile` check passes on isolated AV VLAN config | 🔲 NOT_TESTED | Needs Pi with `config.yaml` |
-| 6.2 | `hallptz doctor` — `network_profile` warns on flat LAN (not FAIL) | 🔲 NOT_TESTED | Needs Pi with flat LAN config |
+| 6.1 | `khptz doctor` — `network_profile` check passes on isolated AV VLAN config | 🔲 NOT_TESTED | Needs Pi with `config.yaml` |
+| 6.2 | `khptz doctor` — `network_profile` warns on flat LAN (not FAIL) | 🔲 NOT_TESTED | Needs Pi with flat LAN config |
 | 6.3 | Config policy documented (docs/CONFIG_POLICY.md) | ✅ PASS | `docs/CONFIG_POLICY.md` exists |
 | 6.4 | Example configs load without error | ✅ PASS | `config/examples/*.yaml` — `load_config()` validated in test suite |
 | 6.5 | Offline-first operation confirmed (no internet required) | ✅ PASS | No internet calls in application code; all dependencies local |
@@ -128,7 +128,7 @@ marked NOT_APPLICABLE or NOT_TESTED in automation.
 |---|-------|--------|-------|
 | 8.1 | Installer script installs without error on clean Raspberry Pi OS | 🔲 NOT_TESTED | Blocks pilot — issue #757 |
 | 8.2 | `systemd` service starts and stays up | 🔲 NOT_TESTED | Blocks pilot |
-| 8.3 | `journalctl -u hallptz` shows no unexpected errors after startup | 🔲 NOT_TESTED | Blocks pilot |
+| 8.3 | `journalctl -u khptz` shows no unexpected errors after startup | 🔲 NOT_TESTED | Blocks pilot |
 | 8.4 | Uninstall / rollback path works | 🔲 NOT_TESTED | Blocks pilot |
 | 8.5 | Upgrade path from previous release tested | 🔲 NOT_TESTED | Blocks pilot |
 
@@ -143,7 +143,7 @@ marked NOT_APPLICABLE or NOT_TESTED in automation.
 | 9.3 | Camera presets work | 🔲 NOT_TESTED | Blocks pilot |
 | 9.4 | ATEM switcher control works (if enabled) | 🔲 NOT_TESTED | Blocks pilot |
 | 9.5 | Touchscreen input works | 🔲 NOT_TESTED | Blocks pilot |
-| 9.6 | `hallptz doctor` passes on Pi with live hardware | 🔲 NOT_TESTED | Blocks pilot |
+| 9.6 | `khptz doctor` passes on Pi with live hardware | 🔲 NOT_TESTED | Blocks pilot |
 | 9.7 | Disk space adequate (>500 MB free) | 🔲 NOT_TESTED | |
 | 9.8 | CPU temperature within safe range | 🔲 NOT_TESTED | |
 
@@ -153,10 +153,10 @@ marked NOT_APPLICABLE or NOT_TESTED in automation.
 
 | # | Check | Status | Notes |
 |---|-------|--------|-------|
-| 10.1 | `hallptz --profile demo status` exits 0 | ⚠️ WARN | Exits WARN due to `sim_ip_backup.json` detected in working directory. On clean Pi install this file won't be present. |
-| 10.2 | `hallptz --profile demo doctor` shows demo isolation checks | ✅ PASS | Shows `FakeCamera`, `FakeATEM`, isolated data path `hallptz-demo` |
-| 10.3 | `hallptz --profile demo demo reset` works | 🔲 NOT_TESTED | |
-| 10.4 | Demo mode does not write to production data directory | ✅ PASS | Data path: `~/.config/hallptz-demo` (isolated) |
+| 10.1 | `khptz --profile demo status` exits 0 | ⚠️ WARN | Exits WARN due to `sim_ip_backup.json` detected in working directory. On clean Pi install this file won't be present. |
+| 10.2 | `khptz --profile demo doctor` shows demo isolation checks | ✅ PASS | Shows `FakeCamera`, `FakeATEM`, isolated data path `khptz-demo` |
+| 10.3 | `khptz --profile demo demo reset` works | 🔲 NOT_TESTED | |
+| 10.4 | Demo mode does not write to production data directory | ✅ PASS | Data path: `~/.config/khptz-demo` (isolated) |
 | 10.5 | Simulation mode flag (`sim_ip_backup.json`) produces WARNING | ✅ PASS | Confirmed: doctor reports `[WARN] simulation: Simulation mode is active` |
 
 ---
@@ -165,8 +165,8 @@ marked NOT_APPLICABLE or NOT_TESTED in automation.
 
 | # | Check | Status | Notes |
 |---|-------|--------|-------|
-| 11.1 | `hallptz backup` creates valid ZIP with manifest | 🔲 NOT_TESTED | Blocks pilot |
-| 11.2 | `hallptz restore <backup.zip>` restores all expected files | 🔲 NOT_TESTED | Blocks pilot |
+| 11.1 | `khptz backup` creates valid ZIP with manifest | 🔲 NOT_TESTED | Blocks pilot |
+| 11.2 | `khptz restore <backup.zip>` restores all expected files | 🔲 NOT_TESTED | Blocks pilot |
 | 11.3 | Restore fails safely on corrupt or missing ZIP | ✅ PASS | Enforced in unit tests |
 | 11.4 | Customer data not lost during restore (previous backed up) | 🔲 NOT_TESTED | Blocks pilot |
 
@@ -178,22 +178,22 @@ Run these checks on real Raspberry Pi hardware or an equivalent target environme
 They do not replace the individual security issues — they prove that everything works
 together in the target runtime.
 
-Use: `systemctl show hallptz-control -p User -p NoNewPrivileges -p ProtectSystem -p ProtectHome -p PrivateTmp`
+Use: `systemctl show khptz-control -p User -p NoNewPrivileges -p ProtectSystem -p ProtectHome -p PrivateTmp`
 
 | # | Check | Status | Notes |
 |---|-------|--------|-------|
-| 12.1 | Service runs as `hallptz` user (not root, not `pi`) | 🔲 NOT_TESTED | Blocks pilot |
+| 12.1 | Service runs as `khptz` user (not root, not `pi`) | 🔲 NOT_TESTED | Blocks pilot |
 | 12.2 | `NoNewPrivileges=true` active in systemd service | 🔲 NOT_TESTED | |
-| 12.3 | `ProtectSystem=strict` active — `/opt/hallptz` read-only | 🔲 NOT_TESTED | |
+| 12.3 | `ProtectSystem=strict` active — `/opt/khptz` read-only | 🔲 NOT_TESTED | |
 | 12.4 | `ProtectHome=true` active | 🔲 NOT_TESTED | |
 | 12.5 | `PrivateTmp=true` active | 🔲 NOT_TESTED | |
-| 12.6 | `/opt/hallptz` owned root:hallptz, mode 0750 or tighter | 🔲 NOT_TESTED | |
-| 12.7 | `/etc/hallptz` owned root:hallptz, mode 2750 or tighter | 🔲 NOT_TESTED | |
-| 12.8 | `/var/lib/hallptz` owned hallptz:hallptz, mode 0750 or tighter | 🔲 NOT_TESTED | |
-| 12.9 | `/var/log/hallptz` owned hallptz:hallptz, mode 0750 or tighter | 🔲 NOT_TESTED | |
-| 12.10 | `/var/backups/hallptz` owned hallptz:hallptz, mode 0750 or tighter | 🔲 NOT_TESTED | |
-| 12.11 | `hallptz` user is a system account with no login shell (`nologin`) | 🔲 NOT_TESTED | |
-| 12.12 | `hallptz version` / `hallptz status` / `hallptz doctor` still work after hardening | 🔲 NOT_TESTED | |
+| 12.6 | `/opt/khptz` owned root:khptz, mode 0750 or tighter | 🔲 NOT_TESTED | |
+| 12.7 | `/etc/khptz` owned root:khptz, mode 2750 or tighter | 🔲 NOT_TESTED | |
+| 12.8 | `/var/lib/khptz` owned khptz:khptz, mode 0750 or tighter | 🔲 NOT_TESTED | |
+| 12.9 | `/var/log/khptz` owned khptz:khptz, mode 0750 or tighter | 🔲 NOT_TESTED | |
+| 12.10 | `/var/backups/khptz` owned khptz:khptz, mode 0750 or tighter | 🔲 NOT_TESTED | |
+| 12.11 | `khptz` user is a system account with no login shell (`nologin`) | 🔲 NOT_TESTED | |
+| 12.12 | `khptz version` / `khptz status` / `khptz doctor` still work after hardening | 🔲 NOT_TESTED | |
 | 12.13 | SSH disabled by default or key-only; root SSH login disabled | 🔲 NOT_TESTED | |
 | 12.14 | Default `pi` user disabled or removed before handover | 🔲 NOT_TESTED | |
 | 12.15 | Backup manifest includes SHA-256 hashes | 🔲 NOT_TESTED | |
@@ -201,17 +201,17 @@ Use: `systemctl show hallptz-control -p User -p NoNewPrivileges -p ProtectSystem
 | 12.17 | `redact_event_dict()` tests pass — no known secret keys leaked | ✅ PASS | Covered in test suite (3153 passed) |
 | 12.18 | Support bundle / incident snapshots contain no secrets or private IPs | 🔲 NOT_TESTED | Requires Pi E2E run |
 | 12.19 | CI secret scanning is green | ✅ PASS | `scripts/check_secrets.py` clean |
-| 12.20 | `hallptz doctor` reports systemd hardening status (or explicitly deferred) | 🔲 NOT_TESTED | Requires Pi |
+| 12.20 | `khptz doctor` reports systemd hardening status (or explicitly deferred) | 🔲 NOT_TESTED | Requires Pi |
 
 Manual inspection commands:
 
 ```bash
-id hallptz
-ls -ld /opt/hallptz /etc/hallptz /var/lib/hallptz /var/log/hallptz /var/backups/hallptz
-systemctl status hallptz-control --no-pager
-systemctl show hallptz-control -p User -p NoNewPrivileges -p ProtectSystem -p ProtectHome -p PrivateTmp
-journalctl -u hallptz-control -n 50 --no-pager
-hallptz version && hallptz status && hallptz doctor
+id khptz
+ls -ld /opt/khptz /etc/khptz /var/lib/khptz /var/log/khptz /var/backups/khptz
+systemctl status khptz-control --no-pager
+systemctl show khptz-control -p User -p NoNewPrivileges -p ProtectSystem -p ProtectHome -p PrivateTmp
+journalctl -u khptz-control -n 50 --no-pager
+khptz version && khptz status && khptz doctor
 ```
 
 ---

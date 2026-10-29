@@ -9,8 +9,8 @@
 #
 # READ-ONLY by default. #890 states that any manual patch during the acceptance
 # run is a failed result, so this script inspects and never repairs: no xhost,
-# no systemd edits, no writes under /opt/hallptz. `--with-backup` additionally
-# exercises `hallptz backup`, which #890 asks for and which only adds a new ZIP.
+# no systemd edits, no writes under /opt/khptz. `--with-backup` additionally
+# exercises `khptz backup`, which #890 asks for and which only adds a new ZIP.
 #
 # Physical checks (camera movement, presets, operator login, the 10-minute GUI
 # soak) cannot be automated; they are printed as MANUAL with the exact step so
@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-[[ -n "${REPORT}" ]] || REPORT="${HOME}/hallptz-acceptance-$(date +%Y%m%d-%H%M%S).txt"
+[[ -n "${REPORT}" ]] || REPORT="${HOME}/khptz-acceptance-$(date +%Y%m%d-%H%M%S).txt"
 
 PASS_N=0; FAIL_N=0; MANUAL_N=0; SKIP_N=0
 
@@ -56,7 +56,7 @@ skip()   { SKIP_N=$((SKIP_N+1));     say "[SKIP]   $*"; }
 : > "${REPORT}"
 
 say "======================================================================"
-say " HALLPTZ Raspberry Pi acceptance report (#890)"
+say " KHPTZ Raspberry Pi acceptance report (#890)"
 say "======================================================================"
 
 # ── Environment block #890 requires recorded before anything changes ─────────
@@ -73,15 +73,15 @@ if [[ -r /proc/device-tree/model ]]; then
 fi
 say "Python      : $(python3 -V 2>&1)"
 
-INSTALL_DIR="/opt/hallptz"
-STATE="/etc/hallptz/install-state.env"
+INSTALL_DIR="/opt/khptz"
+STATE="/etc/khptz/install-state.env"
 state_value() { sed -n "s/^$1=//p" "${STATE}" 2>/dev/null | tr -d '"' | tail -n1; }
 
 if [[ -r "${STATE}" ]]; then
-    say "Version     : $(state_value HALLPTZ_INSTALLED_VERSION)"
-    say "Commit/ref  : $(state_value HALLPTZ_INSTALLED_REF)"
-    say "Wizard user : $(state_value HALLPTZ_WIZARD_USER)"
-    say "Source dir  : $(state_value HALLPTZ_SOURCE_DIR)"
+    say "Version     : $(state_value KHPTZ_INSTALLED_VERSION)"
+    say "Commit/ref  : $(state_value KHPTZ_INSTALLED_REF)"
+    say "Wizard user : $(state_value KHPTZ_WIZARD_USER)"
+    say "Source dir  : $(state_value KHPTZ_SOURCE_DIR)"
 else
     say "Install state: NOT FOUND at ${STATE}"
 fi
@@ -91,44 +91,44 @@ fi
 _state_lib="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/install_state.sh"
 if [[ -r "${_state_lib}" ]]; then
     # shellcheck source=/dev/null
-    HALLPTZ_INSTALL_STATE="${STATE}" source "${_state_lib}"
-    GUI_MODE="$(HALLPTZ_INSTALL_STATE="${STATE}" hallptz_gui_mode)"
+    KHPTZ_INSTALL_STATE="${STATE}" source "${_state_lib}"
+    GUI_MODE="$(KHPTZ_INSTALL_STATE="${STATE}" khptz_gui_mode)"
 else
-    GUI_MODE="$(state_value HALLPTZ_GUI_MODE)"
+    GUI_MODE="$(state_value KHPTZ_GUI_MODE)"
     [[ "${GUI_MODE}" == "user" || "${GUI_MODE}" == "system" ]] || GUI_MODE="system"
 fi
 say "GUI mode    : ${GUI_MODE}"
 
 # ── Diagnostics ───────────────────────────────────────────────────────────────
 
-head2 "Diagnostics (hallptz version / status / doctor)"
+head2 "Diagnostics (khptz version / status / doctor)"
 
-if ! command -v hallptz >/dev/null 2>&1; then
-    fail "hallptz CLI not on PATH - the install did not complete"
+if ! command -v khptz >/dev/null 2>&1; then
+    fail "khptz CLI not on PATH - the install did not complete"
 else
     for _cmd in version status; do
-        if out="$(hallptz "${_cmd}" 2>&1)"; then
-            pass "hallptz ${_cmd} completed"
+        if out="$(khptz "${_cmd}" 2>&1)"; then
+            pass "khptz ${_cmd} completed"
         else
-            fail "hallptz ${_cmd} exited non-zero"
+            fail "khptz ${_cmd} exited non-zero"
         fi
         printf '%s\n' "${out}" | sed 's/^/         | /' >> "${REPORT}"
         case "${out}" in
-            *UnicodeEncodeError*) fail "hallptz ${_cmd}: UnicodeEncodeError (#884 regression)" ;;
-            *"Permission denied"*) fail "hallptz ${_cmd}: permission denied (#884 regression)" ;;
+            *UnicodeEncodeError*) fail "khptz ${_cmd}: UnicodeEncodeError (#884 regression)" ;;
+            *"Permission denied"*) fail "khptz ${_cmd}: permission denied (#884 regression)" ;;
         esac
     done
 
-    doctor_out="$(hallptz doctor 2>&1)"; doctor_rc=$?
+    doctor_out="$(khptz doctor 2>&1)"; doctor_rc=$?
     printf '%s\n' "${doctor_out}" | sed 's/^/         | /' >> "${REPORT}"
     case "${doctor_out}" in
-        *UnicodeEncodeError*) fail "hallptz doctor: UnicodeEncodeError (#884 regression)" ;;
-        *) pass "hallptz doctor produced output without an encoding crash" ;;
+        *UnicodeEncodeError*) fail "khptz doctor: UnicodeEncodeError (#884 regression)" ;;
+        *) pass "khptz doctor produced output without an encoding crash" ;;
     esac
     case "${doctor_out}" in
         *"Permission denied"*|*"Could not write crash report"*)
-            fail "hallptz doctor: permission problem on a service-owned path (#884)" ;;
-        *)  pass "hallptz doctor: no permission-denied warnings" ;;
+            fail "khptz doctor: permission problem on a service-owned path (#884)" ;;
+        *)  pass "khptz doctor: no permission-denied warnings" ;;
     esac
 
     # Exit codes come from domain/doctor_outcome.py (#887).
@@ -141,9 +141,9 @@ else
     esac
 
     # #890: JSON must agree with the human output and the exit code.
-    json_out="$(hallptz doctor --json 2>/dev/null)"; json_rc=$?
+    json_out="$(khptz doctor --json 2>/dev/null)"; json_rc=$?
     if [[ "${json_rc}" -eq "${doctor_rc}" ]]; then
-        pass "hallptz doctor --json exit code agrees with human output (${json_rc})"
+        pass "khptz doctor --json exit code agrees with human output (${json_rc})"
     else
         fail "doctor --json rc=${json_rc} disagrees with doctor rc=${doctor_rc}"
     fi
@@ -158,30 +158,30 @@ head2 "Service and GUI (mode: ${GUI_MODE})"
 if ! command -v systemctl >/dev/null 2>&1; then
     skip "systemctl unavailable - cannot inspect the service"
 elif [[ "${GUI_MODE}" == "user" ]]; then
-    for _asset in /etc/systemd/user/hallptz-gui.service /usr/local/libexec/hallptz-gui-session; do
+    for _asset in /etc/systemd/user/khptz-gui.service /usr/local/libexec/khptz-gui-session; do
         [[ -e "${_asset}" ]] && pass "present: ${_asset}" || fail "missing: ${_asset}"
     done
-    if systemctl is-enabled --quiet hallptz-control 2>/dev/null; then
-        fail "hallptz-control is STILL enabled alongside the session GUI - two GUIs would compete (#885)"
+    if systemctl is-enabled --quiet khptz-control 2>/dev/null; then
+        fail "khptz-control is STILL enabled alongside the session GUI - two GUIs would compete (#885)"
     else
-        pass "hallptz-control is disabled - the desktop session owns the GUI"
+        pass "khptz-control is disabled - the desktop session owns the GUI"
     fi
-    manual "As ${SUDO_USER:-isl}, after login run: systemctl --user status hallptz-gui"
+    manual "As ${SUDO_USER:-khptz}, after login run: systemctl --user status khptz-gui"
 else
-    if systemctl is-enabled --quiet hallptz-control 2>/dev/null; then
-        pass "hallptz-control is enabled"
+    if systemctl is-enabled --quiet khptz-control 2>/dev/null; then
+        pass "khptz-control is enabled"
     else
-        fail "hallptz-control is NOT enabled - it will not start on boot"
+        fail "khptz-control is NOT enabled - it will not start on boot"
     fi
 
-    active="$(systemctl is-active hallptz-control 2>/dev/null)"
+    active="$(systemctl is-active khptz-control 2>/dev/null)"
     say "         service state: ${active:-unknown}"
 
-    restarts="$(systemctl show -p NRestarts --value hallptz-control 2>/dev/null || echo 0)"
+    restarts="$(systemctl show -p NRestarts --value khptz-control 2>/dev/null || echo 0)"
     if [[ "${restarts}" =~ ^[0-9]+$ ]] && [[ "${restarts}" -ge 3 ]]; then
-        fail "hallptz-control has restarted ${restarts} times - restart loop"
+        fail "khptz-control has restarted ${restarts} times - restart loop"
     else
-        pass "hallptz-control restart count is ${restarts:-0}"
+        pass "khptz-control restart count is ${restarts:-0}"
     fi
 fi
 
@@ -190,9 +190,9 @@ fi
 # The mode of these directories is the difference between a GUI that can save
 # presets and one that silently cannot, and it depends on who owns the GUI:
 #
-#   system — 0750 hallptz:hallptz. Only the service writes them.
-#   user   — 2770 hallptz:hallptz. The desktop GUI writes them too, through the
-#            'hallptz' group; setgid keeps new files in that group so the service
+#   system — 0750 khptz:khptz. Only the service writes them.
+#   user   — 2770 khptz:khptz. The desktop GUI writes them too, through the
+#            'khptz' group; setgid keeps new files in that group so the service
 #            identity can still read what the GUI wrote.
 #
 # Worth asserting on the device because three separate components write these
@@ -210,51 +210,51 @@ else
     _expect_runtime_mode="0750"
 fi
 
-for _dir in /var/lib/hallptz /var/log/hallptz /var/backups/hallptz; do
+for _dir in /var/lib/khptz /var/log/khptz /var/backups/khptz; do
     if [[ ! -d "${_dir}" ]]; then
         fail "missing runtime directory: ${_dir}"
         continue
     fi
     _actual="$(stat -c '%04a %U:%G' "${_dir}" 2>/dev/null || true)"
-    if [[ "${_actual}" == "${_expect_runtime_mode} hallptz:hallptz" ]]; then
+    if [[ "${_actual}" == "${_expect_runtime_mode} khptz:khptz" ]]; then
         pass "${_dir} is ${_actual}"
     else
-        fail "${_dir} is '${_actual}', expected '${_expect_runtime_mode} hallptz:hallptz'"
+        fail "${_dir} is '${_actual}', expected '${_expect_runtime_mode} khptz:khptz'"
         [[ "${GUI_MODE}" == "user" ]] \
             && say "         the session GUI cannot write here - it will start with no presets or layout"
     fi
 done
 
 # Config stays admin-write / service-read in both modes. The setgid bit is what
-# keeps files created there in the hallptz group; others-traverse (the trailing 1)
+# keeps files created there in the khptz group; others-traverse (the trailing 1)
 # is what lets the unprivileged desktop session stat .provisioned to decide
 # whether to open the setup wizard, without any read access to config.yaml or
 # the secrets.
-if [[ -d /etc/hallptz ]]; then
-    _cfg="$(stat -c '%04a %U:%G' /etc/hallptz 2>/dev/null || true)"
+if [[ -d /etc/khptz ]]; then
+    _cfg="$(stat -c '%04a %U:%G' /etc/khptz 2>/dev/null || true)"
     case "${_cfg}" in
-        275[01]" root:hallptz") pass "/etc/hallptz is ${_cfg}" ;;
-        *) fail "/etc/hallptz is '${_cfg}', expected '2751 root:hallptz' (2750 pre-provision)" ;;
+        275[01]" root:khptz") pass "/etc/khptz is ${_cfg}" ;;
+        *) fail "/etc/khptz is '${_cfg}', expected '2751 root:khptz' (2750 pre-provision)" ;;
     esac
 else
-    fail "missing config directory: /etc/hallptz"
+    fail "missing config directory: /etc/khptz"
 fi
 
 # Application code must be readable and NEVER writable by the service.
 if [[ -d "${INSTALL_DIR}" ]]; then
     _app="$(stat -c '%04a %U:%G' "${INSTALL_DIR}" 2>/dev/null || true)"
-    if [[ "${_app}" == "0750 root:hallptz" ]]; then
+    if [[ "${_app}" == "0750 root:khptz" ]]; then
         pass "${INSTALL_DIR} is ${_app}"
     else
-        fail "${INSTALL_DIR} is '${_app}', expected '0750 root:hallptz'"
+        fail "${INSTALL_DIR} is '${_app}', expected '0750 root:khptz'"
     fi
 fi
 
 # Secrets must stay owner-only. Group-readable here would hand the
-# administrator password to every account in the hallptz group, and the key is
+# administrator password to every account in the khptz group, and the key is
 # derived from the world-readable /etc/machine-id.
 _secret_findings=0
-for _secret in /var/lib/hallptz/password.enc /var/lib/hallptz/admin.enc; do
+for _secret in /var/lib/khptz/password.enc /var/lib/khptz/admin.enc; do
     [[ -e "${_secret}" ]] || continue
     _mode="$(stat -c '%a' "${_secret}" 2>/dev/null || true)"
     if [[ "${_mode}" == "600" ]]; then
@@ -264,7 +264,7 @@ for _secret in /var/lib/hallptz/password.enc /var/lib/hallptz/admin.enc; do
         _secret_findings=$((_secret_findings + 1))
     fi
 done
-[[ ${_secret_findings} -eq 0 ]] || say "         fix with: sudo chmod 600 /var/lib/hallptz/*.enc"
+[[ ${_secret_findings} -eq 0 ]] || say "         fix with: sudo chmod 600 /var/lib/khptz/*.enc"
 
 # ── Boot journal: the errors #890 says must not return ───────────────────────
 
@@ -302,7 +302,7 @@ fi
 
 head2 "Configuration"
 
-CONFIG="/etc/hallptz/config.yaml"
+CONFIG="/etc/khptz/config.yaml"
 if [[ ! -r "${CONFIG}" ]]; then
     skip "cannot read ${CONFIG} (run with sudo, or the install is incomplete)"
 else
@@ -316,21 +316,21 @@ else
     else
         pass "no ATEM-enabled-without-IP contradiction detected"
     fi
-    say "         (camera/profile agreement is asserted by hallptz doctor above)"
+    say "         (camera/profile agreement is asserted by khptz doctor above)"
 fi
 
 # ── Persistence ───────────────────────────────────────────────────────────────
 
 head2 "Persistence"
 
-if [[ "${WITH_BACKUP}" == "true" ]] && command -v hallptz >/dev/null 2>&1; then
-    if hallptz backup >/dev/null 2>&1; then
-        pass "hallptz backup created a backup"
+if [[ "${WITH_BACKUP}" == "true" ]] && command -v khptz >/dev/null 2>&1; then
+    if khptz backup >/dev/null 2>&1; then
+        pass "khptz backup created a backup"
     else
-        fail "hallptz backup failed"
+        fail "khptz backup failed"
     fi
 else
-    skip "hallptz backup not exercised (pass --with-backup to include it)"
+    skip "khptz backup not exercised (pass --with-backup to include it)"
 fi
 
 manual "Re-run the bootstrap and confirm config, passwords, presets and layout survive"
@@ -359,8 +359,8 @@ say "Tester:      $(id -un)"
 say "Pi model:    $( [[ -r /proc/device-tree/model ]] && tr -d '\0' < /proc/device-tree/model || echo 'unknown')"
 say "OS:          $( [[ -r /etc/os-release ]] && (. /etc/os-release && printf '%s' "${PRETTY_NAME:-unknown}") || echo unknown)"
 say "Python:      $(python3 -V 2>&1)"
-say "HALLPTZ version: $( [[ -r ${STATE} ]] && state_value HALLPTZ_INSTALLED_VERSION || echo unknown)"
-say "Commit:      $( [[ -r ${STATE} ]] && state_value HALLPTZ_INSTALLED_REF || echo unknown)"
+say "KHPTZ version: $( [[ -r ${STATE} ]] && state_value KHPTZ_INSTALLED_VERSION || echo unknown)"
+say "Commit:      $( [[ -r ${STATE} ]] && state_value KHPTZ_INSTALLED_REF || echo unknown)"
 say "GUI mode:    ${GUI_MODE}"
 say "Automated:   ${PASS_N} passed, ${FAIL_N} failed, ${SKIP_N} skipped"
 say "Manual:      ${MANUAL_N} checks still to perform by hand"

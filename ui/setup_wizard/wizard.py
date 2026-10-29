@@ -46,7 +46,7 @@ class SetupWizard(QWizard):
         self.service = service or ProvisioningService()
         self.handoff = handoff or self._default_handoff()
 
-        self.setWindowTitle("HALLPTZ Setup")
+        self.setWindowTitle("KHPTZ Setup")
         self.setWizardStyle(QWizard.ModernStyle)
         self.setOption(QWizard.NoBackButtonOnStartPage, True)
         apply_stylesheet_safely(self, setup_wizard_qss())
@@ -66,7 +66,7 @@ class SetupWizard(QWizard):
 
     @staticmethod
     def _default_handoff() -> ProvisionHandoff:
-        """Build the production handoff over the /run/hallptz channel.
+        """Build the production handoff over the /run/khptz channel.
 
         Raspberry Pi finalisation may install xhost and wait for the desktop
         display on a slow SD card/network, so stay above the provision service's

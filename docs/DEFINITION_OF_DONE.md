@@ -127,7 +127,7 @@ Use this as a minimum PR checklist:
 - [ ] python3 -m ruff check . passes or reason documented
 - [ ] Normal startup considered
 - [ ] Simulation/demo impact considered
-- [ ] hallptz doctor/status considered if runtime/config/diagnostics changed
+- [ ] khptz doctor/status considered if runtime/config/diagnostics changed
 - [ ] Docs updated if behaviour changed
 - [ ] No secrets/private keys/customer-sensitive data committed
 - [ ] Data migration/recovery considered if applicable

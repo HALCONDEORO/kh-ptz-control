@@ -25,7 +25,7 @@ ROOT_ONLY = {
     "boot_stats.json",
     "sim_ip_backup.json",
     "install_notes.md",
-    # Legacy HALLPTZ flat-file customer configs
+    # Legacy KHPTZ flat-file customer configs
     "PTZ1IP.txt",
     "PTZ2IP.txt",
     "ATEMIP.txt",
@@ -59,7 +59,7 @@ NAMES = {
 NAME_GLOBS = [
     "support_bundle*.zip",
     "backup*.zip",
-    "hallptz_backup_*.zip",
+    "khptz_backup_*.zip",
 ]
 
 

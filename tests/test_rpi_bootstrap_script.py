@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# tests/test_rpi_bootstrap_script.py — Contract tests for install_hallptz_rpi.sh (#883)
+# tests/test_rpi_bootstrap_script.py — Contract tests for install_khptz_rpi.sh (#883)
 #
 # The bootstrap script cannot be executed end-to-end in CI (it needs root, a
 # Raspberry Pi and an X session), so these tests pin the properties that the
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = REPO_ROOT / "install_hallptz_rpi.sh"
+SCRIPT = REPO_ROOT / "install_khptz_rpi.sh"
 
 #: Git Bash on Windows mangles backslash paths ("C:UsersmarcoDesktop..."), so
 #: always hand bash a forward-slash path. On Linux this is the normal form.
@@ -34,7 +34,7 @@ def script_text() -> str:
 
 class TestScriptExists:
     def test_bootstrap_script_is_at_the_repository_root(self):
-        """Documented as `sudo bash install_hallptz_rpi.sh` — it must be here."""
+        """Documented as `sudo bash install_khptz_rpi.sh` — it must be here."""
         assert SCRIPT.is_file()
 
     def test_has_a_bash_shebang(self, script_text):
@@ -67,7 +67,7 @@ class TestScriptIsValidBash:
             capture_output=True, text=True, cwd=str(REPO_ROOT.parent),
         )
         assert result.returncode == 0
-        assert "install_hallptz_rpi.sh" in result.stdout
+        assert "install_khptz_rpi.sh" in result.stdout
 
     def test_unknown_option_is_rejected_clearly(self):
         result = subprocess.run(
@@ -146,7 +146,7 @@ class TestOperatorNeverRunsManualCommands:
 
     def test_does_not_hand_the_service_an_x_cookie(self, script_text):
         """Display access is granted per-login by repair_rpi_runtime.sh via
-        `xhost +SI:localuser:hallptz`, which authorises by UID and needs no cookie.
+        `xhost +SI:localuser:khptz`, which authorises by UID and needs no cookie.
 
         The old drop-in set XAUTHORITY from the desktop user's home, which
         forced ProtectHome down to read-only and exposed every home directory.
@@ -174,24 +174,24 @@ class TestOperatorNeverRunsManualCommands:
 
 
 class TestDiagnosticsRunAsTheServiceIdentity:
-    """`hallptz doctor` must not run as root from the installer.
+    """`khptz doctor` must not run as root from the installer.
 
-    /var/log/hallptz is hallptz:hallptz 0750. A root-run doctor creates root:root
+    /var/log/khptz is khptz:khptz 0750. A root-run doctor creates root:root
     app.log and blackbox files inside it, after which the service can never
     write its own logs — the same permission failure class as #884, caused by
     the installer itself.
     """
 
-    def test_doctor_is_invoked_as_the_hallptz_user(self, script_text):
-        assert "sudo -u hallptz hallptz doctor" in script_text
+    def test_doctor_is_invoked_as_the_khptz_user(self, script_text):
+        assert "sudo -u khptz khptz doctor" in script_text
 
     def test_root_fallback_redirects_the_log_directory(self, script_text):
         """The non-product fallback must not write into service-owned paths."""
-        assert "HALLPTZ_LOG_DIR=" in script_text
+        assert "KHPTZ_LOG_DIR=" in script_text
 
     def test_no_bare_root_doctor_invocation(self, script_text):
-        """A plain `hallptz doctor` line would run as root and poison the paths."""
-        bare = re.findall(r"^\s*hallptz doctor\b", script_text, re.MULTILINE)
+        """A plain `khptz doctor` line would run as root and poison the paths."""
+        bare = re.findall(r"^\s*khptz doctor\b", script_text, re.MULTILINE)
         assert not bare, f"doctor invoked without dropping privileges: {bare}"
 
 
@@ -245,11 +245,11 @@ class TestIdempotenceAndSafety:
         assert check_run < install_run
 
     def test_readiness_check_uses_the_same_layout_as_the_install(self, script_text):
-        """--dev selects /home/<user>/hallptz instead of /opt/hallptz and requires
+        """--dev selects /home/<user>/khptz instead of /opt/khptz and requires
         pip3, so the check must receive it as well."""
         assert "_CHECK_ARGS=(--check)" in script_text
         assert '_CHECK_ARGS+=(--dev)' in script_text
 
     def test_never_deletes_customer_paths(self, script_text):
-        assert "rm -rf /etc/hallptz" not in script_text
-        assert "rm -rf /var/lib/hallptz" not in script_text
+        assert "rm -rf /etc/khptz" not in script_text
+        assert "rm -rf /var/lib/khptz" not in script_text

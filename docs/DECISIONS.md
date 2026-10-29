@@ -1,6 +1,6 @@
 # Project Decisions
 
-This document records important product and technical decisions for Hall PTZ Control.
+This document records important product and technical decisions for KH PTZ Control.
 
 Use it to avoid re-opening the same debates and to keep AI-assisted development aligned with the project direction.
 
@@ -100,7 +100,7 @@ The site metadata foundation is:
 
 ```yaml
 site:
-  installation_id: "hallptz-2026-0007"
+  installation_id: "khptz-2026-0007"
   customer_name: "Customer Name"
   room_name: "Main Hall"
   installation_profile: "standard_2_camera"
@@ -143,9 +143,9 @@ Automatic repair should only be added later when it is safe, explicit and tested
 
 Support direction:
 
-- `hallptz doctor` is the first diagnostic command.
-- `hallptz doctor` is required before closing an installation and should be surfaced in installer/setup flows as an action the installer can run.
-- `hallptz backup` should be used before risky support work.
+- `khptz doctor` is the first diagnostic command.
+- `khptz doctor` is required before closing an installation and should be surfaced in installer/setup flows as an action the installer can run.
+- `khptz backup` should be used before risky support work.
 - Backup is mandatory before update or restore operations unless a documented emergency exception is accepted.
 - Restore must validate before writing.
 - Support bundle export should be available from both CLI and UI.
@@ -161,8 +161,8 @@ Support direction:
 - GitHub Actions must not deploy automatically to customer Raspberry Pis.
 - Heavy release checks should be manual, not run on every commit.
 - Installer/systemd work must protect customer data.
-- Production Raspberry Pi installs should use a dedicated `hallptz` service/user account.
-- Production application code, configuration, runtime data and logs should move toward `/opt/hallptz`, `/etc/hallptz`, `/var/lib/hallptz` and `/var/log/hallptz`.
+- Production Raspberry Pi installs should use a dedicated `khptz` service/user account.
+- Production application code, configuration, runtime data and logs should move toward `/opt/khptz`, `/etc/khptz`, `/var/lib/khptz` and `/var/log/khptz`.
 - Customer/runtime data must not live in the repository/application folder in production installs.
 - Restore must validate before writing and should create a pre-restore backup.
 - Golden backups must not be deleted automatically.

@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
-# install.sh — Hall PTZ Control installer for Raspberry Pi
+# install.sh — KH PTZ Control installer for Raspberry Pi
 #
 # Usage:
 #   sudo bash install.sh [--dev] [--atem] [--check]
 #
 # Modes:
-#   (default)  Product install: dedicated 'hallptz' OS user, /opt/hallptz layout.
-#   --dev      Developer install: uses current $USER, /home/$USER/hallptz layout.
+#   (default)  Product install: dedicated 'khptz' OS user, /opt/khptz layout.
+#   --dev      Developer install: uses current $USER, /home/$USER/khptz layout.
 #              Safe for git-checkout development environments.
 #   --atem     Install ATEM optional dependencies (requirements-atem.txt).
 #   --check    Dry-run: validate Pi readiness without writing any files.
 #              Outputs a PASS/WARN/FAIL report. Exits non-zero on blocking failures.
 #
 # Product layout (default):
-#   /opt/hallptz/          app code     (root:hallptz, mode 0750 — service user reads, cannot write)
-#   /etc/hallptz/          config       (root:hallptz, setgid, admin-write only)
-#   /var/lib/hallptz/      runtime data (hallptz:hallptz)
-#   /var/log/hallptz/      logs         (hallptz:hallptz)
-#   /var/backups/hallptz/  backups      (hallptz:hallptz)
+#   /opt/khptz/          app code     (root:khptz, mode 0750 — service user reads, cannot write)
+#   /etc/khptz/          config       (root:khptz, setgid, admin-write only)
+#   /var/lib/khptz/      runtime data (khptz:khptz)
+#   /var/log/khptz/      logs         (khptz:khptz)
+#   /var/backups/khptz/  backups      (khptz:khptz)
 #
 # See docs/RUNTIME_PATH_CONTRACT.md for full path ownership contract.
 #
 # Safety rules:
 #   - Idempotent: safe to run more than once.
 #   - Never deletes existing config or customer data.
-#   - Creates hallptz OS user if it does not already exist.
+#   - Creates khptz OS user if it does not already exist.
 #   - Fails fast if required tools are missing.
 
 set -euo pipefail
@@ -36,9 +36,9 @@ INSTALL_ATEM=false
 CHECK_MODE=false
 WIZARD_USER=""
 # Which process owns the GUI (#885).
-#   system — hallptz-control.service runs it as the 'hallptz' system user, bridged to
+#   system — khptz-control.service runs it as the 'khptz' system user, bridged to
 #            the display by the scoped xhost helper. The validated default.
-#   user   — hallptz-gui.service runs it inside the desktop session, inheriting
+#   user   — khptz-gui.service runs it inside the desktop session, inheriting
 #            DISPLAY/XAUTHORITY/XDG_RUNTIME_DIR/D-Bus with no display grant.
 # Exactly one is ever active: installing either removes the other.
 GUI_MODE="system"
@@ -61,13 +61,13 @@ while [[ $# -gt 0 ]]; do
             ;;
         --help)
             echo "Usage: sudo bash install.sh [--dev] [--atem] [--check] [--wizard-user USER] [--gui-mode MODE]"
-            echo "  (no flags)       Product install — dedicated hallptz user, /opt/hallptz layout"
-            echo "  --dev            Developer install — current user, /home/USER/hallptz layout"
+            echo "  (no flags)       Product install — dedicated khptz user, /opt/khptz layout"
+            echo "  --dev            Developer install — current user, /home/USER/khptz layout"
             echo "  --atem           Install ATEM optional dependencies (requires pip3)"
             echo "  --check          Dry-run: validate Pi readiness without writing any files"
             echo "  --wizard-user U  Desktop user that owns the setup-wizard provisioning"
-            echo "                   channel (/run/hallptz). Defaults to \$SUDO_USER."
-            echo "  --gui-mode M     system (default) = GUI runs as the hallptz service user;"
+            echo "                   channel (/run/khptz). Defaults to \$SUDO_USER."
+            echo "  --gui-mode M     system (default) = GUI runs as the khptz service user;"
             echo "                   user = GUI runs inside the desktop session (#885)."
             exit 0
             ;;
@@ -79,26 +79,26 @@ while [[ $# -gt 0 ]]; do
 done
 
 # The setup wizard runs in the desktop session as this user; it owns the
-# /run/hallptz provisioning channel. Default to the human who invoked sudo.
+# /run/khptz provisioning channel. Default to the human who invoked sudo.
 WIZARD_USER="${WIZARD_USER:-${SUDO_USER:-}}"
 
 if [[ "${DEV_MODE}" == "true" ]]; then
     APP_USER="${SUDO_USER:-${USER}}"
-    INSTALL_DIR="/home/${APP_USER}/hallptz"
-    CONFIG_DIR="/home/${APP_USER}/hallptz"
-    DATA_DIR="/home/${APP_USER}/.config/hallptz"
-    LOG_DIR="/var/log/hallptz"
-    BACKUP_DIR="/var/backups/hallptz"
+    INSTALL_DIR="/home/${APP_USER}/khptz"
+    CONFIG_DIR="/home/${APP_USER}/khptz"
+    DATA_DIR="/home/${APP_USER}/.config/khptz"
+    LOG_DIR="/var/log/khptz"
+    BACKUP_DIR="/var/backups/khptz"
 else
-    APP_USER="hallptz"
-    INSTALL_DIR="/opt/hallptz"
-    CONFIG_DIR="/etc/hallptz"
-    DATA_DIR="/var/lib/hallptz"
-    LOG_DIR="/var/log/hallptz"
-    BACKUP_DIR="/var/backups/hallptz"
+    APP_USER="khptz"
+    INSTALL_DIR="/opt/khptz"
+    CONFIG_DIR="/etc/khptz"
+    DATA_DIR="/var/lib/khptz"
+    LOG_DIR="/var/log/khptz"
+    BACKUP_DIR="/var/backups/khptz"
 fi
 
-SERVICE_NAME="hallptz-control"
+SERVICE_NAME="khptz-control"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -134,7 +134,7 @@ require_pyqt5() {
 # lists no pip packages), so it can only come from apt. Checking it here is the
 # difference between failing on this line with an apt hint and reporting a
 # successful install that cannot start: config/loader.py imports the module at
-# module scope, so main.py, `hallptz doctor` and runtime/rpi_post_provision.py all
+# module scope, so main.py, `khptz doctor` and runtime/rpi_post_provision.py all
 # raise ModuleNotFoundError the first time the appliance is actually used.
 require_python_module() {
     local module="$1"
@@ -171,7 +171,7 @@ info "Install dir   : ${INSTALL_DIR}"
 
 if [[ "${CHECK_MODE}" == "true" ]]; then
     info ""
-    info "=== HALLPTZ Installer Readiness Check ==="
+    info "=== KHPTZ Installer Readiness Check ==="
     info ""
     _check_fails=0
 
@@ -201,7 +201,7 @@ if [[ "${CHECK_MODE}" == "true" ]]; then
     fi
 
     # Service template
-    SERVICE_TEMPLATE="${REPO_ROOT}/runtime/systemd/hallptz-control.service"
+    SERVICE_TEMPLATE="${REPO_ROOT}/runtime/systemd/khptz-control.service"
     if [[ -f "${SERVICE_TEMPLATE}" ]]; then
         _chk_pass "Systemd service template: ${SERVICE_TEMPLATE}"
     else
@@ -239,8 +239,8 @@ if [[ "${CHECK_MODE}" == "true" ]]; then
 
     # Scoped display authorisation (system GUI mode only).
     #
-    # In system mode the GUI runs as 'hallptz' and reaches the desktop user's X
-    # display through `xhost +SI:localuser:hallptz`. That grant is applied by
+    # In system mode the GUI runs as 'khptz' and reaches the desktop user's X
+    # display through `xhost +SI:localuser:khptz`. That grant is applied by
     # scripts/repair_rpi_runtime.sh, which runs from inside the wizard's
     # provisioning chain — and which apt-installs x11-xserver-utils when xhost
     # is absent. On an offline appliance that apt call fails, the chain reports
@@ -280,7 +280,7 @@ if [[ "${DEV_MODE}" == "false" ]]; then
             --no-create-home \
             --home-dir "${DATA_DIR}" \
             --shell /usr/sbin/nologin \
-            --comment "Hall PTZ Control service user" \
+            --comment "KH PTZ Control service user" \
             "${APP_USER}"
         info "Service user '${APP_USER}' created."
     else
@@ -293,15 +293,15 @@ fi
 info "Creating directories..."
 
 if [[ "${DEV_MODE}" == "false" ]]; then
-    # Product layout: /opt/hallptz owned root:hallptz, mode 0750 — service user reads, cannot write
+    # Product layout: /opt/khptz owned root:khptz, mode 0750 — service user reads, cannot write
     install -d -m 750 "${INSTALL_DIR}"
     chown root:"${APP_USER}" "${INSTALL_DIR}"
 
-    # /etc/hallptz: root:hallptz, setgid (2750) — admin writes, service reads
+    # /etc/khptz: root:khptz, setgid (2750) — admin writes, service reads
     install -d -m 2750 "${CONFIG_DIR}"
     chown root:"${APP_USER}" "${CONFIG_DIR}"
 
-    # runtime-writable directories owned by hallptz
+    # runtime-writable directories owned by khptz
     install -d -m 750 -o "${APP_USER}" -g "${APP_USER}" "${DATA_DIR}"
     install -d -m 750 -o "${APP_USER}" -g "${APP_USER}" "${LOG_DIR}"
     install -d -m 750 -o "${APP_USER}" -g "${APP_USER}" "${BACKUP_DIR}"
@@ -355,15 +355,15 @@ RSYNC_EXCLUDES=(
 )
 
 if [[ "${REPO_ROOT}" == "${INSTALL_DIR}" ]]; then
-    # Developer install cloned straight into the install dir (git clone … hallptz).
+    # Developer install cloned straight into the install dir (git clone … khptz).
     # Source and destination are the same tree — copying would be a no-op at
     # best and, with --delete, actively dangerous.
     info "Source and install directory are the same (${INSTALL_DIR}) — skipping copy."
 elif [[ "${DEV_MODE}" == "false" ]]; then
-    # --delete makes /opt/hallptz an exact mirror of the release being installed.
+    # --delete makes /opt/khptz an exact mirror of the release being installed.
     # Without it a downgrade (rollback.sh re-deploys an older ref) would leave
     # files from the newer release behind, so the running install would be a
-    # mix of two versions. Safe here because /opt/hallptz holds only application
+    # mix of two versions. Safe here because /opt/khptz holds only application
     # code: config, data, logs and backups all live outside it (see
     # docs/RUNTIME_PATH_CONTRACT.md), so nothing customer-owned can be deleted.
     info "Installing application to ${INSTALL_DIR} (exact mirror of this release)..."
@@ -376,7 +376,7 @@ else
 fi
 
 if [[ "${DEV_MODE}" == "false" ]]; then
-    # App code: root:hallptz, directories 0750, files 0640.
+    # App code: root:khptz, directories 0750, files 0640.
     # Shell scripts get 0750 so the service user can execute them if needed.
     chown -R root:"${APP_USER}" "${INSTALL_DIR}"
     find "${INSTALL_DIR}" -type d -exec chmod 750 {} \;
@@ -424,7 +424,7 @@ else
 
     # Backfill .provisioned for a working install that predates the setup
     # wizard: the old flow (manually edit config.yaml + runtime.setup_password)
-    # never created this marker, but hallptz-control.service now gates on it —
+    # never created this marker, but khptz-control.service now gates on it —
     # without this, a currently-working customer install would stop starting
     # the moment install.sh is re-run for an update. Only backfill when there
     # is real evidence of a working install (the entry password secret already
@@ -434,32 +434,32 @@ else
         PROVISIONED_MARKER="${CONFIG_DIR}/.provisioned"
         if [[ ! -f "${PROVISIONED_MARKER}" && -f "${ENTRY_SECRET}" ]]; then
             info "Existing install predates the setup wizard — marking as"
-            info "provisioned (${PROVISIONED_MARKER}) so hallptz-control.service can start."
+            info "provisioned (${PROVISIONED_MARKER}) so khptz-control.service can start."
             printf 'ok\n' > "${PROVISIONED_MARKER}"
             chmod 644 "${PROVISIONED_MARKER}"
         fi
     fi
 fi
 
-# ── hallptz CLI symlink ──────────────────────────────────────────────────────────
+# ── khptz CLI symlink ──────────────────────────────────────────────────────────
 
-info "Installing hallptz CLI..."
-HALLPTZ_LAUNCHER="/usr/local/bin/hallptz"
+info "Installing khptz CLI..."
+KHPTZ_LAUNCHER="/usr/local/bin/khptz"
 # Run from the install dir with -m so app_version / domain / runtime resolve on
 # sys.path no matter the caller's cwd. Invoking cli.py by path would only put
-# runtime/ on sys.path, so `hallptz setup` from the desktop session (autostart /
+# runtime/ on sys.path, so `khptz setup` from the desktop session (autostart /
 # menu) would fail with ModuleNotFoundError: app_version.
-cat > "${HALLPTZ_LAUNCHER}" <<LAUNCHER
+cat > "${KHPTZ_LAUNCHER}" <<LAUNCHER
 #!/usr/bin/env bash
 cd "${INSTALL_DIR}" && exec python3 -m runtime.cli "\$@"
 LAUNCHER
-chmod +x "${HALLPTZ_LAUNCHER}"
-info "hallptz CLI installed at ${HALLPTZ_LAUNCHER}"
+chmod +x "${KHPTZ_LAUNCHER}"
+info "khptz CLI installed at ${KHPTZ_LAUNCHER}"
 
 # ── systemd service ───────────────────────────────────────────────────────────
 
 info "Installing systemd service..."
-SERVICE_TEMPLATE="${REPO_ROOT}/runtime/systemd/hallptz-control.service"
+SERVICE_TEMPLATE="${REPO_ROOT}/runtime/systemd/khptz-control.service"
 [[ -f "${SERVICE_TEMPLATE}" ]] || error "Service template not found: ${SERVICE_TEMPLATE}"
 
 if [[ "${DEV_MODE}" == "false" ]]; then
@@ -472,13 +472,13 @@ else
     # above), so that marker is never created and the gate would otherwise
     # leave a dev install's service permanently unable to start.
     sed \
-        -e "s|User=hallptz|User=${APP_USER}|g" \
-        -e "s|Group=hallptz|Group=${APP_USER}|g" \
-        -e "s|WorkingDirectory=/opt/hallptz|WorkingDirectory=${INSTALL_DIR}|g" \
-        -e "s|ExecStart=/usr/bin/python3 /opt/hallptz/main.py|ExecStart=/usr/bin/python3 ${INSTALL_DIR}/main.py|g" \
+        -e "s|User=khptz|User=${APP_USER}|g" \
+        -e "s|Group=khptz|Group=${APP_USER}|g" \
+        -e "s|WorkingDirectory=/opt/khptz|WorkingDirectory=${INSTALL_DIR}|g" \
+        -e "s|ExecStart=/usr/bin/python3 /opt/khptz/main.py|ExecStart=/usr/bin/python3 ${INSTALL_DIR}/main.py|g" \
         -e "s|ReadWritePaths=.*|ReadWritePaths=${DATA_DIR} ${LOG_DIR} ${BACKUP_DIR}|g" \
-        -e "s|Environment=HALLPTZ_DATA_DIR=/var/lib/hallptz|Environment=HALLPTZ_DATA_DIR=${DATA_DIR}|g" \
-        -e "/^ConditionPathExists=\/etc\/hallptz\/\.provisioned$/d" \
+        -e "s|Environment=KHPTZ_DATA_DIR=/var/lib/khptz|Environment=KHPTZ_DATA_DIR=${DATA_DIR}|g" \
+        -e "/^ConditionPathExists=\/etc\/khptz\/\.provisioned$/d" \
         "${SERVICE_TEMPLATE}" > "${SERVICE_FILE}"
 fi
 
@@ -490,7 +490,7 @@ if [[ "${DEV_MODE}" == "false" && "${GUI_MODE}" == "user" ]]; then
     systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
     systemctl stop    "${SERVICE_NAME}" 2>/dev/null || true
     info "GUI mode 'user': ${SERVICE_NAME} disabled — the GUI runs in the desktop session."
-    info "Logs with:  journalctl --user -u hallptz-gui -f   (as the desktop user)"
+    info "Logs with:  journalctl --user -u khptz-gui -f   (as the desktop user)"
 else
     systemctl enable "${SERVICE_NAME}" 2>/dev/null || true
     info "Service ${SERVICE_NAME} enabled."
@@ -501,25 +501,25 @@ fi
 # ── Setup-wizard provisioning channel (product mode only) ─────────────────────
 #
 # The graphical setup wizard runs unprivileged in the desktop session. It cannot
-# write /etc/hallptz or call systemctl, so it drops a request at /run/hallptz/request.json
-# and the root hallptz-provision path-unit reacts. This is the password-free
+# write /etc/khptz or call systemctl, so it drops a request at /run/khptz/request.json
+# and the root khptz-provision path-unit reacts. This is the password-free
 # privilege channel: installing these units here is the single sudo step, after
 # which the wizard provisions without any further prompt.
 
 if [[ "${DEV_MODE}" == "false" ]]; then
     info "Installing setup-wizard provisioning channel..."
-    PROVISION_SERVICE_TEMPLATE="${REPO_ROOT}/runtime/systemd/hallptz-provision.service"
-    PROVISION_PATH_TEMPLATE="${REPO_ROOT}/runtime/systemd/hallptz-provision.path"
+    PROVISION_SERVICE_TEMPLATE="${REPO_ROOT}/runtime/systemd/khptz-provision.service"
+    PROVISION_PATH_TEMPLATE="${REPO_ROOT}/runtime/systemd/khptz-provision.path"
     [[ -f "${PROVISION_SERVICE_TEMPLATE}" ]] || error "Provision service template not found: ${PROVISION_SERVICE_TEMPLATE}"
     [[ -f "${PROVISION_PATH_TEMPLATE}" ]]    || error "Provision path template not found: ${PROVISION_PATH_TEMPLATE}"
 
-    cp "${PROVISION_SERVICE_TEMPLATE}" /etc/systemd/system/hallptz-provision.service
-    cp "${PROVISION_PATH_TEMPLATE}"    /etc/systemd/system/hallptz-provision.path
+    cp "${PROVISION_SERVICE_TEMPLATE}" /etc/systemd/system/khptz-provision.service
+    cp "${PROVISION_PATH_TEMPLATE}"    /etc/systemd/system/khptz-provision.path
 
     if [[ -n "${WIZARD_USER}" ]] && id "${WIZARD_USER}" &>/dev/null; then
         info "Provisioning channel owner (wizard user): ${WIZARD_USER}"
 
-        # /run/hallptz is tmpfs, recreated every boot by tmpfiles.d. Owned by the
+        # /run/khptz is tmpfs, recreated every boot by tmpfiles.d. Owned by the
         # wizard user (not root) so the desktop session can actually create
         # request.json — 0750 root:<user> would give the wizard only r-x via
         # its group, not write. Root reads/writes it anyway when the oneshot
@@ -527,13 +527,13 @@ if [[ "${DEV_MODE}" == "false" ]]; then
         # /etc/tmpfiles.d is absent on minimal systems (and in the Bullseye CI
         # container), so create it before writing rather than failing the install.
         mkdir -p /etc/tmpfiles.d
-        printf 'd /run/hallptz 0750 %s root -\n' "${WIZARD_USER}" > /etc/tmpfiles.d/hallptz.conf
-        systemd-tmpfiles --create /etc/tmpfiles.d/hallptz.conf \
-            || warn "systemd-tmpfiles --create failed; /run/hallptz will be created on next boot"
+        printf 'd /run/khptz 0750 %s root -\n' "${WIZARD_USER}" > /etc/tmpfiles.d/khptz.conf
+        systemd-tmpfiles --create /etc/tmpfiles.d/khptz.conf \
+            || warn "systemd-tmpfiles --create failed; /run/khptz will be created on next boot"
 
         systemctl daemon-reload
-        systemctl enable hallptz-provision.path 2>/dev/null || true
-        systemctl start  hallptz-provision.path 2>/dev/null || true
+        systemctl enable khptz-provision.path 2>/dev/null || true
+        systemctl start  khptz-provision.path 2>/dev/null || true
         info "Provisioning channel enabled — the setup wizard can install without a password prompt."
     else
         warn "Could not determine the desktop (wizard) user — provisioning channel not enabled."
@@ -543,7 +543,7 @@ fi
 
 # ── Setup-wizard launcher + first-boot autostart (product mode only) ──────────
 #
-# `hallptz setup` opens the graphical wizard. It self-suppresses once the install is
+# `khptz setup` opens the graphical wizard. It self-suppresses once the install is
 # provisioned (.provisioned marker), so the autostart entry (no --force) can fire
 # on every desktop login and quietly do nothing after first-run setup completes.
 # The applications menu entry passes --force so it can still reopen Repair.
@@ -551,9 +551,9 @@ fi
 # ── Desktop user group membership (product mode only) ────────────────────────
 #
 # This is a precondition of the install, not a detail of the wizard launcher.
-# App code is root:hallptz 0750, so without membership the desktop user cannot
-# traverse /opt/hallptz at all: `hallptz setup` cannot run, and under --gui-mode user
-# hallptz-gui.service cannot even start (its WorkingDirectory and ExecStart both
+# App code is root:khptz 0750, so without membership the desktop user cannot
+# traverse /opt/khptz at all: `khptz setup` cannot run, and under --gui-mode user
+# khptz-gui.service cannot even start (its WorkingDirectory and ExecStart both
 # live there) — an appliance with no GUI. It used to be nested inside the
 # launcher's "both .desktop templates exist" branch, so a partially deployed
 # tree silently skipped it.
@@ -578,11 +578,11 @@ fi
 
 if [[ "${DEV_MODE}" == "false" ]]; then
     info "Installing setup-wizard launcher..."
-    DESKTOP_TEMPLATE="${REPO_ROOT}/runtime/hallptz-setup.desktop"
-    MENU_DESKTOP_TEMPLATE="${REPO_ROOT}/runtime/hallptz-setup-menu.desktop"
+    DESKTOP_TEMPLATE="${REPO_ROOT}/runtime/khptz-setup.desktop"
+    MENU_DESKTOP_TEMPLATE="${REPO_ROOT}/runtime/khptz-setup-menu.desktop"
     if [[ -f "${DESKTOP_TEMPLATE}" && -f "${MENU_DESKTOP_TEMPLATE}" ]]; then
         install -d -m 755 /usr/share/applications
-        install -m 644 "${MENU_DESKTOP_TEMPLATE}" /usr/share/applications/hallptz-setup.desktop
+        install -m 644 "${MENU_DESKTOP_TEMPLATE}" /usr/share/applications/khptz-setup.desktop
         info "Setup launcher available in the applications menu (Repair mode)."
 
         # First-boot autostart for the desktop (wizard) user.
@@ -592,7 +592,7 @@ if [[ "${DEV_MODE}" == "false" ]]; then
                 AUTOSTART_DIR="${WIZARD_HOME}/.config/autostart"
                 install -d -m 755 -o "${WIZARD_USER}" "${AUTOSTART_DIR}"
                 install -m 644 -o "${WIZARD_USER}" "${DESKTOP_TEMPLATE}" \
-                    "${AUTOSTART_DIR}/hallptz-setup.desktop"
+                    "${AUTOSTART_DIR}/khptz-setup.desktop"
                 info "First-boot setup wizard autostart enabled for ${WIZARD_USER}."
             else
                 warn "Could not resolve home for ${WIZARD_USER} — autostart not installed."
@@ -612,17 +612,17 @@ fi
 # different --gui-mode is a clean, reversible switch rather than an addition.
 
 if [[ "${DEV_MODE}" == "false" ]]; then
-    GUI_UNIT_TEMPLATE="${REPO_ROOT}/runtime/systemd/user/hallptz-gui.service"
-    GUI_HELPER_TEMPLATE="${REPO_ROOT}/runtime/hallptz-gui-session.sh"
-    GUI_DESKTOP_TEMPLATE="${REPO_ROOT}/runtime/hallptz-gui.desktop"
-    GUI_UNIT_TARGET="/etc/systemd/user/hallptz-gui.service"
-    GUI_HELPER_TARGET="/usr/local/libexec/hallptz-gui-session"
+    GUI_UNIT_TEMPLATE="${REPO_ROOT}/runtime/systemd/user/khptz-gui.service"
+    GUI_HELPER_TEMPLATE="${REPO_ROOT}/runtime/khptz-gui-session.sh"
+    GUI_DESKTOP_TEMPLATE="${REPO_ROOT}/runtime/khptz-gui.desktop"
+    GUI_UNIT_TARGET="/etc/systemd/user/khptz-gui.service"
+    GUI_HELPER_TARGET="/usr/local/libexec/khptz-gui-session"
 
     GUI_AUTOSTART=""
     if [[ -n "${WIZARD_USER}" ]] && id "${WIZARD_USER}" &>/dev/null; then
         GUI_WIZARD_HOME="$(getent passwd "${WIZARD_USER}" | cut -d: -f6)"
         [[ -n "${GUI_WIZARD_HOME}" ]] \
-            && GUI_AUTOSTART="${GUI_WIZARD_HOME}/.config/autostart/hallptz-gui.desktop"
+            && GUI_AUTOSTART="${GUI_WIZARD_HOME}/.config/autostart/khptz-gui.desktop"
     fi
 
     if [[ "${GUI_MODE}" == "user" ]]; then
@@ -645,7 +645,7 @@ if [[ "${DEV_MODE}" == "false" ]]; then
 
         # Directory permissions alone are not enough. Data files are written
         # atomically via mkstemp, which creates 0600, so everything already in
-        # /var/lib/hallptz from a system-mode install is unreadable to the desktop
+        # /var/lib/khptz from a system-mode install is unreadable to the desktop
         # user even though it is in the right group — the GUI would start with
         # no presets, seats or layout. Grant the group the same access the
         # directories now advertise. Ownership is left alone.
@@ -676,7 +676,7 @@ if [[ "${DEV_MODE}" == "false" ]]; then
         info "The GUI starts at the next desktop login (no xhost, no root)."
     else
         # System mode: strip any session-owned launcher left by a previous
-        # --gui-mode user install, so only hallptz-control.service remains.
+        # --gui-mode user install, so only khptz-control.service remains.
         for _stale in "${GUI_UNIT_TARGET}" "${GUI_HELPER_TARGET}" "${GUI_AUTOSTART}"; do
             if [[ -n "${_stale}" && -e "${_stale}" ]]; then
                 rm -f -- "${_stale}"
@@ -704,8 +704,8 @@ fi
 
 # ── Install state (what rollback.sh needs to redeploy) ────────────────────────
 #
-# /opt/hallptz is a deployed artifact, not a checkout: the rsync above excludes
-# .git, and the tree is root:hallptz 0750 so the service user cannot write it. A
+# /opt/khptz is a deployed artifact, not a checkout: the rsync above excludes
+# .git, and the tree is root:khptz 0750 so the service user cannot write it. A
 # rollback therefore cannot be `git checkout` inside the install dir — it has to
 # re-deploy an older ref from the source checkout this install came from. That
 # is only possible if we record where that checkout is and which ref is live.
@@ -722,8 +722,8 @@ state_value() {
     sed -n "s/^$1=//p" "${STATE_FILE}" 2>/dev/null | tr -d '"' | tail -n1 || true
 }
 
-PREV_INSTALLED_REF="$(state_value HALLPTZ_INSTALLED_REF)"
-PREV_ROLLBACK_REF="$(state_value HALLPTZ_PREVIOUS_REF)"
+PREV_INSTALLED_REF="$(state_value KHPTZ_INSTALLED_REF)"
+PREV_ROLLBACK_REF="$(state_value KHPTZ_PREVIOUS_REF)"
 
 # `safe.directory` because git refuses to read a repo owned by another user
 # when invoked under sudo ("dubious ownership").
@@ -754,16 +754,16 @@ INSTALL_MODE="$([[ ${DEV_MODE} == true ]] && echo dev || echo product)"
 
 info "Recording install state to ${STATE_FILE}"
 cat > "${STATE_FILE}" <<STATE
-# HALLPTZ install state — written by install.sh. Read by rollback.sh.
+# KHPTZ install state — written by install.sh. Read by rollback.sh.
 # Do not edit by hand unless recovering a broken install.
-HALLPTZ_INSTALL_MODE="${INSTALL_MODE}"
-HALLPTZ_INSTALLED_VERSION="${INSTALLED_VERSION}"
-HALLPTZ_INSTALLED_REF="${SOURCE_REF}"
-HALLPTZ_PREVIOUS_REF="${PREVIOUS_REF}"
-HALLPTZ_SOURCE_DIR="${REPO_ROOT}"
-HALLPTZ_WIZARD_USER="${WIZARD_USER}"
-HALLPTZ_GUI_MODE="${GUI_MODE}"
-HALLPTZ_INSTALLED_AT="${INSTALLED_AT}"
+KHPTZ_INSTALL_MODE="${INSTALL_MODE}"
+KHPTZ_INSTALLED_VERSION="${INSTALLED_VERSION}"
+KHPTZ_INSTALLED_REF="${SOURCE_REF}"
+KHPTZ_PREVIOUS_REF="${PREVIOUS_REF}"
+KHPTZ_SOURCE_DIR="${REPO_ROOT}"
+KHPTZ_WIZARD_USER="${WIZARD_USER}"
+KHPTZ_GUI_MODE="${GUI_MODE}"
+KHPTZ_INSTALLED_AT="${INSTALLED_AT}"
 STATE
 
 if [[ "${DEV_MODE}" == "false" ]]; then
@@ -789,20 +789,20 @@ info "Next steps:"
 if [[ "${DEV_MODE}" == "false" ]]; then
     # Product mode: config/passwords come from the on-device wizard, not a
     # manual edit (there is no standalone CLI command for it), and
-    # hallptz-control.service gates on ConditionPathExists=.../.provisioned so it
+    # khptz-control.service gates on ConditionPathExists=.../.provisioned so it
     # will not start until the wizard provisions the install (it self-restarts
     # once that happens).
     info "  1. Log in to (or restart) the desktop session to run the on-device"
     info "     setup wizard automatically, or launch it from the applications"
-    info "     menu (HALLPTZ Setup). It configures cameras and both passwords."
-    info "  2. Once setup completes, run: hallptz doctor"
+    info "     menu (KHPTZ Setup). It configures cameras and both passwords."
+    info "  2. Once setup completes, run: khptz doctor"
 else
     # Dev mode: no wizard/provisioning channel is installed (gated to product
     # mode above), so config and the entry password are still set by hand.
     info "  1. Edit ${CONFIG_TARGET} with your camera IPs"
     info "  2. Run: python3 -m runtime.setup_password"
     info "  3. Run: systemctl start ${SERVICE_NAME}"
-    info "  4. Run: hallptz doctor"
+    info "  4. Run: khptz doctor"
 fi
 info ""
 warn "VALIDATION REQUIRED: test this installation on a real Raspberry Pi."

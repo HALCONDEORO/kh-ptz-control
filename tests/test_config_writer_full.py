@@ -33,7 +33,7 @@ def _sample_settings() -> AppSettings:
             name="Test Hall",
             contact="IT Support",
             installation_profile="starter_1_camera",
-            installation_id="HALLPTZ-2026-7F3A",
+            installation_id="KHPTZ-2026-7F3A",
         ),
         cameras=[
             CameraSettings(
@@ -46,7 +46,7 @@ def _sample_settings() -> AppSettings:
             ),
         ],
         atem=ATEMSettings(ip="172.16.1.50"),
-        runtime=RuntimeSettings(data_dir="/var/lib/hallptz"),
+        runtime=RuntimeSettings(data_dir="/var/lib/khptz"),
         features=FeaturesSettings(),
         network=NetworkSettings(profile="flat_lan"),
     )
@@ -88,7 +88,7 @@ class TestSafety:
     def test_header_present(self, tmp_path):
         path = tmp_path / "config.yaml"
         write_full_config(_sample_settings(), path)
-        assert path.read_text(encoding="utf-8").startswith("# Hall PTZ Control")
+        assert path.read_text(encoding="utf-8").startswith("# KH PTZ Control")
 
     @pytest.mark.skipif(os.name != "posix", reason="POSIX permission bits")
     def test_mode_applied(self, tmp_path):

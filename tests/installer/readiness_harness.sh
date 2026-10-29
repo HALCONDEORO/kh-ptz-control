@@ -76,7 +76,7 @@ if [[ "${MODE}" == "stripped" ]]; then
     trap 'rm -rf "${STUB_DIR}" "${STRIP_ROOT}"' EXIT
     mkdir -p "${STRIP_ROOT}/runtime/installer"
     cp "${INSTALLER}" "${STRIP_ROOT}/runtime/installer/install.sh"
-    # Deliberately do NOT copy runtime/systemd/hallptz-control.service, so the
+    # Deliberately do NOT copy runtime/systemd/khptz-control.service, so the
     # service-template check must report FAIL.
     RUN_INSTALLER="${STRIP_ROOT}/runtime/installer/install.sh"
 fi

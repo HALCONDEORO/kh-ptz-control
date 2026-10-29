@@ -8,7 +8,7 @@
 
 ## Purpose
 
-The Hall PTZ Control flight recorder writes structured local events so that support
+The KH PTZ Control flight recorder writes structured local events so that support
 can reconstruct what happened before a failure without requiring remote access or
 live reproduction.
 
@@ -35,7 +35,7 @@ Each event is one JSON object per line (JSONL), UTF-8, append-only.
   "event_type": "SeatPresetRecallRequested",
   "app_version": "3.22.0",
   "git_commit": null,
-  "installation_id": "hallptz-2026-0007",
+  "installation_id": "khptz-2026-0007",
   "installation_profile": "starter_1_camera",
   "runtime_mode": "production",
   "session_id": "session-20260508-1",
@@ -187,16 +187,16 @@ The support bundle (`SupportBundleExported` event) includes:
 Black box files live under the log directory:
 
 ```text
-/var/log/hallptz/blackbox/events.jsonl
-/var/log/hallptz/blackbox/events.1.jsonl
+/var/log/khptz/blackbox/events.jsonl
+/var/log/khptz/blackbox/events.1.jsonl
 ...
-/var/log/hallptz/blackbox/events.5.jsonl
+/var/log/khptz/blackbox/events.5.jsonl
 ```
 
 Rationale: `/var/log/` is conventional for operational logs on Linux.
-`/var/lib/hallptz/` is reserved for persistent customer data (config, known-good
+`/var/lib/khptz/` is reserved for persistent customer data (config, known-good
 state, room layout).  The black box is operational telemetry, not customer data,
-so `/var/log/hallptz/blackbox/` is the correct owner.
+so `/var/log/khptz/blackbox/` is the correct owner.
 
 This aligns with `runtime/path_resolver.py` (`blackbox_dir`, `blackbox_events_file`).
 

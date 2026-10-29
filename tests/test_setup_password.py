@@ -28,7 +28,7 @@ def _run_main(**patches):
 # The migration path reads old_file = Path(__file__).parent / "password.txt"
 # relative to the installed module, making it hard to redirect cleanly with
 # monkeypatching.  Coverage of the happy-path migration is provided by the
-# integration test in test_hallptz_cli.py (secret_manager).  Here we only test
+# integration test in test_khptz_cli.py (secret_manager).  Here we only test
 # the exit-on-failure branch via full Path mocking.
 
 class TestMigrationFromLegacyFile:

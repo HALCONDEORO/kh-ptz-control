@@ -53,22 +53,22 @@ class TestGenerateInstallationId:
 class TestIsValidInstallationId:
 
     @pytest.mark.parametrize("value", [
-        "hallptz-2026-0001",
-        "hallptz-2026-9999",
-        "hallptz-2030-0042",
+        "khptz-2026-0001",
+        "khptz-2026-9999",
+        "khptz-2030-0042",
     ])
     def test_valid(self, value):
         assert is_valid_installation_id(value)
 
     @pytest.mark.parametrize("value", [
         "",
-        "HALLPTZ-2026-0001",   # uppercase not accepted
-        "hallptz-26-0001",     # year too short
-        "hallptz-2026-001",    # suffix too short
-        "hallptz-2026-00001",  # suffix too long
-        "hallptz_2026_0001",   # underscores not accepted
+        "KHPTZ-2026-0001",   # uppercase not accepted
+        "khptz-26-0001",     # year too short
+        "khptz-2026-001",    # suffix too short
+        "khptz-2026-00001",  # suffix too long
+        "khptz_2026_0001",   # underscores not accepted
         "abc-2026-0001",
-        "hallptz-2026",
+        "khptz-2026",
     ])
     def test_invalid(self, value):
         assert not is_valid_installation_id(value)
@@ -90,9 +90,9 @@ class TestConfigInstallationId:
         return p
 
     def test_installation_id_loaded(self, tmp_path):
-        p = self._write_config(tmp_path, {"installation_id": "hallptz-2026-0007"})
+        p = self._write_config(tmp_path, {"installation_id": "khptz-2026-0007"})
         settings = load_config(p)
-        assert settings.site.installation_id == "hallptz-2026-0007"
+        assert settings.site.installation_id == "khptz-2026-0007"
 
     def test_installation_id_defaults_to_empty(self, tmp_path):
         p = self._write_config(tmp_path, {})
@@ -103,8 +103,8 @@ class TestConfigInstallationId:
         p = self._write_config(tmp_path, {
             "name": "Dail Eireann",
             "contact": "ops@example.com",
-            "installation_id": "hallptz-2026-0099",
+            "installation_id": "khptz-2026-0099",
         })
         settings = load_config(p)
         assert settings.site.name == "Dail Eireann"
-        assert settings.site.installation_id == "hallptz-2026-0099"
+        assert settings.site.installation_id == "khptz-2026-0099"

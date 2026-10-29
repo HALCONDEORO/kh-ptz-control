@@ -5,7 +5,7 @@
 # regenerated anyway.
 #
 # .git is deliberately NOT excluded. install.sh's rsync excludes it when copying
-# to /opt/hallptz, and container_install_test.sh asserts /opt/hallptz/.git is absent —
+# to /opt/khptz, and container_install_test.sh asserts /opt/khptz/.git is absent —
 # shipping repository history to a customer appliance would leak it. That
 # assertion is only meaningful if .git actually exists in the build context.
 # CI checks out shallow, so it stays small there.

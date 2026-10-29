@@ -58,7 +58,7 @@ customer/operator sign-off and legal consultation before it can be considered.
 - [ ] `AutoPreviewPolicy` with session guard, cooldown and role check implemented.
 - [ ] Full regression test suite for auto-preview path.
 - [ ] Customer/operator sign-off on auto-preview risks.
-- [ ] `hallptz doctor` check explicitly reports automation state.
+- [ ] `khptz doctor` check explicitly reports automation state.
 - [ ] Support bundle captures automation enabled/disabled state.
 - [ ] Rollback path documented in case of unintended on-air events.
 

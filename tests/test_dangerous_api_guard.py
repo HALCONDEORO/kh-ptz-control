@@ -26,7 +26,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-#: Directories rsynced to /opt/hallptz and executed on the appliance.
+#: Directories rsynced to /opt/khptz and executed on the appliance.
 SHIPPED_DIRS = (
     "adapters", "application", "config", "core", "domain",
     "ports", "ptz", "runtime", "simulation", "ui",

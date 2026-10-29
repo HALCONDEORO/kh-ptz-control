@@ -1,6 +1,6 @@
 # Implementation Plan
 
-This document defines the practical execution order for turning Hall PTZ Control into an installable, supportable Raspberry Pi product.
+This document defines the practical execution order for turning KH PTZ Control into an installable, supportable Raspberry Pi product.
 
 The current release target is:
 
@@ -85,11 +85,11 @@ The MVP foundation now includes:
 - Starter/Standard/Demo config templates;
 - camera registry foundation;
 - pytest CI, lint and support workflows (2 500+ tests);
-- `hallptz` CLI;
+- `khptz` CLI;
 - systemd service template;
 - installer script;
 - rollback script;
-- `hallptz doctor` diagnostics;
+- `khptz doctor` diagnostics;
 - offline/demo/profile foundations;
 - installation profile and installation ID foundations;
 - local network/IP diagnostics;
@@ -117,7 +117,7 @@ Do next before selling/installing as customer-ready:
 3. Run release-check workflow/manual checklist.
 4. Test fresh Raspberry Pi install.
 5. Test systemd service start/restart/reboot.
-6. Test hallptz version/status/doctor.
+6. Test khptz version/status/doctor.
 7. Test Starter one-camera profile.
 8. Test Standard two-camera profile.
 9. Test ATEM disabled and ATEM enabled cases.
@@ -167,8 +167,8 @@ Exit criteria:
 - audit root config/customer files
 - harden path handling from non-repo CWD
 - review Linux permissions for service user/data/logs/backups
-- align production direction around `/opt/hallptz`, `/etc/hallptz`, `/var/lib/hallptz` and `/var/log/hallptz`
-- use a dedicated `hallptz` user for production Raspberry Pi installs
+- align production direction around `/opt/khptz`, `/etc/khptz`, `/var/lib/khptz` and `/var/log/khptz`
+- use a dedicated `khptz` user for production Raspberry Pi installs
 ```
 
 Exit criteria:
@@ -252,7 +252,7 @@ Exit criteria:
 ```text
 - offline signed license model
 - LicensingService
-- hallptz license status
+- khptz license status
 - plan name, expiry, max cameras and feature flags
 - tests for valid/expired/tampered licenses
 ```

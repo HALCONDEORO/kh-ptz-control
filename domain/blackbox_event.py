@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# domain/blackbox_event.py — Black box event schema for Hall PTZ Control flight recorder (#487)
+# domain/blackbox_event.py — Black box event schema for KH PTZ Control flight recorder (#487)
 #
 # Pure domain module: no I/O, no config loading, no external dependencies.
 # See docs/BLACK_BOX_SCHEMA.md for the full specification and retention policy.

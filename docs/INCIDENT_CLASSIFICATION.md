@@ -1,6 +1,6 @@
 # Incident Classification
 
-This document defines the first Hall PTZ Control incident taxonomy for support and product feedback.
+This document defines the first KH PTZ Control incident taxonomy for support and product feedback.
 
 Issue: #547.
 
@@ -14,7 +14,7 @@ Use a small taxonomy first:
 
 | Category | Use when evidence suggests |
 |---|---|
-| `software_bug` | HALLPTZ code or packaged behaviour is defective. |
+| `software_bug` | KHPTZ code or packaged behaviour is defective. |
 | `hardware_failure` | Camera, Raspberry Pi, ATEM, switch, touchscreen or other hardware failed. |
 | `network_change` | IP, VLAN, DHCP, routing, cabling or network policy changed. |
 | `customer_change` | Customer changed layout, preset, config, hardware placement or operation outside handover guidance. |
@@ -62,7 +62,7 @@ Suggested record shape:
 ```json
 {
   "incident_id": "inc_2026_0001",
-  "installation_id": "HALLPTZ-2026-0004",
+  "installation_id": "KHPTZ-2026-0004",
   "reported_at": "2026-05-11T16:30:00Z",
   "category": "network_change",
   "severity": "high",
@@ -70,7 +70,7 @@ Suggested record shape:
   "source": "customer_call",
   "detected_by": "human",
   "summary": "Camera 2 unreachable after network change",
-  "evidence": ["support_bundle", "hallptz_doctor", "handover_report"],
+  "evidence": ["support_bundle", "khptz_doctor", "handover_report"],
   "billable": true,
   "follow_up": "revalidation_required"
 }
@@ -132,7 +132,7 @@ Future integration points:
 - Maintenance plan.
 - Installation report.
 - Handover acceptance.
-- `hallptz doctor`.
+- `khptz doctor`.
 - Reseller/installer partner mode.
 
 ---

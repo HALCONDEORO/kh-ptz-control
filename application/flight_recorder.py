@@ -45,7 +45,7 @@ class FlightRecorder:
     Parameters
     ----------
     events_file:
-        Path to the active event log file (e.g. /var/log/hallptz/blackbox/events.jsonl).
+        Path to the active event log file (e.g. /var/log/khptz/blackbox/events.jsonl).
         The parent directory is created on first write if it does not exist.
     max_file_bytes:
         Rotate when the file exceeds this size. Default: 10 MB.

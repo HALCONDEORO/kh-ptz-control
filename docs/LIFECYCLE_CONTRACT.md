@@ -1,6 +1,6 @@
 # Application Lifecycle Contract
 
-This document is the authoritative contract for Hall PTZ Control startup and
+This document is the authoritative contract for KH PTZ Control startup and
 shutdown ordering.  It describes what happens, who owns each step, and what the
 expected behaviour is when things go wrong.
 
@@ -123,17 +123,17 @@ started, or calling it twice, must not raise an exception (see
 ## GUI process ownership (#885)
 
 Which process owns the Qt GUI is chosen at install time with
-`install.sh --gui-mode` (also accepted by `install_hallptz_rpi.sh`).
+`install.sh --gui-mode` (also accepted by `install_khptz_rpi.sh`).
 **Exactly one launcher is ever active** — installing either mode removes the
 other's launcher, so switching is reversible and cannot produce two GUIs.
 
 | | `system` (default) | `user` |
 |---|---|---|
-| Unit | `hallptz-control.service` (system) | `hallptz-gui.service` (`systemd --user`) |
-| Runs as | `hallptz` service user | the logged-in desktop user |
-| Display access | scoped `xhost +SI:localuser:hallptz` helper per login | inherited from the session — nothing to grant |
-| Started by | `graphical.target` | XDG autostart → `/usr/local/libexec/hallptz-gui-session` |
-| Runtime dirs | `0750 hallptz:hallptz` | `2770 hallptz:hallptz` (group-writable) |
+| Unit | `khptz-control.service` (system) | `khptz-gui.service` (`systemd --user`) |
+| Runs as | `khptz` service user | the logged-in desktop user |
+| Display access | scoped `xhost +SI:localuser:khptz` helper per login | inherited from the session — nothing to grant |
+| Started by | `graphical.target` | XDG autostart → `/usr/local/libexec/khptz-gui-session` |
+| Runtime dirs | `0750 khptz:khptz` | `2770 khptz:khptz` (group-writable) |
 
 **Why autostart rather than an enabled user unit.** Raspberry Pi OS Bullseye
 runs LXDE, which does not reliably activate `graphical-session.target`, so an
@@ -145,33 +145,33 @@ the user manager before starting the unit. Starting an already-running unit is
 a no-op, which is what guarantees one instance per graphical login.
 
 **Data boundary in `user` mode.** The GUI reaches its own runtime data through
-membership of the `hallptz` group (the installer already adds the desktop user to
-it so the wizard can read `/opt/hallptz`), with the runtime directories setgid so
+membership of the `khptz` group (the installer already adds the desktop user to
+it so the wizard can read `/opt/khptz`), with the runtime directories setgid so
 new files stay in that group.
 
 Directory permissions alone are not sufficient. JSON data is written atomically
 via `tempfile.mkstemp`, which always creates `0600`, and `os.replace` preserves
 that — so a file is readable only by whoever wrote it. With two identities
-sharing `/var/lib/hallptz` that breaks in both directions: the GUI cannot read what
-the service wrote, and `hallptz doctor` / `hallptz backup` cannot read what the GUI
+sharing `/var/lib/khptz` that breaks in both directions: the GUI cannot read what
+the service wrote, and `khptz doctor` / `khptz backup` cannot read what the GUI
 wrote. `core/json_io.py` therefore mirrors the directory's intent onto the file
 — `0660` when the directory is group-writable, untouched (`0600`) otherwise, so
 system mode is not widened — and `install.sh --gui-mode user` relaxes the files
 already on disk, which would otherwise leave the GUI starting with no presets,
-seats or layout. Application code stays `0750 root:hallptz` — readable,
+seats or layout. Application code stays `0750 root:khptz` — readable,
 never writable — and config writes still go through the provisioning channel.
 The boundary is group membership, not root.
 
 `system` remains the default until the merged fixes are accepted on the physical
 appliance (#890); `user` is the durable architecture #885 asks for.
-`rollback.sh` re-deploys in the recorded mode (`HALLPTZ_GUI_MODE` in
-`/etc/hallptz/install-state.env`), so reverting never silently changes ownership.
+`rollback.sh` re-deploys in the recorded mode (`KHPTZ_GUI_MODE` in
+`/etc/khptz/install-state.env`), so reverting never silently changes ownership.
 
 **Every component reads the mode through `scripts/lib/install_state.sh`.**
 This is not stylistic. The wizard's provisioning chain
-(`hallptz-provision.service` → `provision_with_rpi_integration.sh` →
+(`khptz-provision.service` → `provision_with_rpi_integration.sh` →
 `repair_rpi_runtime.sh`) runs on *every* install, and it used to
-`systemctl enable hallptz-control` unconditionally — so completing the wizard on a
+`systemctl enable khptz-control` unconditionally — so completing the wizard on a
 session-owned install silently re-armed a second launcher and the next boot
 opened two GUIs on the same cameras. A component that activates a launcher
 without consulting the mode is a bug, and `tests/test_gui_mode_consistency.py`

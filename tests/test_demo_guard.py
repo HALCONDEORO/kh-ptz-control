@@ -70,15 +70,15 @@ class TestDemoGuardApply:
         guard = DemoGuard(mode=RuntimeMode.DEMO, demo_data_dir=demo_dir,
                           production_data_dir=tmp_path / "prod")
         guard.apply()
-        assert os.environ.get("HALLPTZ_DATA_DIR") == str(demo_dir)
+        assert os.environ.get("KHPTZ_DATA_DIR") == str(demo_dir)
 
-    def test_apply_overrides_hallptz_data_dir_when_present(self, tmp_path, monkeypatch):
+    def test_apply_overrides_khptz_data_dir_when_present(self, tmp_path, monkeypatch):
         demo_dir = tmp_path / "demo"
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "prod"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "prod"))
         guard = DemoGuard(mode=RuntimeMode.DEMO, demo_data_dir=demo_dir,
                           production_data_dir=tmp_path / "prod")
         guard.apply()
-        assert os.environ.get("HALLPTZ_DATA_DIR") == str(demo_dir)
+        assert os.environ.get("KHPTZ_DATA_DIR") == str(demo_dir)
 
     def test_apply_production_mode_does_nothing(self, tmp_path):
         demo_dir = tmp_path / "demo"

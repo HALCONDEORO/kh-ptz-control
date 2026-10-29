@@ -8,7 +8,7 @@
 
 ## Overview
 
-Hall PTZ Control is a Qt application with several concurrent execution contexts:
+KH PTZ Control is a Qt application with several concurrent execution contexts:
 
 | Context | What runs there |
 |---|---|

@@ -58,8 +58,8 @@ def test_customer_safe_error_keeps_public_and_support_text_separate():
         code="config_invalid",
         public_message="Configuration needs support review.",
         technical_message="Missing atem.inputs.cam1.input_id.",
-        suggested_action="Run hallptz doctor and contact support.",
-        support_context={"config_path": "/etc/hallptz/config.yaml"},
+        suggested_action="Run khptz doctor and contact support.",
+        support_context={"config_path": "/etc/khptz/config.yaml"},
     )
 
     payload = error.to_dict()
@@ -91,7 +91,7 @@ def test_incident_classification_can_represent_suspected_network_change():
         category=IncidentCategory.NETWORK_CHANGE,
         severity=IncidentSeverity.HIGH,
         impact=IncidentImpact.SYSTEM_UNUSABLE,
-        evidence=("hallptz_doctor", "known_good_diff"),
+        evidence=("khptz_doctor", "known_good_diff"),
         billable_hint=BillableHint.UNKNOWN,
         follow_up="revalidation_required",
     )
@@ -99,7 +99,7 @@ def test_incident_classification_can_represent_suspected_network_change():
     payload = classification.to_dict()
 
     assert payload["category"] == "network_change"
-    assert payload["evidence"] == ["hallptz_doctor", "known_good_diff"]
+    assert payload["evidence"] == ["khptz_doctor", "known_good_diff"]
     assert payload["billable_hint"] == "unknown"
 
 

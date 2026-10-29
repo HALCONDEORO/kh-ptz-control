@@ -9,8 +9,8 @@ from pathlib import Path
 def default_state_dir() -> Path:
     local_app_data = os.environ.get("LOCALAPPDATA")
     if local_app_data:
-        return Path(local_app_data) / "Hall PTZ Control" / "Windows Wizard"
-    return Path.home() / ".hallptz" / "windows_wizard"
+        return Path(local_app_data) / "KH PTZ Control" / "Windows Wizard"
+    return Path.home() / ".khptz" / "windows_wizard"
 
 
 def ensure_state_dirs(base_dir: Path | None = None) -> Path:

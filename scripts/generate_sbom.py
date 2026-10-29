@@ -75,9 +75,9 @@ def _build_cyclonedx(app_version: str, git_commit: str, components: list[dict]) 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "component": {
                 "type": "application",
-                "name": "hallptz-adaptive-control",
+                "name": "khptz-adaptive-control",
                 "version": app_version,
-                "description": "Hall PTZ Control — VISCA-over-IP PTZ camera control for Raspberry Pi",
+                "description": "KH PTZ Control — VISCA-over-IP PTZ camera control for Raspberry Pi",
                 "properties": [
                     {"name": "git:commit", "value": git_commit},
                 ],
@@ -88,7 +88,7 @@ def _build_cyclonedx(app_version: str, git_commit: str, components: list[dict]) 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate SBOM for Hall PTZ Control")
+    parser = argparse.ArgumentParser(description="Generate SBOM for KH PTZ Control")
     parser.add_argument("--out", default="release/sbom.json", help="Output path")
     args = parser.parse_args()
 

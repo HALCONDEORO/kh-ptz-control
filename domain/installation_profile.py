@@ -75,7 +75,7 @@ def derive_installation_profile(
 
     El instalador siembra config.yaml con `starter_1_camera` antes de que el
     asistente se ejecute. Si el operador configura dos cámaras y el perfil
-    sembrado se conserva, `hallptz doctor` avisa de una contradicción que el
+    sembrado se conserva, `khptz doctor` avisa de una contradicción que el
     usuario no puede resolver desde el asistente (#886). Derivar el perfil del
     número real de cámaras elimina ese estado inconsistente.
 

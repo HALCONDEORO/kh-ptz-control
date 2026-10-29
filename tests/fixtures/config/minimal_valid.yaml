@@ -1,4 +1,4 @@
-# Hall PTZ Control — Minimal valid test fixture
+# KH PTZ Control — Minimal valid test fixture
 # SAFE TEST DATA — fake site, RFC1918 example IP, fake ID.
 # Used by test helpers. Do not use as a real customer config.
 
@@ -6,7 +6,7 @@ site:
   name: "Test Venue"
   contact: "Test Contact"
   installation_profile: "starter_1_camera"
-  installation_id: "hallptz-2026-TEST"
+  installation_id: "khptz-2026-TEST"
 
 cameras:
   - id: platform

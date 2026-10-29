@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# domain/doctor_outcome.py — Deployment-facing outcome model for `hallptz doctor` (#887)
+# domain/doctor_outcome.py — Deployment-facing outcome model for `khptz doctor` (#887)
 #
 # Pure domain module — no I/O, no Qt.
 #
-# During the first physical Raspberry Pi installation, `hallptz doctor` collapsed
+# During the first physical Raspberry Pi installation, `khptz doctor` collapsed
 # five different classes of result into "Overall: WARN":
 #
 #   - fatal runtime/permission failures

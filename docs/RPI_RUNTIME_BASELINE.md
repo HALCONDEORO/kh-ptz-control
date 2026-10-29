@@ -1,4 +1,4 @@
-# Hall PTZ Control — Raspberry Pi Runtime Baseline
+# KH PTZ Control — Raspberry Pi Runtime Baseline
 
 This document is the compatibility matrix for Raspberry Pi installations.
 It defines the supported hardware, OS, Python version and dependency policy
@@ -115,7 +115,7 @@ ATEM monitoring is disabled and the application continues to run.
 |---|---|
 | `PyATEMMax` installed and `features.atem_enabled: true` | ATEM connection active |
 | `PyATEMMax` installed and `features.atem_enabled: false` | ATEM connection disabled (feature flag wins) |
-| `PyATEMMax` not installed | ATEM monitoring disabled; application starts normally; `hallptz doctor` reports `ATEM library not available` |
+| `PyATEMMax` not installed | ATEM monitoring disabled; application starts normally; `khptz doctor` reports `ATEM library not available` |
 
 **Rule**: missing `PyATEMMax` must never prevent the application from starting.
 The ATEM import is guarded at runtime.
@@ -139,9 +139,9 @@ CI passing does **not** imply pilot readiness. Real Raspberry Pi validation thro
 
 ---
 
-## Runtime version checks (`hallptz doctor`)
+## Runtime version checks (`khptz doctor`)
 
-`hallptz doctor` should report incompatible runtime versions. Current checks:
+`khptz doctor` should report incompatible runtime versions. Current checks:
 
 | Check | Pass condition | Failure action |
 |---|---|---|
@@ -162,7 +162,7 @@ CI passing does **not** imply pilot readiness. Real Raspberry Pi validation thro
 | Raspberry Pi OS 32-bit | Not a test or support target |
 | Raspberry Pi 3 | Insufficient RAM for reliable PyQt5 UI |
 | Docker / containerised Raspberry Pi | Not a supported deployment model |
-| Raspberry Pi with non-standard display drivers | `hallptz doctor` display check not implemented; treat as not validated |
+| Raspberry Pi with non-standard display drivers | `khptz doctor` display check not implemented; treat as not validated |
 
 ---
 

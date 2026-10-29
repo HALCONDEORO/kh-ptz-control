@@ -5,9 +5,9 @@
 test_runtime_path_resolver.py — Tests for RuntimePathResolver and BuildInfo (#560).
 
 Covers:
-- Production defaults resolve to /etc/hallptz, /var/lib/hallptz, /var/log/hallptz, /var/backups/hallptz
-- Environment variable overrides are honoured (HALLPTZ_CONFIG_DIR, HALLPTZ_DATA_DIR,
-  HALLPTZ_DATA_DIR, HALLPTZ_LOG_DIR, HALLPTZ_BACKUP_DIR)
+- Production defaults resolve to /etc/khptz, /var/lib/khptz, /var/log/khptz, /var/backups/khptz
+- Environment variable overrides are honoured (KHPTZ_CONFIG_DIR, KHPTZ_DATA_DIR,
+  KHPTZ_DATA_DIR, KHPTZ_LOG_DIR, KHPTZ_BACKUP_DIR)
 - Relative path overrides are rejected with ValueError
 - running_from_source reflects .git directory presence
 - active_overrides reports only active env vars
@@ -36,29 +36,29 @@ class TestProductionDefaults:
 
     def setup_method(self):
         """Ensure no override env vars are set."""
-        for var in ("HALLPTZ_CONFIG_DIR", "HALLPTZ_DATA_DIR", "HALLPTZ_DATA_DIR",
-                    "HALLPTZ_LOG_DIR", "HALLPTZ_BACKUP_DIR"):
+        for var in ("KHPTZ_CONFIG_DIR", "KHPTZ_DATA_DIR", "KHPTZ_DATA_DIR",
+                    "KHPTZ_LOG_DIR", "KHPTZ_BACKUP_DIR"):
             os.environ.pop(var, None)
 
-    def test_config_dir_is_etc_hallptz(self):
+    def test_config_dir_is_etc_khptz(self):
         r = RuntimePathResolver()
-        assert r.config_dir == Path("/etc/hallptz")
+        assert r.config_dir == Path("/etc/khptz")
 
-    def test_data_dir_is_var_lib_hallptz(self):
+    def test_data_dir_is_var_lib_khptz(self):
         r = RuntimePathResolver()
-        assert r.data_dir == Path("/var/lib/hallptz")
+        assert r.data_dir == Path("/var/lib/khptz")
 
-    def test_log_dir_is_var_log_hallptz(self):
+    def test_log_dir_is_var_log_khptz(self):
         r = RuntimePathResolver()
-        assert r.log_dir == Path("/var/log/hallptz")
+        assert r.log_dir == Path("/var/log/khptz")
 
-    def test_backup_dir_is_var_backups_hallptz(self):
+    def test_backup_dir_is_var_backups_khptz(self):
         r = RuntimePathResolver()
-        assert r.backup_dir == Path("/var/backups/hallptz")
+        assert r.backup_dir == Path("/var/backups/khptz")
 
     def test_support_bundle_dir_is_inside_backup_dir(self):
         r = RuntimePathResolver()
-        assert r.support_bundle_dir == Path("/var/backups/hallptz/support")
+        assert r.support_bundle_dir == Path("/var/backups/khptz/support")
 
     def test_no_active_overrides_by_default(self):
         r = RuntimePathResolver()
@@ -72,7 +72,7 @@ class TestProductionDefaults:
             assert isinstance(value, str), f"{key!r} value {value!r} is not a str"
 
     def test_legacy_data_dir_constant(self):
-        assert LEGACY_DATA_DIR == Path.home() / ".config" / "hallptz"
+        assert LEGACY_DATA_DIR == Path.home() / ".config" / "khptz"
 
 
 # ── RuntimePathResolver — file accessors ─────────────────────────────────────
@@ -80,8 +80,8 @@ class TestProductionDefaults:
 class TestFileAccessors:
 
     def setup_method(self):
-        for var in ("HALLPTZ_CONFIG_DIR", "HALLPTZ_DATA_DIR", "HALLPTZ_DATA_DIR",
-                    "HALLPTZ_LOG_DIR", "HALLPTZ_BACKUP_DIR"):
+        for var in ("KHPTZ_CONFIG_DIR", "KHPTZ_DATA_DIR", "KHPTZ_DATA_DIR",
+                    "KHPTZ_LOG_DIR", "KHPTZ_BACKUP_DIR"):
             os.environ.pop(var, None)
 
     def test_known_good_state_file_inside_data_dir(self):
@@ -118,72 +118,72 @@ class TestFileAccessors:
 class TestEnvironmentOverrides:
 
     def setup_method(self):
-        for var in ("HALLPTZ_CONFIG_DIR", "HALLPTZ_DATA_DIR", "HALLPTZ_DATA_DIR",
-                    "HALLPTZ_LOG_DIR", "HALLPTZ_BACKUP_DIR"):
+        for var in ("KHPTZ_CONFIG_DIR", "KHPTZ_DATA_DIR", "KHPTZ_DATA_DIR",
+                    "KHPTZ_LOG_DIR", "KHPTZ_BACKUP_DIR"):
             os.environ.pop(var, None)
 
-    def test_hallptz_config_dir_override(self, tmp_path):
-        os.environ["HALLPTZ_CONFIG_DIR"] = str(tmp_path / "cfg")
+    def test_khptz_config_dir_override(self, tmp_path):
+        os.environ["KHPTZ_CONFIG_DIR"] = str(tmp_path / "cfg")
         r = RuntimePathResolver()
         assert r.config_dir == tmp_path / "cfg"
-        del os.environ["HALLPTZ_CONFIG_DIR"]
+        del os.environ["KHPTZ_CONFIG_DIR"]
 
-    def test_hallptz_data_dir_override(self, tmp_path):
-        os.environ["HALLPTZ_DATA_DIR"] = str(tmp_path / "data")
+    def test_khptz_data_dir_override(self, tmp_path):
+        os.environ["KHPTZ_DATA_DIR"] = str(tmp_path / "data")
         r = RuntimePathResolver()
         assert r.data_dir == tmp_path / "data"
-        del os.environ["HALLPTZ_DATA_DIR"]
+        del os.environ["KHPTZ_DATA_DIR"]
 
-    def test_hallptz_data_dir_override(self, tmp_path):
-        os.environ["HALLPTZ_DATA_DIR"] = str(tmp_path / "legacy")
+    def test_khptz_data_dir_override(self, tmp_path):
+        os.environ["KHPTZ_DATA_DIR"] = str(tmp_path / "legacy")
         r = RuntimePathResolver()
         assert r.data_dir == tmp_path / "legacy"
-        del os.environ["HALLPTZ_DATA_DIR"]
+        del os.environ["KHPTZ_DATA_DIR"]
 
-    def test_hallptz_log_dir_override(self, tmp_path):
-        os.environ["HALLPTZ_LOG_DIR"] = str(tmp_path / "logs")
+    def test_khptz_log_dir_override(self, tmp_path):
+        os.environ["KHPTZ_LOG_DIR"] = str(tmp_path / "logs")
         r = RuntimePathResolver()
         assert r.log_dir == tmp_path / "logs"
-        del os.environ["HALLPTZ_LOG_DIR"]
+        del os.environ["KHPTZ_LOG_DIR"]
 
-    def test_hallptz_backup_dir_override(self, tmp_path):
-        os.environ["HALLPTZ_BACKUP_DIR"] = str(tmp_path / "backups")
+    def test_khptz_backup_dir_override(self, tmp_path):
+        os.environ["KHPTZ_BACKUP_DIR"] = str(tmp_path / "backups")
         r = RuntimePathResolver()
         assert r.backup_dir == tmp_path / "backups"
-        del os.environ["HALLPTZ_BACKUP_DIR"]
+        del os.environ["KHPTZ_BACKUP_DIR"]
 
     def test_relative_config_override_raises(self):
-        os.environ["HALLPTZ_CONFIG_DIR"] = "relative/path"
+        os.environ["KHPTZ_CONFIG_DIR"] = "relative/path"
         with pytest.raises(ValueError, match="absolute"):
             RuntimePathResolver()
-        del os.environ["HALLPTZ_CONFIG_DIR"]
+        del os.environ["KHPTZ_CONFIG_DIR"]
 
     def test_relative_data_override_raises(self):
-        os.environ["HALLPTZ_DATA_DIR"] = "relative/path"
+        os.environ["KHPTZ_DATA_DIR"] = "relative/path"
         with pytest.raises(ValueError, match="absolute"):
             RuntimePathResolver()
-        del os.environ["HALLPTZ_DATA_DIR"]
+        del os.environ["KHPTZ_DATA_DIR"]
 
     def test_schedule_file_aligns_with_data_paths_when_env_set(self, tmp_path):
         """data_paths.SCHEDULE_FILE and resolver.schedule_file must agree when env set (#598)."""
         import importlib
-        os.environ["HALLPTZ_DATA_DIR"] = str(tmp_path / "data")
+        os.environ["KHPTZ_DATA_DIR"] = str(tmp_path / "data")
         import data_paths
         importlib.reload(data_paths)
         r = RuntimePathResolver()
         assert data_paths.SCHEDULE_FILE == r.schedule_file
-        del os.environ["HALLPTZ_DATA_DIR"]
+        del os.environ["KHPTZ_DATA_DIR"]
         importlib.reload(data_paths)
 
     def test_active_overrides_reports_set_vars(self, tmp_path):
-        os.environ["HALLPTZ_CONFIG_DIR"] = str(tmp_path / "cfg")
-        os.environ["HALLPTZ_LOG_DIR"] = str(tmp_path / "logs")
+        os.environ["KHPTZ_CONFIG_DIR"] = str(tmp_path / "cfg")
+        os.environ["KHPTZ_LOG_DIR"] = str(tmp_path / "logs")
         r = RuntimePathResolver()
         overrides = r.active_overrides()
-        assert "HALLPTZ_CONFIG_DIR" in overrides
-        assert "HALLPTZ_LOG_DIR" in overrides
-        del os.environ["HALLPTZ_CONFIG_DIR"]
-        del os.environ["HALLPTZ_LOG_DIR"]
+        assert "KHPTZ_CONFIG_DIR" in overrides
+        assert "KHPTZ_LOG_DIR" in overrides
+        del os.environ["KHPTZ_CONFIG_DIR"]
+        del os.environ["KHPTZ_LOG_DIR"]
 
 
 # ── RuntimePathResolver — source detection ───────────────────────────────────
@@ -191,8 +191,8 @@ class TestEnvironmentOverrides:
 class TestRunningFromSource:
 
     def setup_method(self):
-        for var in ("HALLPTZ_CONFIG_DIR", "HALLPTZ_DATA_DIR", "HALLPTZ_DATA_DIR",
-                    "HALLPTZ_LOG_DIR", "HALLPTZ_BACKUP_DIR"):
+        for var in ("KHPTZ_CONFIG_DIR", "KHPTZ_DATA_DIR", "KHPTZ_DATA_DIR",
+                    "KHPTZ_LOG_DIR", "KHPTZ_BACKUP_DIR"):
             os.environ.pop(var, None)
 
     def test_running_from_source_detects_git_dir(self):
@@ -248,9 +248,9 @@ class TestBuildInfo:
         assert info.app_version != ""
 
     def test_build_info_reads_installation_id_file(self, tmp_path):
-        (tmp_path / "installation_id.txt").write_text("hallptz-2026-0042", encoding="utf-8")
+        (tmp_path / "installation_id.txt").write_text("khptz-2026-0042", encoding="utf-8")
         info = build_info(data_dir=tmp_path)
-        assert info.installation_id == "hallptz-2026-0042"
+        assert info.installation_id == "khptz-2026-0042"
 
     def test_build_info_missing_id_file_returns_unknown(self, tmp_path):
         info = build_info(data_dir=tmp_path)

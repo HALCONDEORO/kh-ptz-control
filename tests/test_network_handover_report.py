@@ -41,7 +41,7 @@ def _isolated_config(**overrides) -> dict:
     base = {
         "site": {
             "name": "Test Venue",
-            "installation_id": "hallptz-2026-TEST",
+            "installation_id": "khptz-2026-TEST",
             "installation_profile": "starter_1_camera",
         },
         "cameras": [
@@ -122,7 +122,7 @@ class TestNetworkHandoverReportFromConfig:
     def test_installation_id_extracted(self, tmp_path):
         svc = _make_svc(tmp_path, _isolated_config())
         r = svc.generate()
-        assert r.installation_id == "hallptz-2026-TEST"
+        assert r.installation_id == "khptz-2026-TEST"
 
     def test_network_profile_extracted(self, tmp_path):
         svc = _make_svc(tmp_path, _isolated_config())
@@ -194,7 +194,7 @@ class TestNetworkHandoverReportFromConfig:
     def test_no_network_section_produces_warning(self, tmp_path):
         # No explicit network section — loader returns default NetworkSettings(profile="unknown")
         config = {
-            "site": {"name": "X", "installation_id": "hallptz-2026-TEST"},
+            "site": {"name": "X", "installation_id": "khptz-2026-TEST"},
             "cameras": [{"id": "platform", "role": "platform", "ip": "192.168.30.20", "visca_id": "81"}],
         }
         svc = _make_svc(tmp_path, config)

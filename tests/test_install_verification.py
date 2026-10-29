@@ -13,8 +13,8 @@ from runtime.path_resolver import RuntimePathResolver
 
 @pytest.fixture
 def resolver(tmp_path, monkeypatch):
-    monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(tmp_path / "etc"))
-    monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(tmp_path / "etc"))
+    monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "data"))
     r = RuntimePathResolver()
     r.config_dir.mkdir(parents=True, exist_ok=True)
     return r
@@ -47,7 +47,7 @@ class TestLauncherChecksFollowTheInstalledGuiMode:
 
     scripts/repair_rpi_runtime.sh deliberately skips the entire display-ready
     chain under --gui-mode user ("the session owns its own display"), so
-    /run/hallptz/display-ready is never written there. Demanding it anyway made
+    /run/khptz/display-ready is never written there. Demanding it anyway made
     the Done page report "Setup finished but verification failed" on every
     healthy session-owned install — the wizard contradicting itself at the last
     step of a successful setup.
@@ -66,7 +66,7 @@ class TestLauncherChecksFollowTheInstalledGuiMode:
         labels = self._labels(monkeypatch, session_owned=False)
         assert "Desktop display handoff" in labels
         assert "Display-ready path unit" in labels
-        assert "HALLPTZ service unit" in labels
+        assert "KHPTZ service unit" in labels
 
     def test_user_mode_does_not_demand_the_display_handoff(self, monkeypatch):
         labels = self._labels(monkeypatch, session_owned=True)
@@ -93,7 +93,7 @@ class TestLauncherChecksFollowTheInstalledGuiMode:
         monkeypatch.setattr(iv.Path, "home", staticmethod(lambda: tmp_path))
         assert dict(_launcher_checks())["Session GUI autostart"] is False
 
-        entry = tmp_path / ".config" / "autostart" / "hallptz-gui.desktop"
+        entry = tmp_path / ".config" / "autostart" / "khptz-gui.desktop"
         entry.parent.mkdir(parents=True)
         entry.write_text("[Desktop Entry]\n", encoding="utf-8")
         assert dict(_launcher_checks())["Session GUI autostart"] is True

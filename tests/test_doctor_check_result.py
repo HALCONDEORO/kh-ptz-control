@@ -44,7 +44,7 @@ class TestCheckResultToDoctorCheck:
         assert dc.severity is DoctorSeverity.ERROR
 
     def test_key_matches_name(self):
-        cr = CheckResult("installation_id", Status.OK, "ID: hallptz-2026-0042")
+        cr = CheckResult("installation_id", Status.OK, "ID: khptz-2026-0042")
         dc = cr.to_doctor_check()
         assert dc.key == "installation_id"
 
@@ -59,10 +59,10 @@ class TestCheckResultToDoctorCheck:
             "data_dir",
             Status.FAIL,
             "Not writable",
-            evidence={"path": "/var/lib/hallptz", "error": "Permission denied"},
+            evidence={"path": "/var/lib/khptz", "error": "Permission denied"},
         )
         dc = cr.to_doctor_check()
-        assert dc.evidence["path"] == "/var/lib/hallptz"
+        assert dc.evidence["path"] == "/var/lib/khptz"
         assert dc.evidence["error"] == "Permission denied"
 
     def test_suggested_action_passes_through(self):

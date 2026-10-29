@@ -2,7 +2,7 @@
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
 """
-Tests for runtime/cli.py — hallptz CLI command routing.
+Tests for runtime/cli.py — khptz CLI command routing.
 
 Hardware-free: no cameras, no ATEM, no Raspberry Pi.
 """
@@ -61,7 +61,7 @@ class TestVersionCommand:
         assert any(c.isdigit() for c in version)
 
     def test_profile_flag_is_applied_to_version(self, capsys, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
         rc = main(["--profile", "demo", "version"])
         out = capsys.readouterr().out
 
@@ -69,7 +69,7 @@ class TestVersionCommand:
         assert "[DEMO]" in out
 
     def test_profile_flag_does_not_leak_between_calls(self, capsys, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
         main(["--profile", "demo", "version"])
         capsys.readouterr()
 
@@ -124,12 +124,12 @@ class TestDoctorCommand:
         assert data["exit_code"] == rc
 
     def test_json_profile_demo_does_not_leak_env(self, capsys, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
 
         main(["--profile", "demo", "doctor", "--json"])
         capsys.readouterr()
 
-        assert "HALLPTZ_PROFILE" not in os.environ
+        assert "KHPTZ_PROFILE" not in os.environ
 
 
 class TestVersionFile:
@@ -220,42 +220,42 @@ class TestDemoProfileIsolation:
 
     Covers the bugs from issue #659:
     - demo reset was blocking itself because DemoResetService._production_paths()
-      treated HALLPTZ_DATA_DIR (the demo dir) as production after DemoGuard.apply().
+      treated KHPTZ_DATA_DIR (the demo dir) as production after DemoGuard.apply().
     - fingerprint/backup/supportability were not applying demo isolation consistently.
     """
 
     def _clear_env(self, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
-        monkeypatch.delenv("HALLPTZ_DATA_DIR", raising=False)
-        monkeypatch.delenv("HALLPTZ_DATA_DIR", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_DATA_DIR", raising=False)
+        monkeypatch.delenv("KHPTZ_DATA_DIR", raising=False)
 
     # ── Smoke tests: the three manual demo CLI checks from CLAUDE.md ─────────
 
     def test_demo_status_exits_without_exception(self, capsys, monkeypatch, tmp_path):
         """python3 -m runtime.cli --profile demo status must not raise."""
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "demo"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "demo"))
         rc = main(["--profile", "demo", "status"])
         assert isinstance(rc, int)
 
     def test_demo_doctor_exits_without_exception(self, capsys, monkeypatch, tmp_path):
         """python3 -m runtime.cli --profile demo doctor must not raise."""
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "demo"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "demo"))
         rc = main(["--profile", "demo", "doctor"])
         assert isinstance(rc, int)
 
     def test_demo_demo_reset_exits_without_exception(self, capsys, monkeypatch, tmp_path):
         """python3 -m runtime.cli --profile demo demo reset must not raise."""
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "demo"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "demo"))
         rc = main(["--profile", "demo", "demo", "reset"])
         assert isinstance(rc, int)
 
     def test_demo_status_prints_mode_marker(self, capsys, monkeypatch, tmp_path):
         """--profile demo status output must label the DEMO mode."""
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "demo"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "demo"))
         main(["--profile", "demo", "status"])
         out = capsys.readouterr().out
         assert "DEMO" in out
@@ -263,7 +263,7 @@ class TestDemoProfileIsolation:
     def test_demo_doctor_prints_mode_marker(self, capsys, monkeypatch, tmp_path):
         """--profile demo doctor output must label the DEMO mode."""
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "demo"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "demo"))
         main(["--profile", "demo", "doctor"])
         out = capsys.readouterr().out
         assert "DEMO" in out
@@ -272,7 +272,7 @@ class TestDemoProfileIsolation:
 
     def test_demo_reset_exits_zero(self, capsys, monkeypatch, tmp_path):
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "demo"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "demo"))
         rc = main(["--profile", "demo", "demo", "reset"])
         assert rc == 0
 
@@ -280,7 +280,7 @@ class TestDemoProfileIsolation:
         """DemoResetService must not refuse to reset the active demo directory."""
         self._clear_env(monkeypatch)
         demo_dir = tmp_path / "demo-data"
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(demo_dir))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(demo_dir))
         rc = main(["--profile", "demo", "demo", "reset"])
         out = capsys.readouterr().out
         assert rc == 0
@@ -288,7 +288,7 @@ class TestDemoProfileIsolation:
 
     def test_demo_fingerprint_reports_demo_profile(self, capsys, monkeypatch, tmp_path):
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "demo"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "demo"))
         rc = main(["--profile", "demo", "fingerprint", "--json"])
         assert rc == 0
         out = capsys.readouterr().out
@@ -300,7 +300,7 @@ class TestDemoProfileIsolation:
         demo_dir = tmp_path / "demo-data"
         demo_dir.mkdir()
         (demo_dir / "seat_names.json").write_text('{"seats": []}', encoding="utf-8")
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(demo_dir))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(demo_dir))
         dest = tmp_path / "backup.zip"
         rc = main(["--profile", "demo", "backup", "--dest", str(dest)])
         assert rc == 0
@@ -311,7 +311,7 @@ class TestDemoProfileIsolation:
         demo_dir = tmp_path / "demo-data"
         demo_dir.mkdir()
         (demo_dir / "seat_names.json").write_text('{"seats": ["A", "B"]}', encoding="utf-8")
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(demo_dir))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(demo_dir))
         dest = tmp_path / "backup.zip"
         main(["--profile", "demo", "backup", "--dest", str(dest)])
         capsys.readouterr()
@@ -320,7 +320,7 @@ class TestDemoProfileIsolation:
 
 
 class TestVerifyInstallCommand:
-    """Tests for 'hallptz verify-install' post-install smoke command (#672)."""
+    """Tests for 'khptz verify-install' post-install smoke command (#672)."""
 
     def test_returns_int(self, capsys):
         rc = main(["verify-install"])

@@ -2,7 +2,7 @@
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
 """
-scripts/check_secrets.py — Project-wide secret scan for Hall PTZ Control.
+scripts/check_secrets.py — Project-wide secret scan for KH PTZ Control.
 
 Checks staged (about to be committed) files and tracked files in the working
 tree for secret material that must never enter the repository.
@@ -40,7 +40,7 @@ from pathlib import Path
 
 # Exact match at any depth under the repo root.
 _BLOCKED_NAMES: frozenset[str] = frozenset({
-    # Legacy HALLPTZ flat-file configs (real customer data)
+    # Legacy KHPTZ flat-file configs (real customer data)
     "PTZ1IP.txt",
     "PTZ2IP.txt",
     "ATEMIP.txt",
@@ -76,7 +76,7 @@ _BLOCKED_GLOB_PATTERNS: list[str] = [
     "*.db",
     "support_bundle*.zip",
     "backup*.zip",
-    "hallptz_backup_*.zip",
+    "khptz_backup_*.zip",
 ]
 
 # Paths relative to the repo root that must never be committed as-is.

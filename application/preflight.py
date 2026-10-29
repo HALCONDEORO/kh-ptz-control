@@ -137,7 +137,7 @@ def run_preflight(
             checks.append(PreflightCheck(
                 "rpi_advisories", "Raspberry Pi readiness", True, True,
                 f"Advisory checks could not run ({exc})",
-                "Run 'hallptz doctor' after setup for a full report",
+                "Run 'khptz doctor' after setup for a full report",
             ))
 
     return checks

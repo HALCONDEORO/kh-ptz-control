@@ -67,7 +67,7 @@ USB drive for offline backup/restore testing
 - Use static IPs for cameras and ATEM.
 - Avoid depending on internet access for offline installations.
 - Confirm no camera shares an IP with another camera, ATEM or router.
-- Run local diagnostics (`hallptz doctor`) before handover.
+- Run local diagnostics (`khptz doctor`) before handover.
 - Review the [Raspberry Pi security baseline](RPI_SECURITY_BASELINE.md) before customer/pilot handover.
 - Review the [AV device hardening checklist](AV_DEVICE_HARDENING_CHECKLIST.md) for cameras, ATEM, switches and routers.
 - For the recommended network/VLAN design, see [Network architecture](NETWORK_ARCHITECTURE.md).
@@ -96,11 +96,11 @@ sudo apt install -y git rsync python3-pyqt5 python3-pyqt5.qtsvg python3-yaml \
 
 `python3-yaml` is a hard runtime dependency: product mode installs no pip
 packages, and `config/loader.py` imports it at module scope, so without it the
-application, `hallptz doctor` and the wizard's post-provision step all fail with
+application, `khptz doctor` and the wizard's post-provision step all fail with
 `ModuleNotFoundError`. `install.sh` now refuses to install without it.
 
 `x11-xserver-utils` provides `xhost`, which the setup wizard uses to grant the
-`hallptz` service user scoped access to the touchscreen display. Installing it up
+`khptz` service user scoped access to the touchscreen display. Installing it up
 front avoids an apt call in the middle of provisioning — which fails on an
 offline appliance and rolls the wizard back. It is not needed with
 `--gui-mode user`.
@@ -117,8 +117,8 @@ For customer or pilot installs, use the approved release/tag named in the
 installation plan:
 
 ```bash
-git clone https://github.com/HALCONDEORO/hall-ptz-control.git hallptz
-cd hallptz
+git clone https://github.com/HALCONDEORO/kh-ptz-control.git khptz
+cd khptz
 git checkout <approved-tag-or-release-branch>
 ```
 
@@ -126,10 +126,10 @@ Do not install from an arbitrary `main` commit unless an emergency exception
 is explicitly recorded.
 
 > **Keep this checkout on the device.** `install.sh` copies the code into
-> `/opt/hallptz` with `--exclude='.git'`, so the install directory is a deployed
+> `/opt/khptz` with `--exclude='.git'`, so the install directory is a deployed
 > artifact with no git history. Updates and rollbacks re-deploy from *this*
 > checkout, and `install.sh` records its path in
-> `/etc/hallptz/install-state.env`. If the checkout is deleted, `rollback.sh`
+> `/etc/khptz/install-state.env`. If the checkout is deleted, `rollback.sh`
 > needs `--source` and `--to` supplied by hand.
 
 ---
@@ -209,13 +209,13 @@ A product install is configured **on the device**, through the graphical setup
 wizard — not by editing files or running password scripts by hand.
 
 `install.sh` copies the starter config, installs the wizard launcher and its
-XDG autostart entry, and wires the password-free `/run/hallptz` provisioning
-channel. `hallptz-control.service` gates on `ConditionPathExists=/etc/hallptz/.provisioned`,
+XDG autostart entry, and wires the password-free `/run/khptz` provisioning
+channel. `khptz-control.service` gates on `ConditionPathExists=/etc/khptz/.provisioned`,
 so it deliberately will **not** start until the wizard has finished.
 
 1. Log in to (or reboot into) the desktop session. The wizard autostarts.
    (A reboot is the reliable option: `install.sh` adds the desktop user to the
-   `hallptz` group so it can read `/opt/hallptz`, and group membership only takes
+   `khptz` group so it can read `/opt/khptz`, and group membership only takes
    effect at the next login.)
 2. Work through the pages: room details → cameras → optional ATEM/network →
    passwords → review.
@@ -226,23 +226,23 @@ so it deliberately will **not** start until the wizard has finished.
    - **Passwords:** the operator (entry) and administrator passwords are
      independent and must differ.
 3. On Review, confirm. The wizard hands the answers to the privileged
-   `hallptz-provision` oneshot, which writes `/etc/hallptz/config.yaml`, both
-   encrypted secrets in `/var/lib/hallptz/`, the `.provisioned` marker, and then
-   starts `hallptz-control`.
+   `khptz-provision` oneshot, which writes `/etc/khptz/config.yaml`, both
+   encrypted secrets in `/var/lib/khptz/`, the `.provisioned` marker, and then
+   starts `khptz-control`.
 4. Verify:
 
    ```bash
-   hallptz verify-install
-   hallptz doctor
+   khptz verify-install
+   khptz doctor
    ```
 
-To reconfigure later, open **HALLPTZ Setup** from the applications menu (that entry
+To reconfigure later, open **KHPTZ Setup** from the applications menu (that entry
 passes `--force`). Repair mode asks for the **current** administrator password
 first — desktop access alone is not enough to change cameras or reset the
 passwords. A wrong password is rejected by the privileged side and changes
 nothing.
 
-The wizard self-suppresses once `/etc/hallptz/.provisioned` exists, so the
+The wizard self-suppresses once `/etc/khptz/.provisioned` exists, so the
 autostart entry can fire on every login and quietly do nothing.
 
 ---
@@ -260,17 +260,17 @@ Create or verify the admin/operator password.
 python3 setup_password.py        # or: python3 -m runtime.setup_password
 ```
 
-**Product install** — the service runs as the `hallptz` user, so the password must
+**Product install** — the service runs as the `khptz` user, so the password must
 be written where that service reads it, **not** the technician's home. Run the
 setup as the service user with the runtime data dir:
 
 ```bash
-sudo -u hallptz HALLPTZ_DATA_DIR=/var/lib/hallptz python3 -m runtime.setup_password
+sudo -u khptz KHPTZ_DATA_DIR=/var/lib/khptz python3 -m runtime.setup_password
 ```
 
 The tool prints `Contrasena guardada en <path>`. Confirm `<path>` is under the
-runtime data dir the service uses (`/var/lib/hallptz/...`). If you run it as `pi`
-without `HALLPTZ_DATA_DIR`, `password.enc` lands in `/home/pi/.config/hallptz/`
+runtime data dir the service uses (`/var/lib/khptz/...`). If you run it as `pi`
+without `KHPTZ_DATA_DIR`, `password.enc` lands in `/home/pi/.config/khptz/`
 and the service will still start with login blocked.
 
 If `password.enc` is missing or corrupt, login may block access until a valid
@@ -327,24 +327,24 @@ sudo ./runtime/installer/install.sh
 After install:
 
 ```bash
-hallptz verify-install
-hallptz version
-hallptz status
-hallptz doctor
-sudo systemctl status hallptz-control --no-pager
+khptz verify-install
+khptz version
+khptz status
+khptz doctor
+sudo systemctl status khptz-control --no-pager
 ```
 
-If the `hallptz` command is not on `PATH` yet, use the module form
+If the `khptz` command is not on `PATH` yet, use the module form
 (`python3 -m runtime.cli doctor`).
 
 ### systemd autostart validation
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable hallptz-control.service
-sudo systemctl start hallptz-control.service
-sudo systemctl status hallptz-control --no-pager
-journalctl -u hallptz-control -n 100 --no-pager
+sudo systemctl enable khptz-control.service
+sudo systemctl start khptz-control.service
+sudo systemctl status khptz-control --no-pager
+journalctl -u khptz-control -n 100 --no-pager
 ```
 
 Reboot validation:
@@ -352,9 +352,9 @@ Reboot validation:
 ```bash
 sudo reboot
 # after reconnecting:
-hallptz status
-hallptz doctor
-sudo systemctl status hallptz-control --no-pager
+khptz status
+khptz doctor
+sudo systemctl status khptz-control --no-pager
 ```
 
 > Session MUST NOT start automatically on boot — the operator starts it from
@@ -367,7 +367,7 @@ sudo systemctl status hallptz-control --no-pager
 Create a backup after initial configuration and before handover:
 
 ```bash
-hallptz backup
+khptz backup
 ```
 
 Record the backup path and confirm the file exists. Do not copy the backup to
@@ -388,9 +388,9 @@ python3 -m runtime.cli restore path/to/backup.zip
 
 Rollback script: `runtime/installer/rollback.sh`.
 
-`/opt/hallptz` is a deployed copy with no `.git`, so a rollback re-deploys an
-older ref from the **source checkout** (e.g. `/home/<user>/hallptz`). `install.sh`
-records that checkout and the previous ref in `/etc/hallptz/install-state.env`;
+`/opt/khptz` is a deployed copy with no `.git`, so a rollback re-deploys an
+older ref from the **source checkout** (e.g. `/home/<user>/khptz`). `install.sh`
+records that checkout and the previous ref in `/etc/khptz/install-state.env`;
 keep the checkout on the device or rollback will need `--source` and `--to`
 passed by hand.
 
@@ -399,13 +399,13 @@ Pi image:
 
 ```text
 [ ] service stops cleanly
-[ ] previous version is re-deployed to /opt/hallptz
-[ ] /opt/hallptz contains no files from the newer release (rsync --delete)
+[ ] previous version is re-deployed to /opt/khptz
+[ ] /opt/khptz contains no files from the newer release (rsync --delete)
 [ ] customer data is preserved
-[ ] /etc/hallptz/.provisioned survives — the setup wizard does NOT re-run
+[ ] /etc/khptz/.provisioned survives — the setup wizard does NOT re-run
 [ ] both passwords still work at login
 [ ] app starts again
-[ ] hallptz verify-install and hallptz doctor pass or report known warnings
+[ ] khptz verify-install and khptz doctor pass or report known warnings
 ```
 
 See [Update and rollback procedure](UPDATE_ROLLBACK.md) for the full procedure.
@@ -417,12 +417,12 @@ See [Update and rollback procedure](UPDATE_ROLLBACK.md) for the full procedure.
 Current legacy-compatible default path:
 
 ```text
-~/.config/hallptz/
+~/.config/khptz/
 ```
 
 This legacy path is still documented because existing code and migration paths
 depend on it. Do not rename it casually during customer work; a future
-HALLPTZ-branded path (`~/.config/hallptz/`) must only be introduced through an
+KHPTZ-branded path (`~/.config/khptz/`) must only be introduced through an
 explicit migration PR with backup, migration and rollback. See
 [Runtime path contract](RUNTIME_PATH_CONTRACT.md).
 
@@ -438,7 +438,7 @@ room_layout.json
 Custom path (tests/demo):
 
 ```bash
-HALLPTZ_DATA_DIR=/mnt/usb/hallptz python3 main.py
+KHPTZ_DATA_DIR=/mnt/usb/khptz python3 main.py
 ```
 
 Do not delete this customer folder without a backup.
@@ -474,8 +474,8 @@ before production-style testing.
 [ ] app starts manually
 [ ] app starts from systemd
 [ ] screen responds
-[ ] hallptz status runs
-[ ] hallptz doctor runs
+[ ] khptz status runs
+[ ] khptz doctor runs
 [ ] camera 1 connects
 [ ] camera 2 connects if applicable
 [ ] ATEM connects if applicable
@@ -501,10 +501,10 @@ nothing on the appliance (the legacy cleanup it calls runs in `--dry-run`).
 Run it once per reboot so the "after two reboots" criterion is satisfied:
 
 ```bash
-sudo bash scripts/validate_rpi_deployment.sh --wizard-user hallptz
+sudo bash scripts/validate_rpi_deployment.sh --wizard-user khptz
 ```
 
-Every run also writes a timestamped report under `/var/log/hallptz/validation/`
+Every run also writes a timestamped report under `/var/log/khptz/validation/`
 (or the desktop user's home if that path is not writable). It prints per-check
 lines and exits non-zero if any `[FAIL]` is recorded:
 
@@ -516,13 +516,13 @@ What each section confirms:
 
 | Section | A `[FAIL]` means |
 |---|---|
-| Startup mechanisms + acceptance checks | A second/legacy PTZ controller still starts, or more than one Hall PTZ Control GUI runs |
+| Startup mechanisms + acceptance checks | A second/legacy PTZ controller still starts, or more than one KH PTZ Control GUI runs |
 | Legacy conflicts (cleanup `--dry-run`) | Conflicting startup entries remain to be quarantined |
 | Wizard / Qt Bullseye | `Could not parse stylesheet`, or a profile/camera-count or ATEM-IP contradiction in `doctor` |
 | X11 / systemd session | Display/D-Bus session error, GUI running as root, or a restart loop |
 
 Do not sign off on "the code exists". Sign off only after two clean reboots
-on the room Pi show exactly one Hall PTZ Control GUI, `hallptz-control`
+on the room Pi show exactly one KH PTZ Control GUI, `khptz-control`
 active, no legacy controller, and no `[FAIL]` — then record the result in
 `docs/MVP_VALIDATION_REPORT.md`.
 
@@ -538,7 +538,7 @@ first-pilot/customer readiness unless that report records `PASS` or
 
 ## Manual fallback when the setup wizard fails
 
-If the on-device setup wizard (`hallptz setup`) is unavailable or fails mid-flow,
+If the on-device setup wizard (`khptz setup`) is unavailable or fails mid-flow,
 use this manual path instead of improvising.
 
 ### 1. Stop and identify the target
@@ -556,9 +556,9 @@ If you are not certain this is the customer target device, stop and escalate.
 ### 2. Preserve current state
 
 ```bash
-hallptz version || python3 -m runtime.cli version
-hallptz status  || python3 -m runtime.cli status
-hallptz backup  || python3 -m runtime.cli backup
+khptz version || python3 -m runtime.cli version
+khptz status  || python3 -m runtime.cli status
+khptz backup  || python3 -m runtime.cli backup
 ```
 
 If backup fails on a real customer system, stop unless there is an explicitly
@@ -580,13 +580,13 @@ Wizard failure summary:
 
 ```bash
 sudo ./runtime/installer/install.sh
-hallptz version
-hallptz status
-hallptz doctor
+khptz version
+khptz status
+khptz doctor
 ```
 
-For diagnostics-only fallback, do not reinstall — run `hallptz version`,
-`hallptz status`, `hallptz doctor` and `sudo systemctl status hallptz-control --no-pager`.
+For diagnostics-only fallback, do not reinstall — run `khptz version`,
+`khptz status`, `khptz doctor` and `sudo systemctl status khptz-control --no-pager`.
 
 ### 5. Record handover notes
 
@@ -599,7 +599,7 @@ action/escalation.
 
 - the target Raspberry Pi cannot be identified;
 - backup fails before a destructive action;
-- `hallptz doctor` reports unclear failures;
+- `khptz doctor` reports unclear failures;
 - installer rerun would overwrite customer data;
 - restore cannot validate the backup manifest;
 - camera movement or preset behaviour is unsafe;
@@ -643,7 +643,7 @@ Check whether `sim_ip_backup.json` exists.
 
 Before leaving site:
 
-- run `hallptz doctor`;
+- run `khptz doctor`;
 - test representative camera presets;
 - confirm session start/end;
 - create or verify backup;
@@ -666,7 +666,7 @@ recorded version/tag/commit
 reviewed configuration
 app starts manually
 app starts through systemd if required
-hallptz doctor completed
+khptz doctor completed
 main cameras connected
 initial backup created
 rollback plan known

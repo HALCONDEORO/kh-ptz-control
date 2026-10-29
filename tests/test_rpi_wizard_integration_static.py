@@ -7,24 +7,24 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_provision_service_uses_integration_wrapper():
-    text = (ROOT / "runtime/systemd/hallptz-provision.service").read_text(encoding="utf-8")
+    text = (ROOT / "runtime/systemd/khptz-provision.service").read_text(encoding="utf-8")
     assert "provision_with_rpi_integration.sh" in text
     assert "runtime.provision" in text
-    assert "EnvironmentFile=-/etc/hallptz/install-state.env" in text
+    assert "EnvironmentFile=-/etc/khptz/install-state.env" in text
     assert "LANG=C.UTF-8" in text
 
 
 def test_product_display_gate_is_installed_without_breaking_dev_mode():
-    service = (ROOT / "runtime/systemd/hallptz-control.service").read_text(encoding="utf-8")
+    service = (ROOT / "runtime/systemd/khptz-control.service").read_text(encoding="utf-8")
     repair = (ROOT / "scripts/repair_rpi_runtime.sh").read_text(encoding="utf-8")
-    assert "ConditionPathExists=/run/hallptz/display-ready" not in service
-    assert "ConditionPathExists=/run/hallptz/display-ready" in repair
+    assert "ConditionPathExists=/run/khptz/display-ready" not in service
+    assert "ConditionPathExists=/run/khptz/display-ready" in repair
     assert "PrivateTmp=false" in service
     assert "PYTHONIOENCODING=utf-8" in service
 
 
 def test_wrapper_always_removes_the_request_on_exit():
-    """hallptz-provision.path triggers on PathExists=/run/hallptz/request.json and
+    """khptz-provision.path triggers on PathExists=/run/khptz/request.json and
     re-arms the moment the oneshot deactivates. A request that survives a
     failure therefore restarts the whole provisioning chain immediately and
     forever — and parks both plaintext passwords on tmpfs while it does.
@@ -62,11 +62,11 @@ def test_repair_keeps_runtime_dirs_writable_for_a_session_owned_gui():
     text = (ROOT / "scripts/repair_rpi_runtime.sh").read_text(encoding="utf-8")
     assert 'RUNTIME_DIR_MODE="2770"' in text
     assert 'RUNTIME_DIR_MODE="0750"' in text
-    for path in ("/var/lib/hallptz", "/var/log/hallptz", "/var/backups/hallptz"):
-        assert f'install -d -m "${{RUNTIME_DIR_MODE}}" -o hallptz -g hallptz {path}\n' in text, path
+    for path in ("/var/lib/khptz", "/var/log/khptz", "/var/backups/khptz"):
+        assert f'install -d -m "${{RUNTIME_DIR_MODE}}" -o khptz -g khptz {path}\n' in text, path
     # No hard-coded 0750 may remain on a shared runtime directory.
-    for path in ("/var/lib/hallptz", "/var/log/hallptz"):
-        assert f"install -d -m 0750 -o hallptz -g hallptz {path}" not in text, path
+    for path in ("/var/lib/khptz", "/var/log/khptz"):
+        assert f"install -d -m 0750 -o khptz -g khptz {path}" not in text, path
 
 
 def test_repair_only_reaches_for_apt_when_xhost_is_actually_used():
@@ -102,7 +102,7 @@ def _shell_block(text: str, opener: str) -> str:
 
 
 def test_a_fatal_diagnosis_keeps_the_customer_configuration():
-    """A `hallptz doctor` FAIL at the end of provisioning must not discard the
+    """A `khptz doctor` FAIL at the end of provisioning must not discard the
     wizard answers.
 
     The chain treats any non-zero exit from repair_rpi_runtime.sh as
@@ -140,7 +140,7 @@ def test_the_unhealthy_result_tells_the_operator_their_settings_survived():
     helper = _shell_block(chain, "write_unhealthy_result() {")
     assert '"rolled_back": False' in helper
     assert '"configuration_kept": True' in helper
-    assert "hallptz doctor" in helper
+    assert "khptz doctor" in helper
 
 
 def test_a_genuine_integration_failure_still_rolls_back():
@@ -152,7 +152,7 @@ def test_a_genuine_integration_failure_still_rolls_back():
 
 
 def test_a_killed_provisioner_still_answers_the_wizard():
-    """hallptz-provision.service sets TimeoutStartSec=600 and the wizard polls to
+    """khptz-provision.service sets TimeoutStartSec=600 and the wizard polls to
     660. Bash does not run an EXIT trap for an unhandled SIGTERM, so a timeout
     killed the script leaving request.json - with both plaintext passwords - on
     tmpfs and no result at all. The wizard then span until its own deadline and
@@ -176,16 +176,16 @@ def test_the_shredder_is_defined_before_the_trap_that_calls_it():
 
 def test_the_migration_never_kills_the_gui_it_installed():
     """Under --gui-mode user the supported GUI runs as the DESKTOP user with
-    the command line "/usr/bin/python3 /opt/hallptz/main.py" - which the conflict
+    the command line "/usr/bin/python3 /opt/khptz/main.py" - which the conflict
     scan matches on purpose, because a hand-rolled desktop launcher of that
     same command IS a second instance. The cgroup is what tells them apart."""
     cleanup = (ROOT / "scripts/cleanup_legacy_rpi_autostart.sh").read_text(encoding="utf-8")
-    assert "_pid_is_hallptz_managed" in cleanup
-    assert "hallptz-gui.service" in cleanup
+    assert "_pid_is_khptz_managed" in cleanup
+    assert "khptz-gui.service" in cleanup
     assert "/proc/${pid}/cgroup" in cleanup
     stop = _shell_block(cleanup, "stop_conflicts() {")
     # The guard has to run before the PID is queued for killing.
-    assert stop.index("_pid_is_hallptz_managed") < stop.index("pids+=(")
+    assert stop.index("_pid_is_khptz_managed") < stop.index("pids+=(")
 
 
 def test_an_interrupted_provisioning_rolls_back():
@@ -212,21 +212,21 @@ def test_an_interrupted_provisioning_rolls_back():
 
 
 def test_the_display_chain_is_only_installed_where_it_is_used():
-    """It bridges the 'hallptz' service user to the desktop display, which only
+    """It bridges the 'khptz' service user to the desktop display, which only
     exists in system GUI mode."""
     repair = (ROOT / "scripts/repair_rpi_runtime.sh").read_text(encoding="utf-8")
     guard = repair.index('if [[ "${GUI_MODE}" != "user" ]]; then\ninstall -d -m 0755 /usr/local/libexec')
     installs = repair.index('cat > "${DISPLAY_HELPER}"')
     assert guard < installs
-    assert repair.index("hallptz-display-session.desktop", guard) > guard
+    assert repair.index("khptz-display-session.desktop", guard) > guard
 
 
 def test_user_mode_tears_the_display_chain_down():
     """`systemctl disable` is not `mask`: the helper writing
-    /run/hallptz/display-ready triggers hallptz-display-ready.service, whose ExecStart
-    is `systemctl restart hallptz-control.service` - and restart STARTS a
+    /run/khptz/display-ready triggers khptz-display-ready.service, whose ExecStart
+    is `systemctl restart khptz-control.service` - and restart STARTS a
     merely-disabled unit. On a machine switched from system to user mode those
-    leftovers put hallptz-control back on screen next to hallptz-gui.service: two
+    leftovers put khptz-control back on screen next to khptz-gui.service: two
     full-screen GUIs driving the same cameras, re-armed by the very step meant
     to prevent it (#885)."""
     repair = (ROOT / "scripts/repair_rpi_runtime.sh").read_text(encoding="utf-8")
@@ -235,8 +235,8 @@ def test_user_mode_tears_the_display_chain_down():
 
     # The path unit must be actively disabled, not just left unenabled.
     assert "systemctl disable --now" in teardown
-    assert "hallptz-display-ready.path" in teardown
-    assert "hallptz-display-ready.service" in teardown
+    assert "khptz-display-ready.path" in teardown
+    assert "khptz-display-ready.service" in teardown
 
     # And every artifact that could re-arm it has to go.
     for artifact in (
@@ -244,7 +244,7 @@ def test_user_mode_tears_the_display_chain_down():
         "${DISPLAY_PATH_UNIT}",
         "${DISPLAY_SERVICE_UNIT}",
         "${SERVICE_DROPIN}",
-        "hallptz-display-session.desktop",
+        "khptz-display-session.desktop",
     ):
         assert artifact in teardown, artifact
     assert "rm -f --" in teardown
@@ -260,5 +260,5 @@ def test_the_teardown_is_reversible():
     for artifact in ("${DISPLAY_HELPER}", "${DISPLAY_PATH_UNIT}",
                      "${DISPLAY_SERVICE_UNIT}", "${SERVICE_DROPIN}"):
         assert artifact in backup_section, artifact
-    assert "hallptz-display-session.desktop" in backup_section
+    assert "khptz-display-session.desktop" in backup_section
 

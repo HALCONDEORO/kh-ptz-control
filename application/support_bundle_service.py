@@ -5,8 +5,8 @@
 #
 # Creates a ZIP at <output_dir>/support-<timestamp>-<install_id>.zip containing:
 #   manifest.json              — bundle metadata (never restore_capable)
-#   version.txt                — hallptz version + build identity
-#   doctor.txt                 — hallptz doctor output (structured, sanitized)
+#   version.txt                — khptz version + build identity
+#   doctor.txt                 — khptz doctor output (structured, sanitized)
 #   install_summary.json       — installation/profile/identity summary
 #   config_summary.json        — sanitized config summary (no secret values)
 #   blackbox/recent_events.jsonl — up to 500 recent FlightRecorder events
@@ -40,7 +40,7 @@ _MAX_INCIDENTS  = 20
 _MAX_BUNDLES    = 5
 
 _BLACKBOX_README = """\
-Hall PTZ Control — Black Box Data
+KH PTZ Control — Black Box Data
 ================================
 
 recent_events.jsonl
@@ -106,7 +106,7 @@ class SupportBundleService:
                 from runtime.path_resolver import RuntimePathResolver
                 output_dir = RuntimePathResolver().support_bundle_dir
             except Exception:
-                output_dir = Path.home() / ".config" / "hallptz" / "backups" / "support"
+                output_dir = Path.home() / ".config" / "khptz" / "backups" / "support"
         self._output_dir        = Path(output_dir)
         self._recorder          = flight_recorder
         self._incidents_dir     = Path(incidents_dir) if incidents_dir else None
@@ -262,7 +262,7 @@ class SupportBundleService:
             report = svc.run()
             _label = {Status.OK: "OK  ", Status.WARNING: "WARN", Status.FAIL: "FAIL"}
             _icon  = {Status.OK: "+", Status.WARNING: "!", Status.FAIL: "X"}
-            lines = ["Hall PTZ Control -- diagnostics (support bundle snapshot)"]
+            lines = ["KH PTZ Control -- diagnostics (support bundle snapshot)"]
             for check in report.checks:
                 hint = f" -> {check.suggested_action}" if check.suggested_action else ""
                 lines.append(f"  [{_label[check.status]}] {_icon[check.status]}  {check.name}: {check.message}{hint}")

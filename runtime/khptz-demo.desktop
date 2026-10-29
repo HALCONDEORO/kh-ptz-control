@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=HALLPTZ Demo
-Comment=Launch Hall PTZ Control in demo mode (no hardware required)
-Exec=hallptz --profile demo status
+Name=KHPTZ Demo
+Comment=Launch KH PTZ Control in demo mode (no hardware required)
+Exec=khptz --profile demo status
 Icon=preferences-desktop-display
 Terminal=false
 Type=Application

@@ -4,7 +4,7 @@
 # application/atem_diagnostics_service.py — Read-only ATEM diagnostics (#552)
 #
 # AtemDiagnosticsService wraps an AtemReadPort and exposes safe read operations
-# for hallptz doctor, status display and support bundles.
+# for khptz doctor, status display and support bundles.
 #
 # Contract:
 #   - NEVER calls set_preview, cut or auto.
@@ -142,7 +142,7 @@ class AtemDiagnosticsService:
             return self._error_result("test_connection", exc)
 
     def doctor_check(self) -> dict:
-        """Return a doctor-style check dict for hallptz doctor ATEM row."""
+        """Return a doctor-style check dict for khptz doctor ATEM row."""
         if self._port is None:
             return {
                 "name": "ATEM",

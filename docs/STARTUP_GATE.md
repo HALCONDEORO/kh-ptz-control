@@ -31,7 +31,7 @@ Mode: Operator
 Cameras: OK
 Last backup: OK
 
-[Start HALLPTZ]
+[Start KHPTZ]
 ```
 
 Rules:
@@ -157,7 +157,7 @@ DEMO MODE - NO REAL HARDWARE COMMANDS
 Rules:
 
 - Demo should use a distinct visual treatment/banner.
-- Demo start button should say `Start Demo`, not only `Start HALLPTZ`.
+- Demo start button should say `Start Demo`, not only `Start KHPTZ`.
 - Demo validation must not be presented as pilot/customer readiness.
 
 ---

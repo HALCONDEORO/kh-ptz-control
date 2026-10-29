@@ -17,8 +17,8 @@ Covers:
 - Unsupported hardware has highest weight
 - Unknown flags produce risk_flags entries
 - Risk score is additive and deterministic
-- CLI: hallptz maintenance status / mark-complete
-- CLI: hallptz installability score --json
+- CLI: khptz maintenance status / mark-complete
+- CLI: khptz installability score --json
 """
 from __future__ import annotations
 

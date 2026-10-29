@@ -166,7 +166,7 @@ def validate_network_profile(cfg: NetworkProfileConfig) -> list[NetworkProfileIs
             field="network.guest_access_allowed",
             message=(
                 "Guest access is marked as allowed. "
-                "This increases risk — isolate HALLPTZ devices in a dedicated AV VLAN."
+                "This increases risk — isolate KHPTZ devices in a dedicated AV VLAN."
             ),
         ))
 
@@ -176,9 +176,9 @@ def validate_network_profile(cfg: NetworkProfileConfig) -> list[NetworkProfileIs
 # ── Flat-network warning ──────────────────────────────────────────────────────
 
 _FLAT_NETWORK_WARNING = (
-    "HALLPTZ appears to be running on a flat or unverified network. "
+    "KHPTZ appears to be running on a flat or unverified network. "
     "Recommended: isolate Raspberry Pi, cameras and ATEM in a dedicated AV VLAN. "
-    "Do not allow guest WiFi to access HALLPTZ devices."
+    "Do not allow guest WiFi to access KHPTZ devices."
 )
 
 _FLAT_NETWORK_ACTION = (

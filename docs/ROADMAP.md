@@ -1,6 +1,6 @@
 # Roadmap
 
-This is the concise roadmap for Hall PTZ Control.
+This is the concise roadmap for KH PTZ Control.
 
 The practical execution order is in `docs/IMPLEMENTATION_PLAN.md`.
 
@@ -53,11 +53,11 @@ The following MVP foundations are now present in the repository:
 - Ruff lint workflow/config;
 - shellcheck workflow;
 - dependency audit workflow;
-- `hallptz` CLI foundation;
-- `hallptz version`, `hallptz status`, `hallptz doctor`;
-- `hallptz migrate`;
-- `hallptz backup`;
-- `hallptz restore`;
+- `khptz` CLI foundation;
+- `khptz version`, `khptz status`, `khptz doctor`;
+- `khptz migrate`;
+- `khptz backup`;
+- `khptz restore`;
 - systemd service template;
 - installer script;
 - rollback script;
@@ -84,7 +84,7 @@ Before calling the MVP customer-ready:
 - run full test/lint/release checks;
 - test fresh install on target Raspberry Pi image;
 - test systemd boot/start/restart;
-- test `hallptz doctor` on Raspberry Pi;
+- test `khptz doctor` on Raspberry Pi;
 - test real camera startup and session start/end;
 - test one-camera Starter and two-camera Standard profiles;
 - test ATEM disabled and ATEM enabled cases;

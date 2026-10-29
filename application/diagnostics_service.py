@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # application/diagnostics_service.py — DiagnosticsService and CheckResult
 #
-# Runs basic health checks for the `hallptz doctor` command.
+# Runs basic health checks for the `khptz doctor` command.
 # Returns structured CheckResult objects so callers can act on results
 # without parsing printed strings.
 # Without Qt. Without network I/O (camera/ATEM reachability is out of scope here).
@@ -36,8 +36,8 @@ class Status(Enum):
 
 # ── Runtime identity helpers (#887) ───────────────────────────────────────────
 #
-# `hallptz doctor` is run both by the desktop user (during installation) and by
-# the hallptz service identity. Service-owned paths are deliberately not writable
+# `khptz doctor` is run both by the desktop user (during installation) and by
+# the khptz service identity. Service-owned paths are deliberately not writable
 # by the desktop user, so a permission check must know who is asking before it
 # calls that a failure.
 
@@ -190,7 +190,7 @@ class DiagnosticsReport:
         return [c.to_doctor_check() for c in self.checks]
 
     def to_json_dict(self, runtime_state: dict | None = None) -> dict:
-        """Return a plain dict suitable for JSON export (hallptz doctor --json).
+        """Return a plain dict suitable for JSON export (khptz doctor --json).
 
         Parameters
         ----------
@@ -229,7 +229,7 @@ class DiagnosticsReport:
 
 class DiagnosticsService:
     """
-    Runs the standard set of `hallptz doctor` checks.
+    Runs the standard set of `khptz doctor` checks.
 
     Parameters
     ----------
@@ -238,7 +238,7 @@ class DiagnosticsService:
         Defaults to the project root derived from this file's location.
     data_dir:
         User data directory (seat names, presets, etc.).
-        Defaults to the value of HALLPTZ_DATA_DIR or ~/.config/hallptz.
+        Defaults to the value of KHPTZ_DATA_DIR or ~/.config/khptz.
     config_path:
         Path to config.yaml. Defaults to <install_dir>/config.yaml.
     """
@@ -296,7 +296,7 @@ class DiagnosticsService:
         """
         Devuelve un snapshot RuntimeState redactado, o None si no hay store.
 
-        Seguro para exportacion externa (hallptz doctor --json, support bundle).
+        Seguro para exportacion externa (khptz doctor --json, support bundle).
         El nombre del chairman y otros datos PII quedan redactados.
         """
         if self._runtime_store is None:
@@ -430,7 +430,7 @@ class DiagnosticsService:
                 name, Status.FAIL,
                 "Credential files are readable beyond their owner: " + ", ".join(exposed),
                 evidence={"exposed": exposed},
-                suggested_action="sudo chmod 600 /var/lib/hallptz/*.enc",
+                suggested_action="sudo chmod 600 /var/lib/khptz/*.enc",
                 blocking=True,
                 category=CheckCategory.OPERATIONAL,
             )
@@ -441,7 +441,7 @@ class DiagnosticsService:
 
         Passwords are verified in-process: the login screen decrypts the secret
         files directly. Under --gui-mode user the GUI runs as the desktop
-        account, which by design cannot read those 0600 hallptz-owned files — so
+        account, which by design cannot read those 0600 khptz-owned files — so
         the appliance installs cleanly and then nobody can log in.
 
         Reporting it here turns a mystifying runtime symptom into a named,
@@ -483,7 +483,7 @@ class DiagnosticsService:
     def _check_version(self) -> CheckResult:
         try:
             version = self._version_file.read_text(encoding="utf-8").strip()
-            return CheckResult("version", Status.OK, f"Hall PTZ Control {version}")
+            return CheckResult("version", Status.OK, f"KH PTZ Control {version}")
         except OSError as exc:
             return CheckResult("version", Status.FAIL, f"Cannot read VERSION: {exc}")
 
@@ -742,7 +742,7 @@ class DiagnosticsService:
         if readable and writable:
             return CheckResult("data_dir", Status.OK, f"Data directory OK: {self._data_dir}")
 
-        # Running as the desktop user against a hallptz-owned path is expected,
+        # Running as the desktop user against a khptz-owned path is expected,
         # not a fault: the service still has the access it needs. Reporting
         # FAIL here made a healthy appliance show "Overall: FAIL" purely
         # because diagnostics were run from the desktop terminal (#887).
@@ -760,7 +760,7 @@ class DiagnosticsService:
             "data_dir", Status.FAIL,
             f"Data directory not {perms}able: {self._data_dir}",
             suggested_action=(
-                f"sudo chown -R hallptz:hallptz {self._data_dir} && sudo chmod 750 {self._data_dir}"
+                f"sudo chown -R khptz:khptz {self._data_dir} && sudo chmod 750 {self._data_dir}"
             ),
             category=CheckCategory.OPERATIONAL,
         )
@@ -780,7 +780,7 @@ class DiagnosticsService:
                 return CheckResult(
                     "log_dir", Status.WARNING,
                     f"Cannot create log directory {log_dir}: {exc}",
-                    suggested_action="sudo mkdir -p /var/log/hallptz && sudo chown hallptz:hallptz /var/log/hallptz",
+                    suggested_action="sudo mkdir -p /var/log/khptz && sudo chown khptz:khptz /var/log/khptz",
                 )
 
         writable = os.access(log_dir, os.W_OK)
@@ -797,7 +797,7 @@ class DiagnosticsService:
             return CheckResult(
                 "log_dir", Status.WARNING,
                 f"Log directory not writable: {log_dir}",
-                suggested_action="sudo chown hallptz:hallptz /var/log/hallptz && sudo chmod 750 /var/log/hallptz",
+                suggested_action="sudo chown khptz:khptz /var/log/khptz && sudo chmod 750 /var/log/khptz",
                 category=CheckCategory.OPERATIONAL,
             )
         if app_log.exists():

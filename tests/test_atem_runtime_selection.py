@@ -33,11 +33,11 @@ class TestDemoProfileSelectsFakeATEM:
         assert is_fake_atem_mode(profile="Demo") is False
 
     def test_demo_env_var_read_when_profile_none(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "demo")
+        monkeypatch.setenv("KHPTZ_PROFILE", "demo")
         assert is_fake_atem_mode() is True
 
     def test_simulation_env_var_read_when_profile_none(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "simulation")
+        monkeypatch.setenv("KHPTZ_PROFILE", "simulation")
         assert is_fake_atem_mode() is True
 
     def test_demo_path_ignores_sim_active_flag(self):
@@ -55,7 +55,7 @@ class TestSimModeActiveSelectsFakeATEM:
         assert is_fake_atem_mode(profile=None, sim_active=True) is True
 
     def test_sim_active_env_default_is_fake(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "production")
+        monkeypatch.setenv("KHPTZ_PROFILE", "production")
         assert is_fake_atem_mode(sim_active=True) is True
 
 
@@ -66,7 +66,7 @@ class TestProductionProfileSelectsRealMonitor:
         assert is_fake_atem_mode(profile="production", sim_active=False) is False
 
     def test_default_is_not_fake(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "production")
+        monkeypatch.setenv("KHPTZ_PROFILE", "production")
         assert is_fake_atem_mode(sim_active=False) is False
 
     def test_unknown_profile_is_not_fake(self):

@@ -1,6 +1,6 @@
 # Architecture Decisions Record
 
-This document captures key architectural boundary decisions for Hall PTZ Control.
+This document captures key architectural boundary decisions for KH PTZ Control.
 Each ADR records the context, decision taken and consequences of following that rule.
 
 For product and scope decisions see [`docs/DECISIONS.md`](DECISIONS.md).

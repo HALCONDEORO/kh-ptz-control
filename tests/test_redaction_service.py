@@ -138,7 +138,7 @@ class TestRedactText:
         assert "host=example.com" in result.value  # non-secret preserved
 
     def test_clean_text_unchanged(self):
-        text = "Hall PTZ Control version 3.18.0 — all systems nominal."
+        text = "KH PTZ Control version 3.18.0 — all systems nominal."
         result = _SVC.redact_text(text)
         assert result.value == text
         assert result.is_clean
@@ -153,7 +153,7 @@ class TestRedactText:
 class TestIsSafeForExport:
 
     def test_clean_text_is_safe(self):
-        assert _SVC.is_safe_for_export("HALLPTZ doctor: all checks OK")
+        assert _SVC.is_safe_for_export("KHPTZ doctor: all checks OK")
 
     def test_password_assignment_is_not_safe(self):
         assert not _SVC.is_safe_for_export("password=opensesame")

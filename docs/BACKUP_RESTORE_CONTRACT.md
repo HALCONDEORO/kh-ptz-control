@@ -108,7 +108,7 @@ unlisted archive member as tampering, it rejected the **whole** archive —
 adjusted preset brightness could no longer be restored from its own backup, and
 the failure surfaced only during a recovery.
 
-`atem_mapping.json` joined the set when it moved out of `/etc/hallptz` (which the
+`atem_mapping.json` joined the set when it moved out of `/etc/khptz` (which the
 service cannot write) into the runtime data directory. A backup taken before
 that move does not contain it; restoring one simply leaves the current mapping
 in place.
@@ -132,7 +132,7 @@ requested and the manifest explicitly includes them.
 A diagnostic snapshot for remote support — not intended for restore.
 
 ```text
-hallptz doctor output
+khptz doctor output
 sanitized config summary
 recent log excerpt (redacted)
 systemd status summary
@@ -152,8 +152,8 @@ Restore must write only to paths registered in the runtime path contract.
 
 | Category | Allowed restore destination |
 |---|---|
-| `data` | `/var/lib/hallptz/` (canonical) or `~/.config/hallptz/` (legacy) |
-| `config` | `/etc/hallptz/` (canonical) or app directory (legacy) |
+| `data` | `/var/lib/khptz/` (canonical) or `~/.config/khptz/` (legacy) |
+| `config` | `/etc/khptz/` (canonical) or app directory (legacy) |
 | `log` | Not restorable — logs are diagnostic only |
 | `meta` | Not written to disk — used for validation only |
 
@@ -196,8 +196,8 @@ Dry-run must exit 0 if no errors are found, non-zero otherwise.
 Before restoring any file that already exists at the target path:
 
 ```text
-1. Create a timestamped pre-restore backup ZIP in /var/backups/hallptz/
-   (or ~/.config/hallptz/ for legacy installs).
+1. Create a timestamped pre-restore backup ZIP in /var/backups/khptz/
+   (or ~/.config/khptz/ for legacy installs).
    Name: pre-restore-<ISO8601>.zip
 2. Include all files that will be overwritten.
 3. If the pre-restore backup cannot be written, abort the restore unless
@@ -318,12 +318,12 @@ This contract blocks or informs:
 #532  Support bundle export and redaction contract
 Update data_paths.py: add manifest generation to export_backup()
 Update data_paths.py: add manifest validation to import_backup()
-Add dry-run flag to hallptz restore command
-Add pre-restore backup step to hallptz restore command
-Add session.active check to hallptz restore command
+Add dry-run flag to khptz restore command
+Add pre-restore backup step to khptz restore command
+Add session.active check to khptz restore command
 Add sha256 verification to import_backup()
 Add path traversal guard to import_backup()
-Add restore report to hallptz restore command output
+Add restore report to khptz restore command output
 ```
 
 ---

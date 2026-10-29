@@ -27,7 +27,7 @@ def _run(artifacts: list[str], tmp_path: Path) -> int:
 
 
 def test_manifest_created_for_single_artifact(tmp_path):
-    artifact = tmp_path / "hallptz-1.0.0.zip"
+    artifact = tmp_path / "khptz-1.0.0.zip"
     artifact.write_bytes(b"fake zip content")
     rc = _run([str(artifact)], tmp_path)
     assert rc == 0
@@ -35,18 +35,18 @@ def test_manifest_created_for_single_artifact(tmp_path):
     assert manifest["schema_version"] == 1
     assert manifest["hash_algorithm"] == "sha256"
     assert len(manifest["artifacts"]) == 1
-    assert manifest["artifacts"][0]["path"] == "hallptz-1.0.0.zip"
+    assert manifest["artifacts"][0]["path"] == "khptz-1.0.0.zip"
 
 
 def test_sha256sums_file_created(tmp_path):
-    artifact = tmp_path / "hallptz-1.0.0.zip"
+    artifact = tmp_path / "khptz-1.0.0.zip"
     content = b"release artifact"
     artifact.write_bytes(content)
     _run([str(artifact)], tmp_path)
     sha_file = (tmp_path / "release" / "SHA256SUMS.txt").read_text()
     expected_hash = hashlib.sha256(content).hexdigest()
     assert expected_hash in sha_file
-    assert "hallptz-1.0.0.zip" in sha_file
+    assert "khptz-1.0.0.zip" in sha_file
 
 
 def test_hash_is_correct(tmp_path):

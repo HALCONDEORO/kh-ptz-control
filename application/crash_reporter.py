@@ -39,7 +39,7 @@ def _build_report(exc_type, exc_value, exc_tb) -> str:
     lines: list[str] = []
 
     lines.append("=" * 60)
-    lines.append("Hall PTZ Control — crash report")
+    lines.append("KH PTZ Control — crash report")
     lines.append(f"Time:    {datetime.now().isoformat(timespec='seconds')}")
     lines.append(f"Version: {_installed_version}")
     lines.append(f"Mode:    {_installed_mode}")
@@ -74,7 +74,7 @@ def _user_fallback_dir() -> Optional[Path]:
     try:
         base = os.environ.get("XDG_STATE_HOME")
         root = Path(base) if base else Path.home() / ".local" / "state"
-        return root / "hallptz" / "crash"
+        return root / "khptz" / "crash"
     except Exception:  # noqa: BLE001
         return None
 
@@ -82,7 +82,7 @@ def _user_fallback_dir() -> Optional[Path]:
 def _write_report(report: str) -> Optional[Path]:
     """Write *report* to the first writable candidate directory.
 
-    On a real install /opt/hallptz is read-only to the service and /var/log/hallptz is
+    On a real install /opt/khptz is read-only to the service and /var/log/khptz is
     owned by the service user, so a crash report written by the desktop user had
     nowhere to go and was silently lost (#884). Try the configured production
     path first, then fall back to the calling user's own state directory.

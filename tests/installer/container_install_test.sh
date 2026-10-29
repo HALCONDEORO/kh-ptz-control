@@ -49,7 +49,7 @@ assert_absent() {
 }
 
 echo "=============================================================="
-echo " HALLPTZ install.sh write-side test — $(. /etc/os-release && echo "${PRETTY_NAME}")"
+echo " KHPTZ install.sh write-side test — $(. /etc/os-release && echo "${PRETTY_NAME}")"
 echo " Python: $(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')"
 echo "=============================================================="
 
@@ -99,51 +99,51 @@ rm -f /usr/local/bin/python3 /usr/local/bin/python3-noyaml
 
 echo
 echo "==> Service identity"
-if id hallptz >/dev/null 2>&1; then
-    ok "service user 'hallptz' exists"
-    shell="$(getent passwd hallptz | cut -d: -f7)"
+if id khptz >/dev/null 2>&1; then
+    ok "service user 'khptz' exists"
+    shell="$(getent passwd khptz | cut -d: -f7)"
     [[ "${shell}" == "/usr/sbin/nologin" ]] \
-        && ok "hallptz shell is nologin" \
-        || bad "hallptz shell is '${shell}', expected /usr/sbin/nologin"
+        && ok "khptz shell is nologin" \
+        || bad "khptz shell is '${shell}', expected /usr/sbin/nologin"
 else
-    bad "service user 'hallptz' was not created"
+    bad "service user 'khptz' was not created"
 fi
 
 echo
 echo "==> Directory contract"
 # Application code: the service reads it and must NOT be able to write it.
-assert_mode /opt/hallptz           "750 root:hallptz"
+assert_mode /opt/khptz           "750 root:khptz"
 # Site config: admin writes, service reads. setgid keeps group on new files.
-assert_mode /etc/hallptz           "2750 root:hallptz"
+assert_mode /etc/khptz           "2750 root:khptz"
 # Runtime-writable, owned by the service.
-assert_mode /var/lib/hallptz       "750 hallptz:hallptz"
-assert_mode /var/log/hallptz       "750 hallptz:hallptz"
-assert_mode /var/backups/hallptz   "750 hallptz:hallptz"
+assert_mode /var/lib/khptz       "750 khptz:khptz"
+assert_mode /var/log/khptz       "750 khptz:khptz"
+assert_mode /var/backups/khptz   "750 khptz:khptz"
 
 echo
 echo "==> Application payload"
-assert_exists /opt/hallptz/main.py
-assert_exists /opt/hallptz/runtime/cli.py
-assert_exists /opt/hallptz/config/defaults/starter.yaml
+assert_exists /opt/khptz/main.py
+assert_exists /opt/khptz/runtime/cli.py
+assert_exists /opt/khptz/config/defaults/starter.yaml
 # repair_rpi_runtime.sh sources this at provisioning time to decide whether the
 # system service may be enabled. If it is not deployed the fallback assumes
 # system mode, which would re-arm a second launcher on a session-owned install.
-assert_exists /opt/hallptz/scripts/lib/install_state.sh
+assert_exists /opt/khptz/scripts/lib/install_state.sh
 # rsync excludes these; shipping .git to a customer appliance would leak history.
-assert_absent /opt/hallptz/.git
-assert_absent /opt/hallptz/venv
+assert_absent /opt/khptz/.git
+assert_absent /opt/khptz/venv
 
 echo
 echo "==> CLI launcher"
-assert_exists /usr/local/bin/hallptz
-[[ -x /usr/local/bin/hallptz ]] && ok "hallptz launcher is executable" \
-                             || bad "hallptz launcher is not executable"
+assert_exists /usr/local/bin/khptz
+[[ -x /usr/local/bin/khptz ]] && ok "khptz launcher is executable" \
+                             || bad "khptz launcher is not executable"
 
 echo
 echo "==> systemd unit"
-assert_exists /etc/systemd/system/hallptz-control.service
-if diff -q "${REPO_ROOT}/runtime/systemd/hallptz-control.service" \
-           /etc/systemd/system/hallptz-control.service >/dev/null 2>&1; then
+assert_exists /etc/systemd/system/khptz-control.service
+if diff -q "${REPO_ROOT}/runtime/systemd/khptz-control.service" \
+           /etc/systemd/system/khptz-control.service >/dev/null 2>&1; then
     ok "product-mode unit matches the template verbatim"
 else
     bad "installed unit differs from the template (product mode copies it as-is)"
@@ -151,48 +151,48 @@ fi
 
 echo
 echo "==> Config seeded from the starter template"
-assert_mode /etc/hallptz/config.yaml "640 root:hallptz"
+assert_mode /etc/khptz/config.yaml "640 root:khptz"
 
 # ── Idempotency / customer-data safety ────────────────────────────────────────
 # The single most important property: an update must never destroy site config.
 
 echo
 echo "==> Second install (idempotency + config preservation)"
-MARKER="# HALLPTZ-TEST-SENTINEL-DO-NOT-REMOVE"
-echo "${MARKER}" >> /etc/hallptz/config.yaml
-cp /etc/hallptz/config.yaml /tmp/config.before
+MARKER="# KHPTZ-TEST-SENTINEL-DO-NOT-REMOVE"
+echo "${MARKER}" >> /etc/khptz/config.yaml
+cp /etc/khptz/config.yaml /tmp/config.before
 
 if ! bash "${INSTALLER}" --wizard-user root; then
     echo "[FATAL] install.sh failed when re-run on an installed system" >&2
     exit 1
 fi
 
-if grep -qF "${MARKER}" /etc/hallptz/config.yaml; then
+if grep -qF "${MARKER}" /etc/khptz/config.yaml; then
     ok "existing config.yaml was preserved on re-install"
 else
     bad "re-install DESTROYED the existing config.yaml (customer data loss)"
 fi
 
-if diff -q /tmp/config.before /etc/hallptz/config.yaml >/dev/null 2>&1; then
+if diff -q /tmp/config.before /etc/khptz/config.yaml >/dev/null 2>&1; then
     ok "config.yaml is byte-identical after re-install"
 else
     bad "config.yaml changed on re-install"
-    diff /tmp/config.before /etc/hallptz/config.yaml || true
+    diff /tmp/config.before /etc/khptz/config.yaml || true
 fi
 
 # Permissions must not drift on re-run either.
-assert_mode /opt/hallptz     "750 root:hallptz"
-assert_mode /etc/hallptz     "2750 root:hallptz"
-assert_mode /var/lib/hallptz "750 hallptz:hallptz"
+assert_mode /opt/khptz     "750 root:khptz"
+assert_mode /etc/khptz     "2750 root:khptz"
+assert_mode /var/lib/khptz "750 khptz:khptz"
 
 # ── GUI mode switch (#885) ────────────────────────────────────────────────────
 # Exactly one launcher may exist. Switching modes must install one and strip the
 # other, in both directions, or the operator gets two full-screen GUIs driving
 # the same cameras.
 
-GUI_UNIT=/etc/systemd/user/hallptz-gui.service
-GUI_HELPER=/usr/local/libexec/hallptz-gui-session
-GUI_AUTOSTART=/root/.config/autostart/hallptz-gui.desktop
+GUI_UNIT=/etc/systemd/user/khptz-gui.service
+GUI_HELPER=/usr/local/libexec/khptz-gui-session
+GUI_AUTOSTART=/root/.config/autostart/khptz-gui.desktop
 
 echo
 echo "==> Default (system) mode installs no session launcher"
@@ -210,17 +210,17 @@ assert_exists "${GUI_HELPER}"
 assert_exists "${GUI_AUTOSTART}"
 [[ -x "${GUI_HELPER}" ]] && ok "session launcher is executable" \
                          || bad "session launcher is not executable"
-# Runtime data must be reachable by the desktop user through the hallptz group.
-assert_mode /var/lib/hallptz "2770 hallptz:hallptz"
-assert_mode /var/log/hallptz "2770 hallptz:hallptz"
+# Runtime data must be reachable by the desktop user through the khptz group.
+assert_mode /var/lib/khptz "2770 khptz:khptz"
+assert_mode /var/log/khptz "2770 khptz:khptz"
 
 # Directory bits alone are not enough: data files are written via mkstemp,
 # which creates 0600, so anything already present from a system-mode install
 # stays invisible to the GUI and it would start with no presets or layout.
-echo "seed" > /var/lib/hallptz/pre-existing.json
-chmod 600 /var/lib/hallptz/pre-existing.json
+echo "seed" > /var/lib/khptz/pre-existing.json
+chmod 600 /var/lib/khptz/pre-existing.json
 bash "${INSTALLER}" --wizard-user root --gui-mode user >/dev/null 2>&1
-_pre_mode="$(stat -c '%a' /var/lib/hallptz/pre-existing.json)"
+_pre_mode="$(stat -c '%a' /var/lib/khptz/pre-existing.json)"
 # Match the GROUP digit (second from the right), not the world digit: the
 # installer grants g+rw and deliberately leaves other with no access, so a
 # correct result is 660 — which an end-anchored *6|*7 would reject.
@@ -229,9 +229,9 @@ case "${_pre_mode}" in
     *)       bad "pre-existing data file is still ${_pre_mode} - the GUI cannot read it" ;;
 esac
 # Application code stays read-only for the group either way.
-assert_mode /opt/hallptz     "750 root:hallptz"
+assert_mode /opt/khptz     "750 root:khptz"
 # Config is still preserved across a mode switch.
-if grep -qF "${MARKER}" /etc/hallptz/config.yaml; then
+if grep -qF "${MARKER}" /etc/khptz/config.yaml; then
     ok "config.yaml survived the GUI mode switch"
 else
     bad "switching GUI mode destroyed config.yaml"
@@ -246,8 +246,8 @@ fi
 assert_absent "${GUI_UNIT}"
 assert_absent "${GUI_HELPER}"
 assert_absent "${GUI_AUTOSTART}"
-assert_mode /var/lib/hallptz "750 hallptz:hallptz"
-assert_mode /var/log/hallptz "750 hallptz:hallptz"
+assert_mode /var/lib/khptz "750 khptz:khptz"
+assert_mode /var/log/khptz "750 khptz:khptz"
 
 echo
 echo "==> Invalid GUI mode is rejected"
@@ -270,10 +270,10 @@ else
     tail -20 /tmp/check.out
 fi
 # Paths now exist, so the check must say so rather than claiming a fresh system.
-if grep -q "Existing path detected: /opt/hallptz" /tmp/check.out; then
+if grep -q "Existing path detected: /opt/khptz" /tmp/check.out; then
     ok "--check detects the existing installation"
 else
-    bad "--check did not report the existing /opt/hallptz"
+    bad "--check did not report the existing /opt/khptz"
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────

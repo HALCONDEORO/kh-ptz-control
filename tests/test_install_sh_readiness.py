@@ -67,7 +67,7 @@ class TestReadinessGate:
         """A complete checkout has both required templates -> no blocking fail."""
         result = _run("real")
         assert result.returncode == 0, result.stdout + result.stderr
-        assert "=== HALLPTZ Installer Readiness Check ===" in result.stdout
+        assert "=== KHPTZ Installer Readiness Check ===" in result.stdout
         assert "All required checks passed" in result.stdout
 
     def test_root_gate_is_satisfied_by_the_stub(self):

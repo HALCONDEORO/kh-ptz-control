@@ -64,7 +64,7 @@ Already-standalone section builders that move first as warm-up:
    `tests/test_ui_god_object_budget.py` to the new size (the ratchet only moves
    down).
 4. **On the Pi / a real GUI**: open Settings → that tab → exercise every control
-   (view values, edit + save where applicable, discovery) → `hallptz doctor` clean.
+   (view values, edit + save where applicable, discovery) → `khptz doctor` clean.
 5. Commit per phase — only after the tab is verified on the device.
 
 ## Why this order

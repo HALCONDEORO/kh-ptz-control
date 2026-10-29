@@ -135,7 +135,7 @@ class InstallationFingerprint:
         return hashlib.sha256(stable.encode("utf-8")).hexdigest()
 
     def human_summary(self) -> list[str]:
-        """Return human-readable lines for hallptz fingerprint output."""
+        """Return human-readable lines for khptz fingerprint output."""
         lines = [
             f"  Installation ID:   {self.installation_id}",
             f"  App version:       {self.app_version}",

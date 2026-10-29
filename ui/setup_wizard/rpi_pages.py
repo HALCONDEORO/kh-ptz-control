@@ -94,5 +94,5 @@ class DonePage(_DonePage):
         else:
             self._verdict.setStyleSheet(error_label_qss(font_px=13))
             self._verdict.setText(
-                verdict.summary() + "\nRun 'hallptz doctor' to diagnose."
+                verdict.summary() + "\nRun 'khptz doctor' to diagnose."
             )

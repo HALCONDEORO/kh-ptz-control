@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-"""Tests for runtime.setup_launcher and the `hallptz setup` CLI command.
+"""Tests for runtime.setup_launcher and the `khptz setup` CLI command.
 
 These stay Qt-free: the provisioned guard and the CLI dispatch are tested without
 building real wizard pages, so the suite never needs a display here.
@@ -18,8 +18,8 @@ from runtime.setup_launcher import setup_wizard_needed
 
 @pytest.fixture
 def resolver(tmp_path, monkeypatch):
-    monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(tmp_path / "etc"))
-    monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(tmp_path / "etc"))
+    monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "data"))
     r = RuntimePathResolver()
     r.config_dir.mkdir(parents=True, exist_ok=True)
     return r
@@ -42,7 +42,7 @@ def test_force_overrides_provisioned(resolver):
 
 
 def test_uses_default_resolver_when_none(monkeypatch, tmp_path):
-    monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(tmp_path / "etc"))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(tmp_path / "etc"))
     # No marker on disk → wizard needed, resolver built internally.
     assert setup_wizard_needed() is True
 
@@ -104,12 +104,12 @@ def test_cmd_setup_launches_when_not_provisioned(resolver, monkeypatch):
 
 def test_cmd_setup_fresh_install_preserves_installer_written_config(resolver, monkeypatch):
     """install.sh writes config.yaml (with a generated installation_id) before
-    the wizard ever runs. A plain first-run `hallptz setup` (no marker yet) must
+    the wizard ever runs. A plain first-run `khptz setup` (no marker yet) must
     still pick that up, or apply_files() would overwrite the stable ID."""
     from application.provisioning_service import ProvisioningAnswers, ProvisioningService
     from config.writer import write_full_config
     svc = ProvisioningService()
-    seeded = ProvisioningAnswers(installation_id="HALLPTZ-2026-ABCD1234")
+    seeded = ProvisioningAnswers(installation_id="KHPTZ-2026-ABCD1234")
     write_full_config(svc.to_app_settings(seeded), resolver.config_dir / "config.yaml")
     assert not resolver.provisioned_marker_file.exists()  # fresh install, pre-wizard
 
@@ -121,7 +121,7 @@ def test_cmd_setup_fresh_install_preserves_installer_written_config(resolver, mo
     from runtime.cli import cmd_setup
     assert cmd_setup(_Args()) == 0
     assert seen["answers"] is not None
-    assert seen["answers"].installation_id == "HALLPTZ-2026-ABCD1234"
+    assert seen["answers"].installation_id == "KHPTZ-2026-ABCD1234"
 
 
 def test_cmd_setup_force_launches_even_when_provisioned(resolver, monkeypatch):
@@ -204,7 +204,7 @@ def test_cmd_setup_repair_refuses_when_config_unreadable(resolver, monkeypatch, 
     assert rc == 1
     out = capsys.readouterr().out
     assert "could not be loaded" in out
-    assert "hallptz doctor" in out
+    assert "khptz doctor" in out
 
 
 def test_cmd_setup_fresh_install_still_opens_with_unreadable_config(resolver, monkeypatch):

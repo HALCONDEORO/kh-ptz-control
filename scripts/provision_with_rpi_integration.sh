@@ -4,36 +4,36 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-readonly REQUEST="/run/hallptz/request.json"
-readonly RESULT="/run/hallptz/result.json"
-readonly PENDING="/run/hallptz/result.pending.json"
-readonly ADVISORIES="/run/hallptz/rpi-advisories.json"
-readonly PROVISIONED_MARKER="/etc/hallptz/.provisioned"
-readonly INTEGRATION_MARKER="/etc/hallptz/.rpi-integrated"
-readonly APP_ROOT="/opt/hallptz"
-readonly DISPLAY_VALUE="${HALLPTZ_DISPLAY:-:0}"
+readonly REQUEST="/run/khptz/request.json"
+readonly RESULT="/run/khptz/result.json"
+readonly PENDING="/run/khptz/result.pending.json"
+readonly ADVISORIES="/run/khptz/rpi-advisories.json"
+readonly PROVISIONED_MARKER="/etc/khptz/.provisioned"
+readonly INTEGRATION_MARKER="/etc/khptz/.rpi-integrated"
+readonly APP_ROOT="/opt/khptz"
+readonly DISPLAY_VALUE="${KHPTZ_DISPLAY:-:0}"
 # Assigned separately from `readonly` so a failing date is not masked (SC2155).
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 readonly TIMESTAMP
-readonly ROLLBACK_DIR="/var/backups/hallptz/wizard-integration-${TIMESTAMP}"
+readonly ROLLBACK_DIR="/var/backups/khptz/wizard-integration-${TIMESTAMP}"
 
 # Exit code scripts/repair_rpi_runtime.sh uses for "every OS step succeeded
-# and the configuration is applied, but `hallptz doctor` says the appliance is
+# and the configuration is applied, but `khptz doctor` says the appliance is
 # not healthy". Distinct from a generic failure so this script can keep the
 # customer's configuration instead of rolling it back. Kept in sync there.
 readonly RC_DIAGNOSTICS_FATAL=40
 
 ROLLBACK_TARGETS=(
-    "/etc/hallptz/config.yaml"
-    "/var/lib/hallptz/password.enc"
-    "/var/lib/hallptz/admin.enc"
+    "/etc/khptz/config.yaml"
+    "/var/lib/khptz/password.enc"
+    "/var/lib/khptz/admin.enc"
     "${PROVISIONED_MARKER}"
     "${INTEGRATION_MARKER}"
 )
 published=false
 snapshot_taken=false
 
-log() { printf '[hallptz-provision] %s\n' "$*"; }
+log() { printf '[khptz-provision] %s\n' "$*"; }
 
 publish_pending() {
     if [[ "${published}" != "true" && -f "${PENDING}" ]]; then
@@ -72,8 +72,8 @@ PY
 # Two things must be true however this script exits, or the appliance is left in
 # a state the operator cannot recover from:
 #
-#   1. request.json must be gone. hallptz-provision.path triggers on
-#      PathExists=/run/hallptz/request.json and re-arms as soon as the oneshot
+#   1. request.json must be gone. khptz-provision.path triggers on
+#      PathExists=/run/khptz/request.json and re-arms as soon as the oneshot
 #      deactivates, so a request that survives a failure restarts this script
 #      immediately, forever. Two paths used to leave it behind — an
 #      undetectable wizard user, and a provisioner that died before its own
@@ -95,7 +95,7 @@ finish() {
 }
 trap finish EXIT
 
-# EXIT alone is not enough. hallptz-provision.service sets
+# EXIT alone is not enough. khptz-provision.service sets
 # TimeoutStartSec=600; when systemd hits it, it sends SIGTERM - and bash
 # does NOT run an EXIT trap for a signal it has no handler for. The script
 # would die leaving request.json (with both plaintext passwords) on tmpfs
@@ -126,7 +126,7 @@ on_signal() {
 
     # rolled_back is what tells the operator whether to expect their answers
     # to still be there. Saying nothing is worse than either answer.
-    printf '{"ok":false,"rolled_back":%s,"error":"Setup was interrupted (SIG%s) before it finished. Nothing was applied - open HALLPTZ Setup again to retry."}' "${rolled_back}" "${signal}" > "${PENDING}"
+    printf '{"ok":false,"rolled_back":%s,"error":"Setup was interrupted (SIG%s) before it finished. Nothing was applied - open KHPTZ Setup again to retry."}' "${rolled_back}" "${signal}" > "${PENDING}"
     exit 143
 }
 trap 'on_signal TERM' TERM
@@ -134,19 +134,19 @@ trap 'on_signal INT' INT
 trap 'on_signal HUP' HUP
 
 wizard_user_from_state() {
-    local state="/etc/hallptz/install-state.env"
+    local state="/etc/khptz/install-state.env"
     [[ -r "${state}" ]] || return 1
-    sed -n 's/^HALLPTZ_WIZARD_USER="\{0,1\}\([^"[:space:]]*\)"\{0,1\}$/\1/p' \
+    sed -n 's/^KHPTZ_WIZARD_USER="\{0,1\}\([^"[:space:]]*\)"\{0,1\}$/\1/p' \
         "${state}" | tail -n1
 }
 
 detect_wizard_user() {
-    local candidate="${HALLPTZ_WIZARD_USER:-}"
+    local candidate="${KHPTZ_WIZARD_USER:-}"
     [[ -n "${candidate}" ]] || candidate="$(wizard_user_from_state || true)"
-    if [[ -z "${candidate}" && -d /run/hallptz ]]; then
-        candidate="$(stat -c '%U' /run/hallptz 2>/dev/null || true)"
+    if [[ -z "${candidate}" && -d /run/khptz ]]; then
+        candidate="$(stat -c '%U' /run/khptz 2>/dev/null || true)"
     fi
-    [[ -n "${candidate}" && "${candidate}" != "root" && "${candidate}" != "hallptz" ]] \
+    [[ -n "${candidate}" && "${candidate}" != "root" && "${candidate}" != "khptz" ]] \
         || return 1
     id "${candidate}" >/dev/null 2>&1 || return 1
     printf '%s\n' "${candidate}"
@@ -233,7 +233,7 @@ data.update({
     "ok": False,
     "error": (
         "Your settings were saved, but this device is not healthy yet. "
-        "Run 'hallptz doctor' to see what is wrong, fix it, then open HALLPTZ Setup "
+        "Run 'khptz doctor' to see what is wrong, fix it, then open KHPTZ Setup "
         "again - you will not have to re-enter anything."
     ),
     "rpi_integration": False,
@@ -268,7 +268,7 @@ data.update({
 path.write_text(json.dumps(data), encoding="utf-8")
 PY
     chmod 0644 "${PENDING}" 2>/dev/null || true
-    systemctl stop hallptz-control.service >/dev/null 2>&1 || true
+    systemctl stop khptz-control.service >/dev/null 2>&1 || true
 }
 
 result_is_ok() {
@@ -343,7 +343,7 @@ if [[ ${provision_rc} -ne 0 ]] || ! result_is_ok "${PENDING}"; then
 fi
 
 if ! /usr/bin/python3 -m runtime.rpi_post_provision \
-    --config /etc/hallptz/config.yaml \
+    --config /etc/khptz/config.yaml \
     --advisories "${ADVISORIES}"; then
     write_integration_failure "configuration normalization or ATEM validation failed"
     exit 1
@@ -357,7 +357,7 @@ repair_rc=$?
 set -e
 
 if [[ ${repair_rc} -eq ${RC_DIAGNOSTICS_FATAL} ]]; then
-    # Runtime finalisation applied every OS step successfully; `hallptz doctor`
+    # Runtime finalisation applied every OS step successfully; `khptz doctor`
     # then reported the appliance as unhealthy. That is a verdict about the
     # ENVIRONMENT, not about the answers the operator typed, so rolling back
     # here would delete a correct config.yaml and both password secrets and

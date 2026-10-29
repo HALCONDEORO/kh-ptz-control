@@ -42,7 +42,7 @@ def check_utf8(encoding: Optional[str] = None) -> RpiSetupAdvisory:
         False,
         False,
         f"{current} may crash diagnostics when they print Unicode characters",
-        "Setup will force C.UTF-8 for HALLPTZ; use a UTF-8 desktop locale as well.",
+        "Setup will force C.UTF-8 for KHPTZ; use a UTF-8 desktop locale as well.",
     )
 
 
@@ -116,7 +116,7 @@ def check_raspberry_pi_os(
 
 def _active_startup_text(path: Path, text: str) -> str:
     """Return only active startup content, ignoring our reversible quarantine."""
-    if ".disabled-by-hallptz-" in path.name:
+    if ".disabled-by-khptz-" in path.name:
         return ""
     active_lines = []
     for raw_line in text.splitlines():
@@ -133,7 +133,7 @@ def check_legacy_autostart(
     entries: Optional[Iterable[str]] = None,
 ) -> RpiSetupAdvisory:
     patterns = re.compile(
-        r"dublin[ _-]?isl|hallptz_controls|ptz[ _-]?(control|controller)|camera[ _-]?controller",
+        r"khptz|khptz_controls|hallptz|hallptz_controls|ptz[ _-]?(control|controller)|camera[ _-]?controller",
         re.IGNORECASE,
     )
     candidates: List[str] = []
@@ -179,7 +179,14 @@ def check_legacy_autostart(
                 continue
             if active:
                 candidates.append(f"{path}\n{active}")
-    matched = [item for item in candidates if patterns.search(item)]
+    # The install user's home prefix never counts as a product-name match:
+    # /home/khptz/... is the expected location, not a legacy marker.
+    home_prefix = str(home or Path.home()).lower() + "/"
+    matched = [
+        item
+        for item in candidates
+        if patterns.search(item.lower().replace(home_prefix, ""))
+    ]
     if not matched:
         return RpiSetupAdvisory(
             "legacy_autostart",
@@ -195,7 +202,7 @@ def check_legacy_autostart(
         False,
         False,
         f"Found {len(matched)} possible legacy startup {suffix}",
-        "Setup will back them up, disable them and install the canonical HALLPTZ startup chain.",
+        "Setup will back them up, disable them and install the canonical KHPTZ startup chain.",
     )
 
 

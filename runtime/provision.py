@@ -3,8 +3,8 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 """runtime/provision.py — privileged provisioning entrypoint.
 
-Run as root by the hallptz-provision systemd oneshot when the unprivileged wizard
-drops a request file in /run/hallptz (tmpfs). The request carries the wizard
+Run as root by the khptz-provision systemd oneshot when the unprivileged wizard
+drops a request file in /run/khptz (tmpfs). The request carries the wizard
 answers plus the two plaintext passwords; this module:
 
   1. reads and validates the request,
@@ -40,8 +40,8 @@ from application.provisioning_service import (
 )
 from runtime.path_resolver import RuntimePathResolver
 
-SERVICE_USER = "hallptz"
-SERVICE_NAME = "hallptz-control"
+SERVICE_USER = "khptz"
+SERVICE_NAME = "khptz-control"
 
 
 # ── Request (de)serialisation ─────────────────────────────────────────────────
@@ -85,7 +85,7 @@ def _read_request_safely(path: Path) -> str:
     """Read *path* without ever following a symlink, closing the TOCTOU window
     a separate is_symlink()-then-read_text() would leave open.
 
-    /run/hallptz is writable by the unprivileged wizard user, who could otherwise
+    /run/khptz is writable by the unprivileged wizard user, who could otherwise
     swap in a symlink between a check and a later read. O_NOFOLLOW makes the
     open itself fail (ELOOP) on a symlink — there is no gap to race — and the
     fstat check additionally refuses any non-regular file (fifo, device, ...)
@@ -120,7 +120,7 @@ def _shred(path: Path) -> None:
     Only overwrites a regular file, verified from the SAME open file
     descriptor it then writes through — an earlier version checked with
     os.lstat() and then reopened by name via open(path, "wb"), which left a
-    TOCTOU window: /run/hallptz is writable by the unprivileged wizard user, who
+    TOCTOU window: /run/khptz is writable by the unprivileged wizard user, who
     could swap the path to a symlink between the check and the reopen. A
     single O_NOFOLLOW|O_NONBLOCK open (no O_CREAT — the file must already
     exist) closes that window the same way _read_request_safely does for
@@ -158,7 +158,7 @@ def _shred(path: Path) -> None:
 def _write_result(result_path: Path, result: dict) -> None:
     """Write result.json, refusing to follow a symlink at that path.
 
-    Same /run/hallptz symlink concern as _shred: unlink whatever currently sits
+    Same /run/khptz symlink concern as _shred: unlink whatever currently sits
     at result_path (safe — unlink never follows a symlink) immediately before
     an exclusive create, so a symlink raced back into that window makes this
     fail rather than silently overwrite whatever it points at.
@@ -177,7 +177,7 @@ def _write_result(result_path: Path, result: dict) -> None:
 
 
 def _resolve_service_user_ids() -> "Optional[tuple[int, int]]":
-    """Look up the hallptz service user's (uid, gid); None if unavailable
+    """Look up the khptz service user's (uid, gid); None if unavailable
     (non-POSIX platform, or the user does not exist yet — CI, dev, tests)."""
     try:
         import grp
@@ -192,11 +192,11 @@ def _safe_chown(path: Path, uid: int, gid: int) -> None:
     """Default chown for the service-user handoff: fd-based, never follows a
     symlink.
 
-    /var/lib/hallptz is owned hallptz:hallptz 0750 — the hallptz-control.service process
+    /var/lib/khptz is owned khptz:khptz 0750 — the khptz-control.service process
     itself can write there. A compromised process running as that user could
     swap the just-written secret for a symlink in the window between
     apply_files() writing it and this chown running; a naive
-    os.chown(path, ...) follows symlinks by name and would hand hallptz
+    os.chown(path, ...) follows symlinks by name and would hand khptz
     ownership of whatever the link points at. O_NOFOLLOW makes the open
     itself fail on a symlink, and fchown operates on the already-open,
     already-verified-regular fd — there is no reopen-by-name to race.
@@ -216,16 +216,16 @@ def _chown_secrets_to_service_user(
     resolve_ids: Callable[[], "Optional[tuple[int, int]]"] = _resolve_service_user_ids,
     chown: Optional[Callable[[Path, int, int], None]] = None,
 ) -> None:
-    """Chown the two password secrets to the hallptz service user (best-effort).
+    """Chown the two password secrets to the khptz service user (best-effort).
 
     apply_files() writes secrets 0600 as whichever user runs this oneshot —
-    root, since HALLPTZ_DATA_DIR now matches hallptz-control.service's secrets dir.
-    Without this, the secrets land root:root and hallptz-control.service (which
-    runs as User=hallptz) could never decrypt them to validate a login. Never
-    raises — a failure here should not fail provisioning, `hallptz doctor`
+    root, since KHPTZ_DATA_DIR now matches khptz-control.service's secrets dir.
+    Without this, the secrets land root:root and khptz-control.service (which
+    runs as User=khptz) could never decrypt them to validate a login. Never
+    raises — a failure here should not fail provisioning, `khptz doctor`
     surfaces it. ``resolve_ids``/``chown`` are injectable (same pattern as
     ``apply_system_steps``'s ``runner``) since pwd/grp are POSIX-only and the
-    hallptz user does not exist outside a real Pi install. Default ``chown`` is
+    khptz user does not exist outside a real Pi install. Default ``chown`` is
     the symlink-safe ``_safe_chown``, not a raw ``os.chown`` by path.
     """
     ids = resolve_ids()
@@ -251,20 +251,20 @@ def _chgrp_config_to_service_group(
     resolve_ids: Callable[[], "Optional[tuple[int, int]]"] = _resolve_service_user_ids,
     chown: Optional[Callable[[Path, int, int], None]] = None,
 ) -> None:
-    """Fix config.yaml's group to hallptz after apply_files() replaces its inode.
+    """Fix config.yaml's group to khptz after apply_files() replaces its inode.
 
     apply_files() writes config.yaml via write_text_atomic, which replaces the
-    inode outright — losing the installer's original root:hallptz ownership
+    inode outright — losing the installer's original root:khptz ownership
     every time this privileged oneshot runs, landing it root:root instead
     (whatever root's primary group happens to be). Left that way, mode 0640
-    gives group-read, but the "root" group does not include hallptz —
-    hallptz-control.service (User=hallptz, Group=hallptz) could no longer read its own
+    gives group-read, but the "root" group does not include khptz —
+    khptz-control.service (User=khptz, Group=khptz) could no longer read its own
     config after any successful provision/repair. Owner stays root (uid left
     unchanged, matching the installer's convention); only the group changes.
     Never raises — matches _chown_secrets_to_service_user's best-effort
-    pattern; `hallptz doctor` surfaces a failure here. Default ``chown`` is the
+    pattern; `khptz doctor` surfaces a failure here. Default ``chown`` is the
     symlink-safe ``_safe_chown`` (see its docstring) — config_dir's own
-    permissions (root:hallptz, no group/other write) already rule out the
+    permissions (root:khptz, no group/other write) already rule out the
     same swap risk the secrets face, but staying consistent costs nothing.
     """
     ids = resolve_ids()
@@ -295,8 +295,8 @@ def _safe_capture_file(path: Path) -> "Optional[tuple[bytes, int, int, int]]":
     """Read *path*'s bytes + owner/group/mode via a single safe fd.
 
     Refuses to follow a symlink (O_NOFOLLOW) and refuses anything but a
-    regular file — /var/lib/hallptz is writable by the hallptz service user itself
-    (hallptz-control.service), so a compromised process running as that user
+    regular file — /var/lib/khptz is writable by the khptz service user itself
+    (khptz-control.service), so a compromised process running as that user
     could plant a symlink there before this snapshot is even taken. Returns
     None (treated the same as "absent") for a missing path, a symlink, or any
     other non-regular file — restore() then just unlinks whatever it finds
@@ -330,7 +330,7 @@ def _safe_write_regular_file(path: Path, data: bytes, uid: int, gid: int, mode: 
     """Write *data* to *path* as a fresh regular file; chown/chmod happen on
     that same fd, never by reopening the path afterward.
 
-    Same /var/lib/hallptz concern as _safe_capture_file: unlink whatever
+    Same /var/lib/khptz concern as _safe_capture_file: unlink whatever
     currently sits at *path* (safe — unlink never follows a symlink)
     immediately before an O_NOFOLLOW|O_EXCL create, so a symlink raced back
     into that window fails the write instead of writing through it. Never
@@ -381,12 +381,12 @@ class ConfigSnapshot:
     a mid-repair failure after that replace but before
     _chown_secrets_to_service_user() runs would otherwise leave a
     content-correct but root:root-owned secret behind after "successful"
-    rollback — unreadable by hallptz-control.service (User=hallptz) despite the
+    rollback — unreadable by khptz-control.service (User=khptz) despite the
     result saying rolled_back=True.
 
     Both capture and restore go through the fd-based _safe_capture_file /
     _safe_write_regular_file helpers rather than Path.read_bytes()/
-    write_bytes()/os.chown() by name — /var/lib/hallptz is writable by the hallptz
+    write_bytes()/os.chown() by name — /var/lib/khptz is writable by the khptz
     service user, so a compromised process running as that user could swap a
     secret for a symlink between capture() and restore() otherwise.
     """
@@ -437,14 +437,14 @@ def plan_system_commands(resolver: Optional[RuntimePathResolver] = None) -> List
     session_owned = gui_is_session_owned(r)
 
     # Runtime directories: 2770 when the desktop GUI shares them with the
-    # service through the hallptz group, 0750 when only the service writes. Using
+    # service through the khptz group, 0750 when only the service writes. Using
     # 0750 unconditionally would undo what install.sh --gui-mode user set and
     # leave the GUI unable to write presets, seats or logs.
     runtime_mode = "2770" if session_owned else "0750"
 
     commands: List[List[str]] = [
         ["useradd", "--system", "--no-create-home", "--shell", "/usr/sbin/nologin", SERVICE_USER],
-        # config dir: root:hallptz, setgid + others-traverse (2751) so the desktop
+        # config dir: root:khptz, setgid + others-traverse (2751) so the desktop
         # session can stat the .provisioned marker without reading secrets.
         ["install", "-d", "-m", "2751", "-o", "root", "-g", SERVICE_USER, cfg],
         ["install", "-d", "-m", runtime_mode, "-o", SERVICE_USER, "-g", SERVICE_USER, data],
@@ -455,7 +455,7 @@ def plan_system_commands(resolver: Optional[RuntimePathResolver] = None) -> List
 
     # Enabling the system service on a session-owned install is the
     # two-competing-GUIs bug: install.sh deliberately disabled it, and the
-    # desktop session already starts hallptz-gui.service at login.
+    # desktop session already starts khptz-gui.service at login.
     if not session_owned:
         commands.append(["systemctl", "enable", SERVICE_NAME])
 
@@ -485,19 +485,19 @@ def apply_system_steps(
 
 
 def _restart_control_service(runner: Callable[[List[str]], object] = None) -> None:
-    """Start/restart hallptz-control.service once provisioning succeeds.
+    """Start/restart khptz-control.service once provisioning succeeds.
 
-    hallptz-control.service gates on ConditionPathExists=.../.provisioned, so if
+    khptz-control.service gates on ConditionPathExists=.../.provisioned, so if
     it attempted to start earlier (before the marker existed, e.g. at boot)
     systemd skipped it and will NOT retry on its own now that the marker
     exists — nothing else pokes it. This also picks up fresh config/secrets
     for an install that was already running on stale/starter values from a
     prior partial setup. Best-effort: a restart failure here does not roll
-    back an otherwise-successful provisioning result — `hallptz doctor`/`hallptz
+    back an otherwise-successful provisioning result — `khptz doctor`/`khptz
     status` already surface the service's actual running state.
     """
-    # On a session-owned install (#885) hallptz-control is deliberately disabled
-    # and hallptz-gui.service is started by the desktop session at login.
+    # On a session-owned install (#885) khptz-control is deliberately disabled
+    # and khptz-gui.service is started by the desktop session at login.
     # Restarting the system service here would not merely arm a second
     # launcher — it would put a second full-screen GUI on the cameras
     # immediately, while the operator is still finishing the wizard.
@@ -557,7 +557,7 @@ def run_provision(
     result: dict
     try:
         # _read_request_safely refuses to follow a symlink (O_NOFOLLOW) and
-        # refuses anything but a regular file — /run/hallptz is writable by the
+        # refuses anything but a regular file — /run/khptz is writable by the
         # unprivileged wizard user. Any failure here is treated the same as a
         # corrupt request by the broad except below.
         data = json.loads(_read_request_safely(request_path))
@@ -566,14 +566,14 @@ def run_provision(
         issues = svc.validate(answers)
         if not issues and r.provisioned_marker_file.exists():
             # An already-provisioned install has real settings to protect.
-            # /run/hallptz is writable by the unprivileged wizard user, so a raw
+            # /run/khptz is writable by the unprivileged wizard user, so a raw
             # request dropped there directly — bypassing the wizard's own
             # AdminAuthPage entirely — must not be enough on its own to
             # reconfigure or reset both passwords. Checked HERE, not in the
             # wizard's UI process: this privileged oneshot is the only
-            # context that reliably resolves/decrypts the hallptz:hallptz-owned
-            # secrets (HALLPTZ_DATA_DIR is pinned for this unit; a
-            # desktop-launched `hallptz setup` process is not).
+            # context that reliably resolves/decrypts the khptz:khptz-owned
+            # secrets (KHPTZ_DATA_DIR is pinned for this unit; a
+            # desktop-launched `khptz setup` process is not).
             from application.authentication import verify_admin
             if not verify_admin(answers.current_admin_password):
                 issues = [ProvisioningIssue(
@@ -618,11 +618,11 @@ def run_provision(
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    """CLI used by the hallptz-provision systemd oneshot. Returns 0 on success."""
+    """CLI used by the khptz-provision systemd oneshot. Returns 0 on success."""
     import argparse
 
     parser = argparse.ArgumentParser(
-        prog="hallptz-provision",
+        prog="khptz-provision",
         description="Apply a setup provisioning request (run as root by systemd).",
     )
     parser.add_argument("--request", required=True, type=Path,

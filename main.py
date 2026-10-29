@@ -40,7 +40,7 @@ def _init_logging() -> None:
     setup_logging(log_dir=log_dir, version_line=info.version_line())
 
     # The GUI is the process that actually crashes on an appliance, yet the
-    # crash reporter was only ever installed by the `hallptz` CLI — so the field
+    # crash reporter was only ever installed by the `khptz` CLI — so the field
     # failures that ended in `status=6/ABRT` left nothing behind but a
     # photograph of the screen. PyQt5 passes an unhandled exception raised in a
     # slot to sys.excepthook *before* calling qFatal()/abort(), so installing it

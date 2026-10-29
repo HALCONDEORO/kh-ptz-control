@@ -6,12 +6,12 @@
 # tempfile.mkstemp always creates 0600 and os.replace preserves it, so every
 # JSON data file is readable only by whoever wrote it. That is fine while one
 # identity owns the data, and silently broken once two share it through the
-# `hallptz` group:
+# `khptz` group:
 #
-#   - switching to --gui-mode user leaves every existing /var/lib/hallptz file
-#     0600 hallptz:hallptz, so the GUI starts with no presets, seats or layout;
-#   - files the GUI then writes are 0600 <desktop-user>:hallptz, so `hallptz doctor`,
-#     `hallptz backup` and the support bundle cannot read them.
+#   - switching to --gui-mode user leaves every existing /var/lib/khptz file
+#     0600 khptz:khptz, so the GUI starts with no presets, seats or layout;
+#   - files the GUI then writes are 0600 <desktop-user>:khptz, so `khptz doctor`,
+#     `khptz backup` and the support bundle cannot read them.
 #
 # The fix mirrors the directory's intent onto the file. These tests assert the
 # decision rather than the resulting filesystem bits, so they are meaningful on

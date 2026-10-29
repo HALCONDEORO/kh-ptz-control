@@ -151,9 +151,9 @@ class LayoutExportImportService:
             return f"Invalid 'schema_version': {version!r}"
         if version > SCHEMA_VERSION:
             return (
-                f"Layout uses schema version {version} but this version of HALLPTZ "
+                f"Layout uses schema version {version} but this version of KHPTZ "
                 f"only supports up to version {SCHEMA_VERSION}. "
-                "Upgrade Hall PTZ Control to import this layout."
+                "Upgrade KH PTZ Control to import this layout."
             )
 
         seats = raw.get("seats", [])

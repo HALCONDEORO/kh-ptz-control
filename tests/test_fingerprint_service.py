@@ -18,8 +18,8 @@ Covers:
 - _safe_json_hash returns 'missing' for missing file
 - _safe_json_hash returns 'invalid' for non-JSON file
 - _file_sha256 returns 'missing' for missing file
-- hallptz fingerprint command exits 0
-- hallptz fingerprint --json produces valid JSON with expected keys
+- khptz fingerprint command exits 0
+- khptz fingerprint --json produces valid JSON with expected keys
 """
 from __future__ import annotations
 
@@ -72,13 +72,13 @@ class TestFingerprintHash:
 
     def test_same_state_same_hash(self):
         fp1 = InstallationFingerprint(
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
             config_hash="abc123",
             layout_hash="def456",
         )
         fp2 = InstallationFingerprint(
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
             config_hash="abc123",
             layout_hash="def456",
@@ -106,8 +106,8 @@ class TestFingerprintHash:
         assert fp1.fingerprint_hash() != fp2.fingerprint_hash()
 
     def test_installation_id_change_changes_fingerprint(self):
-        fp1 = InstallationFingerprint(installation_id="hallptz-2026-0001")
-        fp2 = InstallationFingerprint(installation_id="hallptz-2026-0002")
+        fp1 = InstallationFingerprint(installation_id="khptz-2026-0001")
+        fp2 = InstallationFingerprint(installation_id="khptz-2026-0002")
         assert fp1.fingerprint_hash() != fp2.fingerprint_hash()
 
 
@@ -120,9 +120,9 @@ class TestHumanSummary:
         assert all(isinstance(l, str) for l in lines)
 
     def test_contains_installation_id(self):
-        fp = InstallationFingerprint(installation_id="hallptz-2026-0042")
+        fp = InstallationFingerprint(installation_id="khptz-2026-0042")
         summary = "\n".join(fp.human_summary())
-        assert "hallptz-2026-0042" in summary
+        assert "khptz-2026-0042" in summary
 
     def test_config_hash_truncated(self):
         fp = InstallationFingerprint(config_hash="a" * 64)
@@ -151,7 +151,7 @@ class TestHumanSummary:
 
     def test_no_raw_ips_in_summary(self):
         fp = InstallationFingerprint(
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             cameras=[{"role": "cam1", "configured": "yes"}],
         )
         summary = "\n".join(fp.human_summary())
@@ -177,7 +177,7 @@ class TestToDict:
 
     def test_to_dict_is_json_serializable(self):
         fp = InstallationFingerprint(
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
             cameras=[{"role": "cam1", "configured": "yes"}],
         )
@@ -197,7 +197,7 @@ class TestToDict:
 
     def test_to_dict_no_secrets(self):
         fp = InstallationFingerprint(
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
         )
         text = json.dumps(fp.to_dict())
@@ -304,7 +304,7 @@ class TestFingerprintService:
         paths = self._make_paths(tmp_path)
         with patch("application.fingerprint_service.build_info") as mock_bi:
             mock_bi.return_value = MagicMock(
-                installation_id="hallptz-2026-test",
+                installation_id="khptz-2026-test",
                 app_version="3.18.0",
                 git_commit="abc1234",
                 runtime_profile="production",
@@ -317,14 +317,14 @@ class TestFingerprintService:
         paths = self._make_paths(tmp_path)
         with patch("application.fingerprint_service.build_info") as mock_bi:
             mock_bi.return_value = MagicMock(
-                installation_id="hallptz-2026-test",
+                installation_id="khptz-2026-test",
                 app_version="3.18.0",
                 git_commit="abc1234",
                 runtime_profile="production",
             )
             svc = FingerprintService(paths=paths)
             fp = svc.generate()
-        assert fp.installation_id == "hallptz-2026-test"
+        assert fp.installation_id == "khptz-2026-test"
         assert fp.app_version == "3.18.0"
         assert fp.git_commit == "abc1234"
         assert fp.profile == "production"
@@ -387,7 +387,7 @@ class TestFingerprintCLI:
         from runtime.cli import main
         with patch("application.fingerprint_service.build_info") as mock_bi:
             mock_bi.return_value = MagicMock(
-                installation_id="hallptz-cli-test",
+                installation_id="khptz-cli-test",
                 app_version="3.18.0",
                 git_commit="abc1234",
                 runtime_profile="production",
@@ -399,7 +399,7 @@ class TestFingerprintCLI:
         from runtime.cli import main
         with patch("application.fingerprint_service.build_info") as mock_bi:
             mock_bi.return_value = MagicMock(
-                installation_id="hallptz-cli-test",
+                installation_id="khptz-cli-test",
                 app_version="3.18.0",
                 git_commit="abc1234",
                 runtime_profile="production",
@@ -416,7 +416,7 @@ class TestFingerprintCLI:
         from runtime.cli import main
         with patch("application.fingerprint_service.build_info") as mock_bi:
             mock_bi.return_value = MagicMock(
-                installation_id="hallptz-cli-test",
+                installation_id="khptz-cli-test",
                 app_version="3.18.0",
                 git_commit="abc1234",
                 runtime_profile="production",

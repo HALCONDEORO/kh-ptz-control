@@ -18,8 +18,8 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-UNIT = REPO_ROOT / "runtime" / "systemd" / "hallptz-control.service"
-BOOTSTRAP = REPO_ROOT / "install_hallptz_rpi.sh"
+UNIT = REPO_ROOT / "runtime" / "systemd" / "khptz-control.service"
+BOOTSTRAP = REPO_ROOT / "install_khptz_rpi.sh"
 INSTALLER = REPO_ROOT / "runtime" / "installer" / "install.sh"
 
 
@@ -83,13 +83,13 @@ class TestDisplayContract:
 
     def test_protect_home_stays_true(self, unit_settings):
         """The superseded drop-in weakened this to read-only to expose the
-        desktop user's X cookie. The scoped `xhost +SI:localuser:hallptz` helper
+        desktop user's X cookie. The scoped `xhost +SI:localuser:khptz` helper
         makes that unnecessary — homes must stay protected."""
         assert unit_settings["ProtectHome"] == ["true"]
 
 
 class TestUtf8Contract:
-    """UnicodeEncodeError killed `hallptz doctor` mid-output on the pilot Pi (#884)."""
+    """UnicodeEncodeError killed `khptz doctor` mid-output on the pilot Pi (#884)."""
 
     @pytest.mark.parametrize(
         "expected",
@@ -104,25 +104,25 @@ class TestPathContract:
 
     def test_execstart_matches_the_installed_layout(self, unit_settings):
         exec_start = unit_settings["ExecStart"][0]
-        assert "/opt/hallptz/main.py" in exec_start
+        assert "/opt/khptz/main.py" in exec_start
         assert exec_start.startswith("/usr/bin/python3")
 
     def test_working_directory_is_the_install_dir(self, unit_settings):
-        assert unit_settings["WorkingDirectory"] == ["/opt/hallptz"]
+        assert unit_settings["WorkingDirectory"] == ["/opt/khptz"]
 
     def test_install_dir_agrees_with_the_installer(self):
         """A unit pointing at a directory install.sh never creates yields a
         service that cannot start."""
         installer = INSTALLER.read_text(encoding="utf-8")
-        assert 'INSTALL_DIR="/opt/hallptz"' in installer
+        assert 'INSTALL_DIR="/opt/khptz"' in installer
 
     def test_readwritepaths_covers_the_service_owned_dirs(self, unit_settings):
         rw = unit_settings["ReadWritePaths"][0]
-        for required in ("/var/lib/hallptz", "/var/log/hallptz", "/var/backups/hallptz"):
+        for required in ("/var/lib/khptz", "/var/log/khptz", "/var/backups/khptz"):
             assert required in rw, f"{required} missing from ReadWritePaths"
 
     def test_runs_as_the_service_user_not_root(self, unit_settings):
-        assert unit_settings["User"] == ["hallptz"]
+        assert unit_settings["User"] == ["khptz"]
 
     def test_starts_under_the_graphical_target(self, unit_settings):
         assert unit_settings["WantedBy"] == ["graphical.target"]
@@ -153,10 +153,10 @@ class TestBootstrapContract:
         assert "Environment=XAUTHORITY" not in bootstrap_text
 
     def test_diagnostics_do_not_run_as_root(self, bootstrap_text):
-        """A root-run doctor creates root:root files in hallptz:hallptz 0750 log dirs,
+        """A root-run doctor creates root:root files in khptz:khptz 0750 log dirs,
         after which the service can never write its own logs."""
-        assert "sudo -u hallptz hallptz doctor" in bootstrap_text
-        assert not re.search(r"^\s*hallptz doctor\b", bootstrap_text, re.MULTILINE)
+        assert "sudo -u khptz khptz doctor" in bootstrap_text
+        assert not re.search(r"^\s*khptz doctor\b", bootstrap_text, re.MULTILINE)
 
 
 class TestDoctorExitCodeAlignment:

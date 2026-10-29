@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-HallPTZ Controls uses the following third-party packages.
+KHPTZ Controls uses the following third-party packages.
 Each package is governed by its own licence; this file is provided for awareness only
 and does not modify the terms of any upstream licence.
 

@@ -6,7 +6,7 @@ Verifies:
   - Demo startup does not write to production paths
   - FakeCamera requires no network sockets
   - FakeATEM requires no PyATEMMax / no network sockets
-  - DemoGuard isolates HALLPTZ_DATA_DIR
+  - DemoGuard isolates KHPTZ_DATA_DIR
   - Production profile never loads demo-specific components
   - Anti-socket guards: no socket.connect in demo flows
 """
@@ -47,7 +47,7 @@ class TestDemoStartupSafety:
         from domain.runtime_mode import RuntimeMode
         g = DemoGuard(mode=RuntimeMode.DEMO, demo_data_dir=demo_dir, app_dir=tmp_path)
         g.apply()
-        assert os.environ.get("HALLPTZ_DATA_DIR") == str(demo_dir)
+        assert os.environ.get("KHPTZ_DATA_DIR") == str(demo_dir)
 
     def test_demo_guard_does_not_write_to_production(self, tmp_path):
         demo_dir = tmp_path / "demo"

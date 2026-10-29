@@ -52,9 +52,9 @@ def group_shared_mode(directory: Path) -> "int | None":
     Single definition of the file-access policy for runtime data (#885).
 
     Data files are created privately (0600), which is correct while one identity
-    owns them and silently wrong once two share a directory through the ``hallptz``
-    group: the session-owned GUI cannot read what the service wrote, and ``hallptz
-    doctor`` / ``hallptz backup`` cannot read what the GUI wrote. The installer
+    owns them and silently wrong once two share a directory through the ``khptz``
+    group: the session-owned GUI cannot read what the service wrote, and ``khptz
+    doctor`` / ``khptz backup`` cannot read what the GUI wrote. The installer
     already states the intent by making the runtime directories setgid
     group-writable in that mode, so read it back from the directory rather than
     asking every caller to know which mode the appliance is in.

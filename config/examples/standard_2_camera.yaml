@@ -1,4 +1,4 @@
-# Hall PTZ Control — Example: Standard (2 cameras, ATEM switcher)
+# KH PTZ Control — Example: Standard (2 cameras, ATEM switcher)
 #
 # SAFE SAMPLE — fake site name, RFC1918 example IPs, fake installation ID.
 # Do NOT commit real customer configs to the repository.
@@ -10,7 +10,7 @@ site:
   name: "Example Venue B"
   contact: "AV Support Team"
   installation_profile: "standard_2_camera"
-  installation_id: "hallptz-2026-EXAMPLE"
+  installation_id: "khptz-2026-EXAMPLE"
 
 cameras:
   - id: platform

@@ -11,8 +11,8 @@ $runtimeDir = Join-Path $repoRoot ".pytest-runtime"
 New-Item -ItemType Directory -Force $runtimeDir | Out-Null
 
 $env:QT_QPA_PLATFORM = "offscreen"
-if (-not $env:HALLPTZ_DATA_DIR) {
-    $env:HALLPTZ_DATA_DIR = Join-Path $runtimeDir "data"
+if (-not $env:KHPTZ_DATA_DIR) {
+    $env:KHPTZ_DATA_DIR = Join-Path $runtimeDir "data"
 }
 
 if ($InstallDeps) {

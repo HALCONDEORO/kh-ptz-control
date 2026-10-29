@@ -24,7 +24,7 @@ from runtime.secret_manager import encrypt_password, decrypt_password, _ENC_FILE
 
 def main() -> None:
     print("=" * 50)
-    print("  Hall PTZ Control - Configuracion de contrasena")
+    print("  KH PTZ Control - Configuracion de contrasena")
     print("=" * 50)
 
     # Migracion automatica desde password.txt (path canonico, no CWD-relativo)

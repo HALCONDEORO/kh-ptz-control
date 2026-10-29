@@ -1,6 +1,6 @@
 # Privacy Notes
 
-This document summarizes the customer and operator data handled by HallPTZ Controls.
+This document summarizes the customer and operator data handled by KHPTZ Controls.
 It is operational guidance only and does not replace a customer-specific privacy policy,
 data-processing agreement, or legal review.
 
@@ -22,7 +22,7 @@ The application can store the following local data:
 Runtime JSON data is stored under the configured persistent data directory, usually:
 
 ```text
-~/.config/hallptz/
+~/.config/khptz/
 ```
 
 Some plain-text deployment config files may still live beside the application during the current migration period.

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Hall PTZ Control - Raspberry Pi runtime finalisation
+# KH PTZ Control - Raspberry Pi runtime finalisation
 #
 # Installs the canonical display/UTF-8/runtime contract used by the real setup
 # wizard. This script performs OS integration only; application compatibility is
-# fixed in the source tree and is no longer patched in-place under /opt/hallptz.
+# fixed in the source tree and is no longer patched in-place under /opt/khptz.
 #
 # Safe to run repeatedly. Customer configuration, passwords, presets and layouts
 # are never replaced. Every OS file replaced by this script is backed up first.
@@ -12,16 +12,16 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 readonly SCRIPT_VERSION="5"
-readonly SERVICE_NAME="hallptz-control.service"
-readonly DISPLAY_HELPER="/usr/local/libexec/hallptz-display-session"
-readonly DISPLAY_PATH_UNIT="/etc/systemd/system/hallptz-display-ready.path"
-readonly DISPLAY_SERVICE_UNIT="/etc/systemd/system/hallptz-display-ready.service"
-readonly SERVICE_DROPIN_DIR="/etc/systemd/system/hallptz-control.service.d"
+readonly SERVICE_NAME="khptz-control.service"
+readonly DISPLAY_HELPER="/usr/local/libexec/khptz-display-session"
+readonly DISPLAY_PATH_UNIT="/etc/systemd/system/khptz-display-ready.path"
+readonly DISPLAY_SERVICE_UNIT="/etc/systemd/system/khptz-display-ready.service"
+readonly SERVICE_DROPIN_DIR="/etc/systemd/system/khptz-control.service.d"
 readonly SERVICE_DROPIN="${SERVICE_DROPIN_DIR}/20-rpi-display.conf"
-readonly HALLPTZ_LAUNCHER="/usr/local/bin/hallptz"
+readonly KHPTZ_LAUNCHER="/usr/local/bin/khptz"
 
 # Exit code meaning "every OS step succeeded and the configuration is applied,
-# but `hallptz doctor` reports the appliance is not healthy". Distinct from 1 so
+# but `khptz doctor` reports the appliance is not healthy". Distinct from 1 so
 # the caller can keep the customer's configuration instead of rolling it back.
 # Kept in sync with scripts/provision_with_rpi_integration.sh.
 readonly RC_DIAGNOSTICS_FATAL=40
@@ -35,9 +35,9 @@ warn() { printf '[WARN]  %s\n' "$*" >&2; }
 fail() { printf '[ERROR] %s\n' "$*" >&2; exit 1; }
 
 # Which process owns the GUI (#885). This script is reached from the wizard's
-# provisioning chain (hallptz-provision.service ->
+# provisioning chain (khptz-provision.service ->
 # provision_with_rpi_integration.sh -> here), which runs on EVERY install
-# including session-owned ones. Re-enabling hallptz-control there would put two
+# including session-owned ones. Re-enabling khptz-control there would put two
 # full-screen GUIs on the same cameras, so the mode has to be read before any
 # systemd activation happens.
 _state_lib="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/install_state.sh"
@@ -47,9 +47,9 @@ if [[ -r "${_state_lib}" ]]; then
 else
     # Partially deployed tree: assume the historical layout rather than guessing
     # "user" and leaving the machine with no launcher at all.
-    hallptz_gui_mode() { printf 'system\n'; }
+    khptz_gui_mode() { printf 'system\n'; }
 fi
-GUI_MODE="$(hallptz_gui_mode)"
+GUI_MODE="$(khptz_gui_mode)"
 readonly GUI_MODE
 
 # Mode for the runtime-writable directories (/var/lib, /var/log, /var/backups).
@@ -57,7 +57,7 @@ readonly GUI_MODE
 # This script runs from the wizard's provisioning chain AFTER install.sh and
 # after runtime/provision.py's plan_system_commands(), both of which already
 # make these directories 2770 on a session-owned install so the desktop GUI can
-# write its own presets, layout and logs through the 'hallptz' group. Re-asserting
+# write its own presets, layout and logs through the 'khptz' group. Re-asserting
 # a flat 0750 here — as this script did — was the last write in the chain, so
 # it silently undid that and left the session GUI with a read-only data
 # directory on an install that reported success. Keep the single rule in one
@@ -85,7 +85,7 @@ usage() {
 Usage: sudo bash scripts/repair_rpi_runtime.sh [options]
 
 Options:
-  --wizard-user USER  Human desktop user that runs HALLPTZ Setup.
+  --wizard-user USER  Human desktop user that runs KHPTZ Setup.
   --display DISPLAY   X11 display. Defaults to current DISPLAY or :0.
   -h, --help          Show this help.
 USAGE
@@ -106,22 +106,22 @@ done
 
 [[ "$(id -u)" -eq 0 ]] || fail "Run this script with sudo."
 [[ -n "${WIZARD_USER}" ]] || fail "Could not detect the desktop user. Use --wizard-user USER."
-[[ "${WIZARD_USER}" != "root" && "${WIZARD_USER}" != "hallptz" ]] \
+[[ "${WIZARD_USER}" != "root" && "${WIZARD_USER}" != "khptz" ]] \
     || fail "The wizard user must be the human desktop user."
 [[ "${TARGET_DISPLAY}" =~ ^:[0-9]+(\.[0-9]+)?$ ]] \
     || fail "Invalid X11 display: ${TARGET_DISPLAY}"
 id "${WIZARD_USER}" >/dev/null 2>&1 || fail "User does not exist: ${WIZARD_USER}"
-id hallptz >/dev/null 2>&1 || fail "The hallptz service user does not exist. Run the product installer first."
-[[ -f /opt/hallptz/main.py ]] || fail "Installed application not found at /opt/hallptz/main.py."
-[[ -f /etc/systemd/system/hallptz-control.service ]] \
-    || fail "hallptz-control.service is not installed."
+id khptz >/dev/null 2>&1 || fail "The khptz service user does not exist. Run the product installer first."
+[[ -f /opt/khptz/main.py ]] || fail "Installed application not found at /opt/khptz/main.py."
+[[ -f /etc/systemd/system/khptz-control.service ]] \
+    || fail "khptz-control.service is not installed."
 
 for command in cp find getent install journalctl locale runuser stat sudo systemctl systemd-tmpfiles; do
     command -v "${command}" >/dev/null 2>&1 \
         || fail "Required command not found: ${command}"
 done
 
-# xhost is only ever used to grant the 'hallptz' service user access to the
+# xhost is only ever used to grant the 'khptz' service user access to the
 # desktop user's X display, which exists solely in system GUI mode. Under
 # --gui-mode user the GUI already runs inside the session and never touches
 # xhost, so requiring it there would abort the wizard — and reaching for
@@ -154,9 +154,9 @@ if ! LC_ALL="${UTF8_LOCALE}" locale charmap 2>/dev/null | grep -qi 'UTF-8'; then
 fi
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-BACKUP_DIR="/var/backups/hallptz/rpi-runtime-finalisation-${TIMESTAMP}"
-install -d -m "${RUNTIME_DIR_MODE}" -o hallptz -g hallptz /var/backups/hallptz
-install -d -m 0750 -o hallptz -g hallptz "${BACKUP_DIR}"
+BACKUP_DIR="/var/backups/khptz/rpi-runtime-finalisation-${TIMESTAMP}"
+install -d -m "${RUNTIME_DIR_MODE}" -o khptz -g khptz /var/backups/khptz
+install -d -m 0750 -o khptz -g khptz "${BACKUP_DIR}"
 
 backup_path() {
     local path="$1"
@@ -166,38 +166,38 @@ backup_path() {
     return 0
 }
 
-info "HALLPTZ Raspberry Pi runtime finalisation v${SCRIPT_VERSION}"
+info "KHPTZ Raspberry Pi runtime finalisation v${SCRIPT_VERSION}"
 info "Backing up replaced OS files to ${BACKUP_DIR}"
 for path in \
-    "${HALLPTZ_LAUNCHER}" \
+    "${KHPTZ_LAUNCHER}" \
     "${SERVICE_DROPIN}" \
     "${DISPLAY_HELPER}" \
     "${DISPLAY_PATH_UNIT}" \
     "${DISPLAY_SERVICE_UNIT}" \
-    "/etc/tmpfiles.d/hallptz.conf" \
-    "${WIZARD_HOME}/.config/autostart/hallptz-display-session.desktop" \
-    "${WIZARD_HOME}/.config/autostart/hallptz-display-permission.desktop"; do
+    "/etc/tmpfiles.d/khptz.conf" \
+    "${WIZARD_HOME}/.config/autostart/khptz-display-session.desktop" \
+    "${WIZARD_HOME}/.config/autostart/khptz-display-permission.desktop"; do
     backup_path "${path}"
 done
 
 info "Repairing canonical runtime directories (mode ${RUNTIME_DIR_MODE}, GUI mode ${GUI_MODE})..."
-install -d -m "${RUNTIME_DIR_MODE}" -o hallptz -g hallptz /var/lib/hallptz
-install -d -m "${RUNTIME_DIR_MODE}" -o hallptz -g hallptz /var/log/hallptz
-install -d -m "${RUNTIME_DIR_MODE}" -o hallptz -g hallptz /var/log/hallptz/blackbox
-install -d -m "${RUNTIME_DIR_MODE}" -o hallptz -g hallptz /var/log/hallptz/incidents
-install -d -m "${RUNTIME_DIR_MODE}" -o hallptz -g hallptz /var/backups/hallptz
+install -d -m "${RUNTIME_DIR_MODE}" -o khptz -g khptz /var/lib/khptz
+install -d -m "${RUNTIME_DIR_MODE}" -o khptz -g khptz /var/log/khptz
+install -d -m "${RUNTIME_DIR_MODE}" -o khptz -g khptz /var/log/khptz/blackbox
+install -d -m "${RUNTIME_DIR_MODE}" -o khptz -g khptz /var/log/khptz/incidents
+install -d -m "${RUNTIME_DIR_MODE}" -o khptz -g khptz /var/backups/khptz
 
-if ! id -nG "${WIZARD_USER}" | tr ' ' '\n' | grep -qx hallptz; then
-    info "Adding ${WIZARD_USER} to the hallptz group..."
-    usermod -aG hallptz "${WIZARD_USER}"
+if ! id -nG "${WIZARD_USER}" | tr ' ' '\n' | grep -qx khptz; then
+    info "Adding ${WIZARD_USER} to the khptz group..."
+    usermod -aG khptz "${WIZARD_USER}"
     warn "The new group membership becomes active after logout/login or reboot."
 fi
 
 info "Configuring the volatile desktop-ready channel..."
-printf 'd /run/hallptz 0750 %s root -\n' "${WIZARD_USER}" > /etc/tmpfiles.d/hallptz.conf
-systemd-tmpfiles --create /etc/tmpfiles.d/hallptz.conf
+printf 'd /run/khptz 0750 %s root -\n' "${WIZARD_USER}" > /etc/tmpfiles.d/khptz.conf
+systemd-tmpfiles --create /etc/tmpfiles.d/khptz.conf
 
-# The display-ready chain exists for ONE reason: to bridge the 'hallptz'
+# The display-ready chain exists for ONE reason: to bridge the 'khptz'
 # service user to the desktop user's X display in system GUI mode. A
 # session-owned GUI already owns its session's display, so none of it
 # applies there - and installing it anyway is not merely redundant.
@@ -209,11 +209,11 @@ systemd-tmpfiles --create /etc/tmpfiles.d/hallptz.conf
 # present it grants the service user display access this mode never needs.
 #
 # The path unit is worse. `systemctl disable` is not `mask`: the helper
-# writing /run/hallptz/display-ready triggers hallptz-display-ready.service, whose
-# ExecStart is `systemctl restart hallptz-control.service` - and restart STARTS
+# writing /run/khptz/display-ready triggers khptz-display-ready.service, whose
+# ExecStart is `systemctl restart khptz-control.service` - and restart STARTS
 # a merely-disabled unit. On a machine switched from system to user mode
-# these leftovers therefore put hallptz-control back on screen alongside
-# hallptz-gui.service: two full-screen GUIs driving the same cameras, the exact
+# these leftovers therefore put khptz-control back on screen alongside
+# khptz-gui.service: two full-screen GUIs driving the same cameras, the exact
 # failure #885 exists to prevent, re-armed by the integration step meant to
 # prevent it.
 #
@@ -230,42 +230,42 @@ cat > "${DISPLAY_HELPER}" <<'HELPER'
 set -Eeuo pipefail
 
 export DISPLAY="${DISPLAY:-:0}"
-readonly marker="/run/hallptz/display-ready"
+readonly marker="/run/khptz/display-ready"
 readonly temporary="${marker}.$$"
 trap 'rm -f "${temporary}"' EXIT
 
 rm -f "${marker}"
 for ((attempt = 1; attempt <= 60; attempt++)); do
-    if [[ -d /run/hallptz ]] && /usr/bin/xhost +SI:localuser:hallptz >/dev/null 2>&1; then
+    if [[ -d /run/khptz ]] && /usr/bin/xhost +SI:localuser:khptz >/dev/null 2>&1; then
         umask 022
         printf 'display=%s\nuser=%s\ntime=%s\n' \
             "${DISPLAY}" "$(id -un)" "$(date -Iseconds)" > "${temporary}"
         mv -f "${temporary}" "${marker}"
         command -v logger >/dev/null 2>&1 \
-            && logger -t hallptz-display-session \
-                "Display access granted to local user hallptz on ${DISPLAY}"
+            && logger -t khptz-display-session \
+                "Display access granted to local user khptz on ${DISPLAY}"
         exit 0
     fi
     sleep 2
 done
 
 command -v logger >/dev/null 2>&1 \
-    && logger -t hallptz-display-session \
-        "Could not grant display access to hallptz on ${DISPLAY}"
+    && logger -t khptz-display-session \
+        "Could not grant display access to khptz on ${DISPLAY}"
 exit 1
 HELPER
 chmod 0755 "${DISPLAY_HELPER}"
 
 info "Installing the desktop-session handoff..."
 AUTOSTART_DIR="${WIZARD_HOME}/.config/autostart"
-AUTOSTART_FILE="${AUTOSTART_DIR}/hallptz-display-session.desktop"
+AUTOSTART_FILE="${AUTOSTART_DIR}/khptz-display-session.desktop"
 install -d -m 0755 -o "${WIZARD_USER}" -g "${WIZARD_GROUP}" "${AUTOSTART_DIR}"
 cat > "${AUTOSTART_FILE}" <<EOF_DESKTOP
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=HALLPTZ display session
-Comment=Grant HALLPTZ scoped access to the local touchscreen display
+Name=KHPTZ display session
+Comment=Grant KHPTZ scoped access to the local touchscreen display
 TryExec=${DISPLAY_HELPER}
 Exec=${DISPLAY_HELPER}
 Terminal=false
@@ -276,17 +276,17 @@ X-GNOME-Autostart-enabled=true
 EOF_DESKTOP
 chown "${WIZARD_USER}:${WIZARD_GROUP}" "${AUTOSTART_FILE}"
 chmod 0644 "${AUTOSTART_FILE}"
-rm -f -- "${AUTOSTART_DIR}/hallptz-display-permission.desktop"
+rm -f -- "${AUTOSTART_DIR}/khptz-display-permission.desktop"
 
 info "Installing display-ready systemd units..."
 cat > "${DISPLAY_PATH_UNIT}" <<'EOF_PATH'
 [Unit]
-Description=Watch for the HALLPTZ desktop display-ready marker
+Description=Watch for the KHPTZ desktop display-ready marker
 After=local-fs.target
 
 [Path]
-PathChanged=/run/hallptz/display-ready
-Unit=hallptz-display-ready.service
+PathChanged=/run/khptz/display-ready
+Unit=khptz-display-ready.service
 
 [Install]
 WantedBy=multi-user.target
@@ -294,12 +294,12 @@ EOF_PATH
 
 cat > "${DISPLAY_SERVICE_UNIT}" <<'EOF_SERVICE'
 [Unit]
-Description=Start HALLPTZ Control after desktop display access is ready
+Description=Start KHPTZ Control after desktop display access is ready
 
 [Service]
 Type=oneshot
-ExecStart=-/bin/systemctl reset-failed hallptz-control.service
-ExecStart=/bin/systemctl restart hallptz-control.service
+ExecStart=-/bin/systemctl reset-failed khptz-control.service
+ExecStart=/bin/systemctl restart khptz-control.service
 TimeoutStartSec=30
 EOF_SERVICE
 
@@ -310,7 +310,7 @@ install -d -m 0755 "${SERVICE_DROPIN_DIR}"
 cat > "${SERVICE_DROPIN}" <<EOF_DROPIN
 [Unit]
 After=graphical.target
-ConditionPathExists=/run/hallptz/display-ready
+ConditionPathExists=/run/khptz/display-ready
 
 [Service]
 PrivateTmp=false
@@ -325,7 +325,7 @@ info "GUI mode 'user': removing the display-ready chain..."
 
 # Disable before deleting: removing a unit file that is still enabled leaves
 # a dangling symlink systemd warns about on every later daemon-reload.
-for _unit in hallptz-display-ready.path hallptz-display-ready.service; do
+for _unit in khptz-display-ready.path khptz-display-ready.service; do
     systemctl disable --now "${_unit}" >/dev/null 2>&1 || true
 done
 
@@ -335,8 +335,8 @@ _display_chain_artifacts=(
     "${DISPLAY_PATH_UNIT}"
     "${DISPLAY_SERVICE_UNIT}"
     "${SERVICE_DROPIN}"
-    "${WIZARD_HOME}/.config/autostart/hallptz-display-session.desktop"
-    "${WIZARD_HOME}/.config/autostart/hallptz-display-permission.desktop"
+    "${WIZARD_HOME}/.config/autostart/khptz-display-session.desktop"
+    "${WIZARD_HOME}/.config/autostart/khptz-display-permission.desktop"
 )
 for _artifact in "${_display_chain_artifacts[@]}"; do
     if [[ -e "${_artifact}" ]]; then
@@ -349,8 +349,8 @@ rmdir --ignore-fail-on-non-empty "${SERVICE_DROPIN_DIR}" 2>/dev/null || true
 info "The session GUI reaches the display through its own session - no grant needed."
 fi
 
-info "Installing the UTF-8-safe HALLPTZ launcher..."
-cat > "${HALLPTZ_LAUNCHER}" <<EOF_LAUNCHER
+info "Installing the UTF-8-safe KHPTZ launcher..."
+cat > "${KHPTZ_LAUNCHER}" <<EOF_LAUNCHER
 #!/usr/bin/env bash
 set -Eeuo pipefail
 export LANG=${UTF8_LOCALE}
@@ -359,34 +359,34 @@ export PYTHONUTF8=1
 export PYTHONIOENCODING=utf-8
 
 subcommand="\${1:-}"
-if [[ "\$(id -u)" -ne 0 && "\$(id -un)" != "hallptz" ]]; then
+if [[ "\$(id -u)" -ne 0 && "\$(id -un)" != "khptz" ]]; then
     case "\${subcommand}" in
         status|uptime|cameras|doctor|fingerprint|known-good|maintenance|installability|supportability|support-bundle|backup|network-report|verify-install)
-            exec /usr/bin/sudo -u hallptz -H env \
+            exec /usr/bin/sudo -u khptz -H env \
                 LANG=${UTF8_LOCALE} LC_ALL=${UTF8_LOCALE} \
                 PYTHONUTF8=1 PYTHONIOENCODING=utf-8 \
-                /bin/bash -c 'cd /opt/hallptz && exec /usr/bin/python3 -m runtime.cli "\$@"' \
-                hallptz-cli "\$@"
+                /bin/bash -c 'cd /opt/khptz && exec /usr/bin/python3 -m runtime.cli "\$@"' \
+                khptz-cli "\$@"
             ;;
         restore)
             exec /usr/bin/sudo env \
                 LANG=${UTF8_LOCALE} LC_ALL=${UTF8_LOCALE} \
                 PYTHONUTF8=1 PYTHONIOENCODING=utf-8 \
-                /bin/bash -c 'cd /opt/hallptz && exec /usr/bin/python3 -m runtime.cli "\$@"' \
-                hallptz-cli "\$@"
+                /bin/bash -c 'cd /opt/khptz && exec /usr/bin/python3 -m runtime.cli "\$@"' \
+                khptz-cli "\$@"
             ;;
         setup|demo)
             state_root="\${XDG_STATE_HOME:-\${HOME}/.local/state}"
-            export HALLPTZ_LOG_DIR="\${HALLPTZ_LOG_DIR:-\${state_root}/hallptz/log}"
-            mkdir -p "\${HALLPTZ_LOG_DIR}"
+            export KHPTZ_LOG_DIR="\${KHPTZ_LOG_DIR:-\${state_root}/khptz/log}"
+            mkdir -p "\${KHPTZ_LOG_DIR}"
             ;;
     esac
 fi
 
-cd /opt/hallptz
+cd /opt/khptz
 exec /usr/bin/python3 -m runtime.cli "\$@"
 EOF_LAUNCHER
-chmod 0755 "${HALLPTZ_LAUNCHER}"
+chmod 0755 "${KHPTZ_LAUNCHER}"
 
 systemctl daemon-reload
 
@@ -406,7 +406,7 @@ if [[ "${GUI_MODE}" == "user" ]]; then
     # session-owned GUI already has the session's display, so it is not needed.
     info "Display-ready chain not required in this mode."
 else
-    systemctl enable --now hallptz-display-ready.path
+    systemctl enable --now khptz-display-ready.path
     systemctl enable "${SERVICE_NAME}" >/dev/null
 fi
 
@@ -428,13 +428,13 @@ find_xauthority() {
     fi
 }
 
-# Display authorisation and the wait for hallptz-control only apply when the
+# Display authorisation and the wait for khptz-control only apply when the
 # system service owns the GUI. On a session-owned install the service is
 # deliberately down, so waiting for it would abort the wizard's provisioning
-# with "hallptz-control did not become active" on a perfectly healthy machine.
+# with "khptz-control did not become active" on a perfectly healthy machine.
 if [[ "${GUI_MODE}" == "user" ]]; then
     info "GUI mode 'user': no display grant needed - the session owns its own display."
-    info "The GUI starts from hallptz-gui.service at the next desktop login."
+    info "The GUI starts from khptz-gui.service at the next desktop login."
 else
     info "Authorising the current desktop display..."
     XAUTH_FILE="$(find_xauthority || true)"
@@ -452,9 +452,9 @@ else
         fail "The current desktop display could not be authorised. Keep the Pi desktop session open and retry setup."
     fi
 
-    systemctl start hallptz-display-ready.service
+    systemctl start khptz-display-ready.service
 
-    info "Waiting for hallptz-control to become active..."
+    info "Waiting for khptz-control to become active..."
     SERVICE_ACTIVE=false
     for ((attempt = 1; attempt <= 20; attempt++)); do
         if systemctl is-active --quiet "${SERVICE_NAME}"; then
@@ -465,16 +465,16 @@ else
     done
     if [[ "${SERVICE_ACTIVE}" != "true" ]]; then
         journalctl -u "${SERVICE_NAME}" -n 80 --no-pager || true
-        fail "hallptz-control did not become active after display authorisation."
+        fail "khptz-control did not become active after display authorisation."
     fi
 fi
 
-info "Running production diagnostics as hallptz..."
+info "Running production diagnostics as khptz..."
 DOCTOR_RESULT=0
-runuser -u hallptz -- env \
+runuser -u khptz -- env \
     LANG="${UTF8_LOCALE}" LC_ALL="${UTF8_LOCALE}" \
     PYTHONUTF8=1 PYTHONIOENCODING=utf-8 \
-    "${HALLPTZ_LAUNCHER}" doctor || DOCTOR_RESULT=$?
+    "${KHPTZ_LAUNCHER}" doctor || DOCTOR_RESULT=$?
 
 # Exit codes come from domain/doctor_outcome.py:
 #   0  PASS                   · operational and correctly configured
@@ -521,7 +521,7 @@ info "Display      : ${TARGET_DISPLAY}"
 info "Backup       : ${BACKUP_DIR}"
 info "GUI mode     : ${GUI_MODE}"
 if [[ "${GUI_MODE}" == "user" ]]; then
-    info "Launcher     : hallptz-gui.service (starts at the next desktop login)"
+    info "Launcher     : khptz-gui.service (starts at the next desktop login)"
 else
     info "Service      : active"
 fi

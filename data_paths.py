@@ -6,9 +6,9 @@
 # Centraliza la ubicación de todos los archivos JSON que deben sobrevivir
 # una reinstalación del software (git pull, rm -rf + clone, etc.).
 #
-# Directorio de datos: ~/.config/hallptz/  (por defecto)
-#   Override: variable de entorno HALLPTZ_DATA_DIR
-#   Ejemplo:  HALLPTZ_DATA_DIR=/mnt/usb/backup python3 main.py
+# Directorio de datos: ~/.config/khptz/  (por defecto)
+#   Override: variable de entorno KHPTZ_DATA_DIR
+#   Ejemplo:  KHPTZ_DATA_DIR=/mnt/usb/backup python3 main.py
 #
 #   - Vive en el home del usuario, fuera del árbol de la app.
 #   - Se crea automáticamente al arrancar la aplicación.
@@ -22,7 +22,7 @@
 # Backup ZIP:
 #   export_backup() crea un ZIP con TODOS los archivos necesarios para
 #   reproducir una instalación en otro equipo:
-#     - Datos JSON (chairman_presets, seat_names, schedule) → ~/.config/hallptz/
+#     - Datos JSON (chairman_presets, seat_names, schedule) → ~/.config/khptz/
 #     - Config TXT (PTZ1IP, PTZ2IP, Cam1ID, Cam2ID, ATEMIP, Contact) → app dir
 #   import_backup() restaura ambos grupos al directorio correcto.
 
@@ -45,11 +45,11 @@ warnings.warn(
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_CONFIG_DIR = Path.home() / '.config' / 'hallptz'
+_DEFAULT_CONFIG_DIR = Path.home() / '.config' / 'khptz'
 
-# HALLPTZ_DATA_DIR permite al administrador apuntar los datos a cualquier ruta
+# KHPTZ_DATA_DIR permite al administrador apuntar los datos a cualquier ruta
 # (NAS, USB, directorio de pruebas) sin tocar el código.
-_data_dir_env = os.environ.get('HALLPTZ_DATA_DIR') or ''
+_data_dir_env = os.environ.get('KHPTZ_DATA_DIR') or ''
 CONFIG_DIR = Path(_data_dir_env) if _data_dir_env else _DEFAULT_CONFIG_DIR
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 

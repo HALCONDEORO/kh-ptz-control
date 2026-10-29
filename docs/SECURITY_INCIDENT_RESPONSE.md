@@ -23,8 +23,8 @@ Preserve:
 installed version/tag/commit
 time and timezone
 customer/site identifier in sanitized form
-hallptz version output
-hallptz doctor summary with secrets removed
+khptz version output
+khptz doctor summary with secrets removed
 relevant log time window with secrets removed
 actions taken before and after discovery
 affected files by path, not by secret contents
@@ -90,7 +90,7 @@ Do not reuse a recovered device for customer operation until it has been rebuilt
 [ ] rotate affected SSH keys and passwords
 [ ] inspect authorized_keys and user accounts
 [ ] check recent login history
-[ ] run hallptz doctor when the system is stable
+[ ] run khptz doctor when the system is stable
 [ ] create a backup before corrective changes that affect customer data
 [ ] review firewall and support access policy
 ```
@@ -131,7 +131,7 @@ Real customer configs belong in runtime/customer storage, not in the repository.
 [ ] create a backup if safe
 [ ] preserve update logs
 [ ] rollback to a known-good tag if needed
-[ ] run hallptz doctor after rollback
+[ ] run khptz doctor after rollback
 [ ] compare deployed commit with the approved release source
 ```
 

@@ -2,7 +2,7 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # ui/config_pages/test_tab.py — ConfigDialog "Test" tab (in-app diagnostics) (#894 phase 1)
 #
-# Read-only page: runs the same checks as `hallptz doctor` from the touchscreen.
+# Read-only page: runs the same checks as `khptz doctor` from the touchscreen.
 # Extracted verbatim from ConfigDialog._build_ui; `self` -> `dialog`, and the
 # _build_ui-local _panel_layout helper is received as a parameter.
 
@@ -19,7 +19,7 @@ from ui.styles import CARD_BD as _C_CARD_BD, FIELD_BG as _C_FIELD_BG, MUTED as _
 def build_test_tab(dialog, tools_layout, panel_layout):
     """Populate the Test tab with the in-app System Diagnostics panel."""
     # ── Test tab: System Diagnostics ──────────────────────────────────
-    # Runs the same checks as `hallptz doctor` from the touchscreen so a
+    # Runs the same checks as `khptz doctor` from the touchscreen so a
     # technician never needs a terminal in the field. Checks run in a
     # worker thread (network reachability can block) and the result is
     # marshalled back to the GUI thread via a queued signal — same pattern
@@ -79,7 +79,7 @@ def build_test_tab(dialog, tools_layout, panel_layout):
             from application.diagnostics_service import DiagnosticsService
             from application.diagnostics_presenter import build_view
             try:
-                mode = RuntimeMode(_os.environ.get('HALLPTZ_PROFILE', 'production'))
+                mode = RuntimeMode(_os.environ.get('KHPTZ_PROFILE', 'production'))
             except ValueError:
                 mode = RuntimeMode.PRODUCTION
             view = build_view(DiagnosticsService(mode=mode).run())

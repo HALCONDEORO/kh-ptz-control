@@ -118,7 +118,7 @@ class TestWriteReport:
         fake_dir = tmp_path / "not_a_dir"
         fake_dir.write_text("blocker", encoding="utf-8")
         cr._installed_log_dir = fake_dir / "logs"
-        # On a real install /var/log/hallptz belongs to the service user, so a
+        # On a real install /var/log/khptz belongs to the service user, so a
         # report written by the desktop user must land somewhere rather than be
         # lost (#884).
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))

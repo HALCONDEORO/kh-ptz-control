@@ -18,11 +18,11 @@ from pathlib import Path
 
 REPO_ROOT      = Path(__file__).parent.parent
 INSTALL_SH     = REPO_ROOT / "runtime" / "installer" / "install.sh"
-SERVICE_FILE   = REPO_ROOT / "runtime" / "systemd" / "hallptz-control.service"
-PROVISION_SERVICE = REPO_ROOT / "runtime" / "systemd" / "hallptz-provision.service"
-PROVISION_PATH    = REPO_ROOT / "runtime" / "systemd" / "hallptz-provision.path"
-SETUP_DESKTOP      = REPO_ROOT / "runtime" / "hallptz-setup.desktop"
-SETUP_MENU_DESKTOP = REPO_ROOT / "runtime" / "hallptz-setup-menu.desktop"
+SERVICE_FILE   = REPO_ROOT / "runtime" / "systemd" / "khptz-control.service"
+PROVISION_SERVICE = REPO_ROOT / "runtime" / "systemd" / "khptz-provision.service"
+PROVISION_PATH    = REPO_ROOT / "runtime" / "systemd" / "khptz-provision.path"
+SETUP_DESKTOP      = REPO_ROOT / "runtime" / "khptz-setup.desktop"
+SETUP_MENU_DESKTOP = REPO_ROOT / "runtime" / "khptz-setup-menu.desktop"
 REQUIREMENTS   = {
     "rpi":  REPO_ROOT / "requirements-rpi.txt",
     "atem": REPO_ROOT / "requirements-atem.txt",
@@ -109,7 +109,7 @@ class TestPythonRuntimeImports:
     Product mode installs no pip packages (requirements-rpi.txt is comments
     only), so every third-party import the appliance makes has to come from
     apt. PyQt5 was checked; PyYAML was not — yet config/loader.py imports it at
-    module scope, so main.py, `hallptz doctor` and runtime/rpi_post_provision.py
+    module scope, so main.py, `khptz doctor` and runtime/rpi_post_provision.py
     all raise ModuleNotFoundError. Without this gate the installer reports a
     successful install of an appliance that cannot start.
     """
@@ -184,89 +184,89 @@ class TestProductModeDependencyPolicy:
 
 class TestProductPathsConsistency:
 
-    def test_install_dir_is_opt_hallptz(self):
+    def test_install_dir_is_opt_khptz(self):
         paths = _product_paths_from_sh()
-        assert paths.get("INSTALL_DIR") == "/opt/hallptz"
+        assert paths.get("INSTALL_DIR") == "/opt/khptz"
 
-    def test_config_dir_is_etc_hallptz(self):
+    def test_config_dir_is_etc_khptz(self):
         paths = _product_paths_from_sh()
-        assert paths.get("CONFIG_DIR") == "/etc/hallptz"
+        assert paths.get("CONFIG_DIR") == "/etc/khptz"
 
-    def test_data_dir_is_var_lib_hallptz(self):
+    def test_data_dir_is_var_lib_khptz(self):
         paths = _product_paths_from_sh()
-        assert paths.get("DATA_DIR") == "/var/lib/hallptz"
+        assert paths.get("DATA_DIR") == "/var/lib/khptz"
 
-    def test_log_dir_is_var_log_hallptz(self):
+    def test_log_dir_is_var_log_khptz(self):
         paths = _product_paths_from_sh()
-        assert paths.get("LOG_DIR") == "/var/log/hallptz"
+        assert paths.get("LOG_DIR") == "/var/log/khptz"
 
-    def test_backup_dir_is_var_backups_hallptz(self):
+    def test_backup_dir_is_var_backups_khptz(self):
         paths = _product_paths_from_sh()
-        assert paths.get("BACKUP_DIR") == "/var/backups/hallptz"
+        assert paths.get("BACKUP_DIR") == "/var/backups/khptz"
 
-    def test_app_user_is_hallptz(self):
+    def test_app_user_is_khptz(self):
         paths = _product_paths_from_sh()
-        assert paths.get("APP_USER") == "hallptz"
+        assert paths.get("APP_USER") == "khptz"
 
 
 # ── service file consistency ──────────────────────────────────────────────────
 
 class TestServiceFileConsistency:
 
-    def test_service_user_is_hallptz(self):
-        assert "User=hallptz" in _svc()
+    def test_service_user_is_khptz(self):
+        assert "User=khptz" in _svc()
 
-    def test_service_group_is_hallptz(self):
-        assert "Group=hallptz" in _svc()
+    def test_service_group_is_khptz(self):
+        assert "Group=khptz" in _svc()
 
     def test_service_working_directory(self):
-        assert "WorkingDirectory=/opt/hallptz" in _svc()
+        assert "WorkingDirectory=/opt/khptz" in _svc()
 
     def test_service_exec_start(self):
-        assert "ExecStart=/usr/bin/python3 /opt/hallptz/main.py" in _svc()
+        assert "ExecStart=/usr/bin/python3 /opt/khptz/main.py" in _svc()
 
-    def test_service_read_write_paths_include_etc_hallptz(self):
-        assert "/etc/hallptz" in _svc()
+    def test_service_read_write_paths_include_etc_khptz(self):
+        assert "/etc/khptz" in _svc()
 
-    def test_service_read_write_paths_include_var_lib_hallptz(self):
-        assert "/var/lib/hallptz" in _svc()
+    def test_service_read_write_paths_include_var_lib_khptz(self):
+        assert "/var/lib/khptz" in _svc()
 
-    def test_service_read_write_paths_include_var_log_hallptz(self):
-        assert "/var/log/hallptz" in _svc()
+    def test_service_read_write_paths_include_var_log_khptz(self):
+        assert "/var/log/khptz" in _svc()
 
-    def test_service_read_write_paths_include_var_backups_hallptz(self):
-        assert "/var/backups/hallptz" in _svc()
+    def test_service_read_write_paths_include_var_backups_khptz(self):
+        assert "/var/backups/khptz" in _svc()
 
-    def test_service_no_write_to_opt_hallptz(self):
-        """App code in /opt/hallptz must not appear in ReadWritePaths."""
+    def test_service_no_write_to_opt_khptz(self):
+        """App code in /opt/khptz must not appear in ReadWritePaths."""
         svc = _svc()
         rw_line = next(
             (l for l in svc.splitlines() if l.strip().startswith("ReadWritePaths")),
             None,
         )
         assert rw_line is not None, "ReadWritePaths not found in service file"
-        assert "/opt/hallptz" not in rw_line, (
-            "/opt/hallptz must not be in ReadWritePaths — app code should be read-only"
+        assert "/opt/khptz" not in rw_line, (
+            "/opt/khptz must not be in ReadWritePaths — app code should be read-only"
         )
 
     def test_service_gates_on_provisioned_marker(self):
-        """hallptz-control.service must not start with starter/unconfigured
+        """khptz-control.service must not start with starter/unconfigured
         credentials before the setup wizard provisions the install."""
-        assert "ConditionPathExists=/etc/hallptz/.provisioned" in _svc()
+        assert "ConditionPathExists=/etc/khptz/.provisioned" in _svc()
 
     def test_dev_mode_strips_provisioned_condition(self):
         """Dev installs never run the wizard/provisioning channel (both gated
         to product mode), so the marker never exists — the dev-mode sed must
         remove the gate, or a dev install's service could never start."""
         sh = _sh()
-        assert r"/^ConditionPathExists=\/etc\/hallptz\/\.provisioned$/d" in sh
+        assert r"/^ConditionPathExists=\/etc\/khptz\/\.provisioned$/d" in sh
 
 
 # ── backfill .provisioned for pre-wizard legacy installs ──────────────────────
 
 class TestLegacyProvisionedBackfill:
     """Reinstalling/updating a working install that predates the setup wizard
-    must not leave hallptz-control.service permanently unable to start just
+    must not leave khptz-control.service permanently unable to start just
     because .provisioned was never created by the old manual flow. See PR
     #867 review."""
 
@@ -274,7 +274,7 @@ class TestLegacyProvisionedBackfill:
         sh = _sh()
         start = sh.find('info "Existing config.yaml found at')
         assert start != -1
-        end = sh.find("# ── hallptz CLI symlink", start)
+        end = sh.find("# ── khptz CLI symlink", start)
         assert end != -1
         return sh[start:end]
 
@@ -304,12 +304,12 @@ class TestLegacyProvisionedBackfill:
 
 class TestNextStepsMessage:
     """The final instructions must describe a path that actually works —
-    `hallptz set-password` was never a real subcommand, and product-mode
-    hallptz-control.service now gates on .provisioned so `systemctl start`
+    `khptz set-password` was never a real subcommand, and product-mode
+    khptz-control.service now gates on .provisioned so `systemctl start`
     right after install would just be skipped. See PR #867 review."""
 
     def test_no_reference_to_nonexistent_set_password_command(self):
-        assert "hallptz set-password" not in _sh()
+        assert "khptz set-password" not in _sh()
 
     def test_product_mode_points_at_the_wizard(self):
         sh = _sh()
@@ -321,7 +321,7 @@ class TestNextStepsMessage:
         assert product_block_end != -1
         product_block = sh[idx:product_block_end]
         assert "setup wizard" in product_block
-        assert "hallptz doctor" in product_block
+        assert "khptz doctor" in product_block
         assert "systemctl start" not in product_block
 
     def test_dev_mode_still_documents_manual_password_setup(self):
@@ -340,25 +340,25 @@ class TestNextStepsMessage:
 # ── shared secrets dir between control and provision services ────────────────
 
 class TestSecretsDirConsistency:
-    """hallptz-control.service and hallptz-provision.service must resolve secrets to
-    the same directory. Without HALLPTZ_DATA_DIR pinned in both, secret_manager
+    """khptz-control.service and khptz-provision.service must resolve secrets to
+    the same directory. Without KHPTZ_DATA_DIR pinned in both, secret_manager
     falls back to Path.home() — /root for the provisioning oneshot (runs as
-    root) vs wherever Path.home() resolves for the hallptz user in the control
+    root) vs wherever Path.home() resolves for the khptz user in the control
     service. Those never agree, so a wizard-provisioned password could never
     decrypt at login. See PR #867 review."""
 
-    def test_control_service_pins_hallptz_data_dir(self):
-        assert "Environment=HALLPTZ_DATA_DIR=/var/lib/hallptz" in _svc()
+    def test_control_service_pins_khptz_data_dir(self):
+        assert "Environment=KHPTZ_DATA_DIR=/var/lib/khptz" in _svc()
 
-    def test_provision_service_pins_hallptz_data_dir(self):
+    def test_provision_service_pins_khptz_data_dir(self):
         text = PROVISION_SERVICE.read_text(encoding="utf-8")
-        assert "Environment=HALLPTZ_DATA_DIR=/var/lib/hallptz" in text
+        assert "Environment=KHPTZ_DATA_DIR=/var/lib/khptz" in text
 
     def test_dev_mode_patches_control_service_data_dir(self):
-        """Dev-mode sed must repoint HALLPTZ_DATA_DIR too, or a dev install's
-        control service would still point secrets at /var/lib/hallptz."""
+        """Dev-mode sed must repoint KHPTZ_DATA_DIR too, or a dev install's
+        control service would still point secrets at /var/lib/khptz."""
         sh = _sh()
-        assert "Environment=HALLPTZ_DATA_DIR=/var/lib/hallptz|Environment=HALLPTZ_DATA_DIR=${DATA_DIR}" in sh
+        assert "Environment=KHPTZ_DATA_DIR=/var/lib/khptz|Environment=KHPTZ_DATA_DIR=${DATA_DIR}" in sh
 
 
 # ── installer/service path cross-check ───────────────────────────────────────
@@ -396,25 +396,25 @@ class TestInstallerServiceCrossCheck:
 
 class TestOwnershipAndPermissions:
 
-    def test_opt_hallptz_owned_root_hallptz(self):
+    def test_opt_khptz_owned_root_khptz(self):
         sh = _sh()
         assert 'chown -R root:"${APP_USER}" "${INSTALL_DIR}"' in sh
 
-    def test_opt_hallptz_dirs_mode_750(self):
+    def test_opt_khptz_dirs_mode_750(self):
         assert "chmod 750" in _sh()
 
-    def test_opt_hallptz_files_mode_640(self):
+    def test_opt_khptz_files_mode_640(self):
         assert "chmod 640" in _sh()
 
     def test_no_world_readable_chown(self):
         """chown -R root:root must not appear — that was the old (wrong) pattern."""
         assert "chown -R root:root" not in _sh()
 
-    def test_etc_hallptz_owned_root_hallptz(self):
+    def test_etc_khptz_owned_root_khptz(self):
         sh = _sh()
         assert 'chown root:"${APP_USER}" "${CONFIG_DIR}"' in sh
 
-    def test_etc_hallptz_mode_2750_setgid(self):
+    def test_etc_khptz_mode_2750_setgid(self):
         assert "2750" in _sh()
 
 
@@ -428,11 +428,11 @@ class TestLauncherScript:
         assert 'cd "${INSTALL_DIR}" && exec python3 -m runtime.cli' in sh
 
     def test_launcher_installed_to_usr_local_bin(self):
-        assert "/usr/local/bin/hallptz" in _sh()
+        assert "/usr/local/bin/khptz" in _sh()
 
     def test_launcher_is_executable(self):
         sh = _sh()
-        assert 'chmod +x "${HALLPTZ_LAUNCHER}"' in sh
+        assert 'chmod +x "${KHPTZ_LAUNCHER}"' in sh
 
 
 # ── installation_id generation ───────────────────────────────────────────────
@@ -517,7 +517,7 @@ class TestCheckMode:
         assert "SERVICE_TEMPLATE" in block
 
     def test_check_mode_reports_on_xhost(self):
-        """xhost is what lets the 'hallptz' service user reach the display.
+        """xhost is what lets the 'khptz' service user reach the display.
 
         It is installed by scripts/repair_rpi_runtime.sh — from inside the
         wizard's provisioning chain, via apt. On an offline appliance that apt
@@ -545,7 +545,7 @@ class TestCheckMode:
 # ── setup-wizard provisioning channel ─────────────────────────────────────────
 
 class TestProvisioningChannel:
-    """The installer must wire the password-free /run/hallptz provisioning channel."""
+    """The installer must wire the password-free /run/khptz provisioning channel."""
 
     def test_provision_unit_templates_exist(self):
         assert PROVISION_SERVICE.exists()
@@ -553,8 +553,8 @@ class TestProvisioningChannel:
 
     def test_path_unit_watches_request_file(self):
         text = PROVISION_PATH.read_text(encoding="utf-8")
-        assert "/run/hallptz/request.json" in text
-        assert "Unit=hallptz-provision.service" in text
+        assert "/run/khptz/request.json" in text
+        assert "Unit=khptz-provision.service" in text
 
     def test_service_unit_runs_provision_entrypoint(self):
         text = PROVISION_SERVICE.read_text(encoding="utf-8")
@@ -563,20 +563,20 @@ class TestProvisioningChannel:
 
     def test_installer_copies_both_provision_units(self):
         sh = _sh()
-        assert "/etc/systemd/system/hallptz-provision.service" in sh
-        assert "/etc/systemd/system/hallptz-provision.path" in sh
+        assert "/etc/systemd/system/khptz-provision.service" in sh
+        assert "/etc/systemd/system/khptz-provision.path" in sh
 
-    def test_installer_creates_run_hallptz_tmpfiles(self):
+    def test_installer_creates_run_khptz_tmpfiles(self):
         sh = _sh()
-        assert "/etc/tmpfiles.d/hallptz.conf" in sh
-        # /run/hallptz must be owned by the wizard user (write access to create
+        assert "/etc/tmpfiles.d/khptz.conf" in sh
+        # /run/khptz must be owned by the wizard user (write access to create
         # request.json), group root, 0750 — root:<user> would only give the
         # wizard r-x via the group and it could never write its own request.
-        assert 'd /run/hallptz 0750 %s root' in sh
+        assert 'd /run/khptz 0750 %s root' in sh
         assert "systemd-tmpfiles --create" in sh
 
     def test_installer_enables_path_unit(self):
-        assert "systemctl enable hallptz-provision.path" in _sh()
+        assert "systemctl enable khptz-provision.path" in _sh()
 
     def test_wizard_user_defaults_to_sudo_user(self):
         sh = _sh()
@@ -612,18 +612,18 @@ class TestSetupWizardAutostart:
         """Autostart entry must self-suppress once provisioned — no --force."""
         text = SETUP_DESKTOP.read_text(encoding="utf-8")
         exec_line = next(l for l in text.splitlines() if l.startswith("Exec="))
-        assert exec_line == "Exec=hallptz setup"
+        assert exec_line == "Exec=khptz setup"
         assert "Type=Application" in text
 
     def test_menu_desktop_uses_force(self):
         """Menu entry must reopen Repair even when already provisioned."""
         text = SETUP_MENU_DESKTOP.read_text(encoding="utf-8")
-        assert "Exec=hallptz setup --force" in text
+        assert "Exec=khptz setup --force" in text
         assert "Type=Application" in text
 
     def test_installer_installs_menu_launcher_from_menu_template(self):
         sh = _sh()
-        assert "/usr/share/applications/hallptz-setup.desktop" in sh
+        assert "/usr/share/applications/khptz-setup.desktop" in sh
         assert 'install -m 644 "${MENU_DESKTOP_TEMPLATE}"' in sh
 
     def test_installer_drops_autostart_from_plain_template(self):
@@ -645,7 +645,7 @@ class TestSetupWizardAutostart:
         assert guard != -1, "launcher block is not gated on product mode"
 
     def test_wizard_user_added_to_app_group(self):
-        """Desktop user must be added to the hallptz group to read /opt/hallptz code."""
+        """Desktop user must be added to the khptz group to read /opt/khptz code."""
         sh = _sh()
         assert 'usermod -aG "${APP_USER}" "${WIZARD_USER}"' in sh
 

@@ -1,6 +1,6 @@
 # Security Policy
 
-Hall PTZ Control is open source (MIT), but please do not disclose suspected security issues in public issues, public pull requests, screenshots, logs or support bundles.
+KH PTZ Control is open source (MIT), but please do not disclose suspected security issues in public issues, public pull requests, screenshots, logs or support bundles.
 
 ## Reporting
 

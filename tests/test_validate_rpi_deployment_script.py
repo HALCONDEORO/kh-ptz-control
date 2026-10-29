@@ -108,9 +108,9 @@ class TestReadOnly:
         ]
 
     def test_backup_is_never_taken(self, text):
-        """`hallptz backup` writes a ZIP — a write on a read-only run."""
-        assert not active_lines(text, "hallptz backup")
-        assert not active_lines(text, "run_hallptz backup")
+        """`khptz backup` writes a ZIP — a write on a read-only run."""
+        assert not active_lines(text, "khptz backup")
+        assert not active_lines(text, "run_khptz backup")
 
     def test_only_the_report_directory_is_created(self, text):
         for line in active_lines(text, "install -d"):
@@ -142,13 +142,13 @@ class TestArgumentHandling:
 
 class TestReportFile:
     def test_report_is_written_next_to_the_production_logs(self, text):
-        assert 'LOG_DIR="/var/log/hallptz/validation"' in text
+        assert 'LOG_DIR="/var/log/khptz/validation"' in text
 
     def test_falls_back_when_the_log_directory_is_not_writable(self, text):
         """#884: read-only diagnostics must never abort over their own output
         path."""
         assert '[[ -w "${LOG_DIR}" ]]' in text
-        assert "hallptz-validation" in text
+        assert "khptz-validation" in text
         assert 'LOG_DIR="/tmp"' in text
 
     def test_report_name_is_unique_per_run(self, text):
@@ -189,9 +189,9 @@ class TestChecksThatMustExist:
     check silently dropped turns the run into a rubber stamp."""
 
     @pytest.mark.parametrize("needle,why", [
-        ("/opt/hallptz/main.py", "exactly one GUI process"),
+        ("/opt/khptz/main.py", "exactly one GUI process"),
         ("expected exactly one", "duplicate-GUI detection (#885)"),
-        ("HallPTZ|hallptz", "legacy controller still running"),
+        ("KHPTZ|khptz", "legacy controller still running"),
         ("Conflicting entries matched: 0", "no legacy autostart left (#892)"),
         ("Could not parse stylesheet", "Qt 5.15 QSS regression (#886)"),
         ("Profile mismatch", "config contradiction (#886)"),
@@ -212,9 +212,9 @@ class TestChecksThatMustExist:
         assert "is running as root" in text
 
     def test_missing_cli_degrades_to_a_warning(self, text):
-        """A validator that dies because `hallptz` is not on PATH produces no
+        """A validator that dies because `khptz` is not on PATH produces no
         evidence at all."""
-        assert "hallptz CLI not found" in text
+        assert "khptz CLI not found" in text
 
     def test_absent_journalctl_degrades_to_a_warning(self, text):
         assert active_lines(text, "journalctl unavailable")
@@ -237,9 +237,9 @@ class TestPathResolution:
 @pytest.mark.xfail(
     strict=True,
     reason="Known gap: this validator predates --gui-mode user (#885) and is "
-           "not GUI-mode aware. On a session-owned install hallptz-control is "
+           "not GUI-mode aware. On a session-owned install khptz-control is "
            "deliberately disabled, so 'is not active' is reported as a FAILURE, "
-           "and every journal check reads an empty hallptz-control journal and "
+           "and every journal check reads an empty khptz-control journal and "
            "reports OK. scripts/validate_rpi_acceptance.sh (#890) already "
            "sources scripts/lib/install_state.sh; this one must too. Remove "
            "this marker together with the fix.",
@@ -247,10 +247,10 @@ class TestPathResolution:
 class TestGuiModeAwareness:
     def test_consults_the_shared_install_state_reader(self, text):
         assert "lib/install_state.sh" in text
-        assert "hallptz_gui_mode" in text
+        assert "khptz_gui_mode" in text
 
     def test_does_not_require_the_system_service_in_user_mode(self, text):
-        """`hallptz-control.service is not active` is the correct, installed state
+        """`khptz-control.service is not active` is the correct, installed state
         of a --gui-mode user appliance — not a failure."""
         failing = [
             line for line in active_lines(text, 'bad "${SERVICE} is not active')
@@ -261,9 +261,9 @@ class TestGuiModeAwareness:
         )
 
     def test_checks_the_user_units_in_user_mode(self, text):
-        """In user mode the GUI lives in hallptz-gui.service and its log is the
+        """In user mode the GUI lives in khptz-gui.service and its log is the
         user journal — the unit the journal checks must follow the mode."""
-        assert "hallptz-gui" in text
+        assert "khptz-gui" in text
 
 
 @pytest.mark.skipif(shutil.which("bash") is None, reason="bash not available")

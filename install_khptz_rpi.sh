@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# install_hallptz_rpi.sh — single supported entry point for a Raspberry Pi install (#883)
+# install_khptz_rpi.sh — single supported entry point for a Raspberry Pi install (#883)
 #
 # Usage:
-#   sudo bash install_hallptz_rpi.sh [--wizard-user USER] [--gui-mode system|user]
+#   sudo bash install_khptz_rpi.sh [--wizard-user USER] [--gui-mode system|user]
 #                                 [--atem] [--check] [--allow-dirty] [--dev]
 #
 # Run with --help for the authoritative flag list.
@@ -23,7 +23,7 @@
 #
 # It deliberately does NOT grant display access. That is owned by the wizard
 # integration step (scripts/repair_rpi_runtime.sh), which installs a per-login
-# helper running `xhost +SI:localuser:hallptz` — scoped to the service user and
+# helper running `xhost +SI:localuser:khptz` — scoped to the service user and
 # re-applied on every login. The operator still never runs xhost by hand.
 #
 # Idempotent: safe to re-run on an already-installed system.
@@ -37,7 +37,7 @@ set -euo pipefail
 
 # ── Locate the repository root (works from any directory) ─────────────────────
 # BASH_SOURCE is resolved rather than trusting $PWD, so `sudo bash
-# /path/to/install_hallptz_rpi.sh` from $HOME behaves the same as running it from
+# /path/to/install_khptz_rpi.sh` from $HOME behaves the same as running it from
 # the checkout.
 
 _source="${BASH_SOURCE[0]}"
@@ -54,7 +54,7 @@ REPO_ROOT="$(cd -P "$(dirname "${_source}")" && pwd)"
 SELF="${REPO_ROOT}/$(basename "${_source}")"
 
 INSTALLER="${REPO_ROOT}/runtime/installer/install.sh"
-SERVICE_NAME="hallptz-control"
+SERVICE_NAME="khptz-control"
 DROPIN_DIR="/etc/systemd/system/${SERVICE_NAME}.service.d"
 DROPIN_FILE="${DROPIN_DIR}/10-display-session.conf"
 
@@ -92,7 +92,7 @@ _validate_gui_mode() {
     case "${GUI_MODE}" in
         system|user) : ;;
         *) fatal "Invalid --gui-mode '${GUI_MODE}'. Expected:
-    system  GUI runs as the 'hallptz' service user (default, validated)
+    system  GUI runs as the 'khptz' service user (default, validated)
     user    GUI runs inside the desktop session (#885)" ;;
     esac
 }
@@ -100,7 +100,7 @@ _validate_gui_mode() {
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --wizard-user)
-            [[ $# -ge 2 ]] || fatal "--wizard-user needs a username, e.g. --wizard-user hallptz"
+            [[ $# -ge 2 ]] || fatal "--wizard-user needs a username, e.g. --wizard-user khptz"
             WIZARD_USER="$2"; shift 2 ;;
         --wizard-user=*)
             WIZARD_USER="${1#*=}"; shift ;;
@@ -129,10 +129,10 @@ while [[ $# -gt 0 ]]; do
             # A heredoc rather than sed'ing this file's own header: the header
             # line numbers drift every time the comment block is edited.
             cat <<HELP
-install_hallptz_rpi.sh — single supported entry point for a Raspberry Pi install
+install_khptz_rpi.sh — single supported entry point for a Raspberry Pi install
 
 Usage:
-  sudo bash install_hallptz_rpi.sh [--wizard-user USER] [--atem] [--check] [--dev]
+  sudo bash install_khptz_rpi.sh [--wizard-user USER] [--atem] [--check] [--dev]
 
 Options:
   --wizard-user USER  Desktop user that owns the GUI and the setup wizard.
@@ -142,10 +142,10 @@ Options:
   --allow-dirty       Permit installing from a checkout with uncommitted
                       changes (blocked by default for customer installs).
   --gui-mode MODE     Which process owns the GUI:
-                        system (default) — hallptz-control.service runs it as the
-                          'hallptz' user, bridged to the display by the scoped
+                        system (default) — khptz-control.service runs it as the
+                          'khptz' user, bridged to the display by the scoped
                           xhost helper. The currently validated path.
-                        user — hallptz-gui.service runs it inside the desktop
+                        user — khptz-gui.service runs it inside the desktop
                           session, inheriting DISPLAY/XAUTHORITY/D-Bus with no
                           display grant and no root (#885).
                       Switching either way is safe and reversible: installing
@@ -177,7 +177,7 @@ fi
 
 [[ -f "${INSTALLER}" ]] || fatal "Could not find the installer at:
     ${INSTALLER}
-  This script must stay inside the HALLPTZ repository checkout."
+  This script must stay inside the KHPTZ repository checkout."
 
 info "Repository root: ${REPO_ROOT}"
 
@@ -214,7 +214,7 @@ fi
 
 # ── Desktop user ──────────────────────────────────────────────────────────────
 # The GUI, its X session and the setup wizard all belong to the logged-in
-# desktop user, not to root and not to the hallptz service user.
+# desktop user, not to root and not to the khptz service user.
 
 step "Identifying the desktop user"
 
@@ -233,7 +233,7 @@ fi
 if [[ -z "${WIZARD_USER}" ]]; then
     fatal "Could not determine the desktop user.
   Re-run naming it explicitly, for example:
-    sudo bash ${SELF} --wizard-user hallptz"
+    sudo bash ${SELF} --wizard-user khptz"
 fi
 
 if ! id "${WIZARD_USER}" >/dev/null 2>&1; then
@@ -250,7 +250,7 @@ info "Desktop user: ${WIZARD_USER} (uid ${WIZARD_UID}, home ${WIZARD_HOME})"
 # ── Display session ───────────────────────────────────────────────────────────
 # Informational only. Display access itself is granted by the wizard's
 # integration step (scripts/repair_rpi_runtime.sh), which installs a per-login
-# helper running `xhost +SI:localuser:hallptz`. See the cleanup step below.
+# helper running `xhost +SI:localuser:khptz`. See the cleanup step below.
 
 step "Checking the display session"
 
@@ -267,14 +267,14 @@ fi
 step "Validating Raspberry Pi readiness"
 
 # --dev must reach the check too: it selects a different path layout
-# (/home/<user>/hallptz instead of /opt/hallptz) and requires pip3. Checking the
+# (/home/<user>/khptz instead of /opt/khptz) and requires pip3. Checking the
 # product layout and then installing the developer one validates the wrong
 # thing, and lets a check pass that the install then fails.
 _CHECK_ARGS=(--check)
 [[ "${DEV_MODE}" == "true" ]] && _CHECK_ARGS+=(--dev)
 
 if ! bash "${INSTALLER}" "${_CHECK_ARGS[@]}"; then
-    fatal "This Pi is not ready to install HALLPTZ. Fix the FAIL items listed above and re-run."
+    fatal "This Pi is not ready to install KHPTZ. Fix the FAIL items listed above and re-run."
 fi
 
 if [[ "${CHECK_ONLY}" == "true" ]]; then
@@ -285,7 +285,7 @@ fi
 
 # ── Install / repair ──────────────────────────────────────────────────────────
 
-step "Installing HALLPTZ (safe to re-run)"
+step "Installing KHPTZ (safe to re-run)"
 
 if ! bash "${INSTALLER}" --wizard-user "${WIZARD_USER}" ${PASSTHROUGH[@]+"${PASSTHROUGH[@]}"}; then
     fatal "The installer did not complete. See the output above."
@@ -295,12 +295,12 @@ fi
 # Earlier revisions of this script wrote 10-display-session.conf, handing the
 # service the desktop user's X cookie. That approach is obsolete and actively
 # harmful now that the wizard integration installs the scoped
-# `xhost +SI:localuser:hallptz` helper (scripts/repair_rpi_runtime.sh), because:
+# `xhost +SI:localuser:khptz` helper (scripts/repair_rpi_runtime.sh), because:
 #
 #   - it set ProtectHome=read-only, overriding the unit's ProtectHome=true and
 #     exposing every home directory to the service, for a cookie the scoped
 #     helper does not need;
-#   - the ACL granting 'hallptz' read access to ~/.Xauthority did not survive a
+#   - the ACL granting 'khptz' read access to ~/.Xauthority did not survive a
 #     re-login, since the display manager recreates that file;
 #   - it baked $DISPLAY from the *caller's* environment into the unit, so
 #     installing over SSH with X forwarding wrote a dead 'localhost:10.0'.
@@ -325,26 +325,26 @@ info "Display access is granted per-login by the wizard integration step."
 
 # Run diagnostics as the SERVICE identity, never as root.
 #
-# `hallptz doctor` opens /var/log/hallptz/app.log and the blackbox event log. Those
-# directories are hallptz:hallptz 0750, so a root-run doctor creates root:root files
+# `khptz doctor` opens /var/log/khptz/app.log and the blackbox event log. Those
+# directories are khptz:khptz 0750, so a root-run doctor creates root:root files
 # inside them and the service can then never write its own logs — the same
 # class of permission failure #884 was raised for, only caused by the
-# installer. Running as hallptz also makes the check reflect what the service
+# installer. Running as khptz also makes the check reflect what the service
 # actually sees.
 
 step "Running diagnostics"
 
 DOCTOR_RC=0
-if id hallptz >/dev/null 2>&1 && command -v hallptz >/dev/null 2>&1; then
-    info "Running as the 'hallptz' service user"
-    sudo -u hallptz hallptz doctor || DOCTOR_RC=$?
+if id khptz >/dev/null 2>&1 && command -v khptz >/dev/null 2>&1; then
+    info "Running as the 'khptz' service user"
+    sudo -u khptz khptz doctor || DOCTOR_RC=$?
 else
     # Not installed as a product (e.g. --dev): keep root's log writes out of
     # the service-owned paths entirely.
     _tmp_log="$(mktemp -d)"
     (
         cd "${REPO_ROOT}" \
-        && HALLPTZ_LOG_DIR="${_tmp_log}" python3 -m runtime.cli doctor
+        && KHPTZ_LOG_DIR="${_tmp_log}" python3 -m runtime.cli doctor
     ) || DOCTOR_RC=$?
     rm -rf "${_tmp_log}"
 fi
@@ -374,9 +374,9 @@ elif [[ "${GUI_MODE}" == "user" ]]; then
     # which does not exist until they log in, so `systemctl --user` from here
     # would be meaningless. What must be true right now is that the launcher
     # assets are installed and the system service is NOT also going to start.
-    _gui_unit="/etc/systemd/user/hallptz-gui.service"
-    _gui_helper="/usr/local/libexec/hallptz-gui-session"
-    _gui_autostart="${WIZARD_HOME}/.config/autostart/hallptz-gui.desktop"
+    _gui_unit="/etc/systemd/user/khptz-gui.service"
+    _gui_helper="/usr/local/libexec/khptz-gui-session"
+    _gui_autostart="${WIZARD_HOME}/.config/autostart/khptz-gui.desktop"
 
     for _asset in "${_gui_unit}" "${_gui_helper}" "${_gui_autostart}"; do
         if [[ -e "${_asset}" ]]; then
@@ -423,14 +423,14 @@ echo
 echo "======================================================================"
 case "${DOCTOR_RC}" in
     0)
-        echo " SUCCESS — HALLPTZ ${VERSION} is installed and healthy."
+        echo " SUCCESS — KHPTZ ${VERSION} is installed and healthy."
         echo
         echo " Next action:  reboot, then log in as ${WIZARD_USER}."
         echo "               The touchscreen application starts automatically."
         RC=0
         ;;
     10)
-        echo " SUCCESS — HALLPTZ ${VERSION} is installed and operational."
+        echo " SUCCESS — KHPTZ ${VERSION} is installed and operational."
         echo " Deployment recommendations remain (listed above); none of them block use."
         echo
         echo " Next action:  reboot, then log in as ${WIZARD_USER}."
@@ -440,18 +440,18 @@ case "${DOCTOR_RC}" in
         echo " INSTALLED — configuration is still required."
         echo
         echo " Next action:  run the setup wizard as the desktop user:"
-        echo "                 sudo -u ${WIZARD_USER} hallptz setup --force"
+        echo "                 sudo -u ${WIZARD_USER} khptz setup --force"
         echo "               Then re-run this script to confirm."
         RC=20
         ;;
     *)
-        echo " FAILED — HALLPTZ cannot run on this system yet."
+        echo " FAILED — KHPTZ cannot run on this system yet."
         echo
         echo " Next action:  fix the items marked FAIL above, then re-run:"
         echo "                 sudo bash ${SELF} --wizard-user ${WIZARD_USER}"
         echo
         echo " If you need help, collect diagnostics with:"
-        echo "                 hallptz support-bundle"
+        echo "                 khptz support-bundle"
         RC=30
         ;;
 esac

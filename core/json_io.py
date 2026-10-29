@@ -97,10 +97,10 @@ def _apply_group_access(tmp_path: str, directory: Path) -> None:
     ``tempfile.mkstemp`` always creates 0600, and ``os.replace`` preserves that,
     so every data file ends up readable only by whoever wrote it. That is
     correct while a single identity owns the data, but it silently breaks the
-    session-owned GUI (#885), where two identities share ``/var/lib/hallptz``
-    through the ``hallptz`` group: files written by the service become unreadable
-    to the GUI, and files written by the GUI become unreadable to ``hallptz
-    doctor`` / ``hallptz backup``.
+    session-owned GUI (#885), where two identities share ``/var/lib/khptz``
+    through the ``khptz`` group: files written by the service become unreadable
+    to the GUI, and files written by the GUI become unreadable to ``khptz
+    doctor`` / ``khptz backup``.
 
     The directory already encodes the intent — the installer makes the runtime
     directories setgid group-writable only in that mode — so mirror it:

@@ -1,4 +1,4 @@
-# Hall PTZ Control — Starter install template
+# KH PTZ Control — Starter install template
 # One PTZ camera, no ATEM, minimal features.
 # Copy to config.yaml and fill in real IP / VISCA ID before first run.
 

@@ -270,7 +270,7 @@ class DialogsController:
         # Paso 4: camera IP / VISCA ID now live in config.yaml, managed by the
         # setup wizard — not in per-field .txt files written from the UI. The
         # old behaviour wrote a bare-relative "PTZ1IP.txt" into the process CWD
-        # (which is read-only under /opt/hallptz on the Pi) and was never read back
+        # (which is read-only under /opt/khptz on the Pi) and was never read back
         # as authoritative config, so it silently did nothing. Direct the
         # operator to the supported path instead of persisting from the UI,
         # which also removes an ADR-001/006 UI-writes-persistence violation.
@@ -278,7 +278,7 @@ class DialogsController:
             self._w,
             'Managed by the setup wizard',
             f'The {field} is now configured in config.yaml, not here.\n'
-            'Run "hallptz setup" to change camera settings.',
+            'Run "khptz setup" to change camera settings.',
         )
 
     # ── Wrappers públicos ─────────────────────────────────────────────────

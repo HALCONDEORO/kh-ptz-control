@@ -3,14 +3,14 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # tests/test_gui_mode_consistency.py — every component agrees on who owns the GUI (#885)
 #
-# The bug these exist for: install.sh --gui-mode user disables hallptz-control, but
-# the wizard's provisioning chain (hallptz-provision.service ->
+# The bug these exist for: install.sh --gui-mode user disables khptz-control, but
+# the wizard's provisioning chain (khptz-provision.service ->
 # provision_with_rpi_integration.sh -> repair_rpi_runtime.sh) re-enabled it
 # unconditionally. Completing the wizard therefore re-armed a second launcher,
 # and the next boot opened two full-screen GUIs driving the same cameras — the
 # exact failure #885 exists to prevent, caused by the provisioning chain itself.
 #
-# Nothing caught it because each component parsed HALLPTZ_GUI_MODE on its own (or
+# Nothing caught it because each component parsed KHPTZ_GUI_MODE on its own (or
 # not at all). These tests assert the shared reader is used and that no
 # component activates a launcher without consulting it.
 
@@ -28,7 +28,7 @@ LIB = REPO_ROOT / "scripts" / "lib" / "install_state.sh"
 REPAIR = REPO_ROOT / "scripts" / "repair_rpi_runtime.sh"
 CLEANUP = REPO_ROOT / "scripts" / "cleanup_legacy_rpi_autostart.sh"
 ACCEPTANCE = REPO_ROOT / "scripts" / "validate_rpi_acceptance.sh"
-BOOTSTRAP = REPO_ROOT / "install_hallptz_rpi.sh"
+BOOTSTRAP = REPO_ROOT / "install_khptz_rpi.sh"
 INSTALLER = REPO_ROOT / "runtime" / "installer" / "install.sh"
 
 
@@ -60,17 +60,17 @@ class TestSharedReaderExists:
     def test_component_tolerates_a_missing_library(self, script):
         """A partially deployed tree must not break the script outright."""
         text = read(script)
-        assert "hallptz_gui_mode() { printf 'system\\n'; }" in text
+        assert "khptz_gui_mode() { printf 'system\\n'; }" in text
 
 
 class TestProvisioningNeverArmsASecondLauncher:
     """The regression that motivated this file."""
 
     def test_repair_reads_the_gui_mode(self):
-        assert "hallptz_gui_mode" in read(REPAIR)
+        assert "khptz_gui_mode" in read(REPAIR)
 
     def test_repair_does_not_enable_the_service_unconditionally(self):
-        """`systemctl enable hallptz-control` must be reachable only inside a
+        """`systemctl enable khptz-control` must be reachable only inside a
         system-mode branch."""
         text = read(REPAIR)
         enables = active_lines(text, 'systemctl enable "${SERVICE_NAME}"')
@@ -79,7 +79,7 @@ class TestProvisioningNeverArmsASecondLauncher:
         guard = text.index('GUI_MODE}" == "user"')
         for line in enables:
             assert text.index(line) > guard, (
-                "hallptz-control is enabled before the GUI mode is consulted"
+                "khptz-control is enabled before the GUI mode is consulted"
             )
 
     def test_repair_disables_the_service_in_user_mode(self):
@@ -90,7 +90,7 @@ class TestProvisioningNeverArmsASecondLauncher:
 
     def test_repair_does_not_wait_for_the_service_in_user_mode(self):
         """Waiting for a deliberately-disabled service aborted the wizard's
-        provisioning with 'hallptz-control did not become active'."""
+        provisioning with 'khptz-control did not become active'."""
         text = read(REPAIR)
         wait = text.index("did not become active")
         guard = text.index('GUI_MODE}" == "user"')
@@ -110,7 +110,7 @@ class TestRollbackSurvivesDamagedMetadata:
     def test_warns_rather_than_failing(self):
         text = read(REPO_ROOT / "runtime" / "installer" / "rollback.sh")
         block = text[text.index("Normalise the recorded mode"):]
-        assert "WARNING: unrecognised HALLPTZ_GUI_MODE" in block
+        assert "WARNING: unrecognised KHPTZ_GUI_MODE" in block
         assert "fail " not in block.split("REDEPLOY_ARGS")[0]
 
     def test_empty_value_still_means_default(self):
@@ -181,38 +181,38 @@ class TestSharedReaderBehaviour:
             state.write_text(contents, encoding="utf-8")
         result = subprocess.run(
             ["bash", "-c",
-             f'export HALLPTZ_INSTALL_STATE="{state.as_posix()}"; '
-             f'source "{LIB.as_posix()}"; hallptz_gui_mode'],
+             f'export KHPTZ_INSTALL_STATE="{state.as_posix()}"; '
+             f'source "{LIB.as_posix()}"; khptz_gui_mode'],
             capture_output=True, text=True,
         )
         assert result.returncode == 0, result.stderr
         return result.stdout.strip()
 
     def test_reads_user(self, tmp_path):
-        assert self._mode(tmp_path, 'HALLPTZ_GUI_MODE="user"\n') == "user"
+        assert self._mode(tmp_path, 'KHPTZ_GUI_MODE="user"\n') == "user"
 
     def test_reads_system(self, tmp_path):
-        assert self._mode(tmp_path, 'HALLPTZ_GUI_MODE="system"\n') == "system"
+        assert self._mode(tmp_path, 'KHPTZ_GUI_MODE="system"\n') == "system"
 
     def test_unquoted_value(self, tmp_path):
-        assert self._mode(tmp_path, "HALLPTZ_GUI_MODE=user\n") == "user"
+        assert self._mode(tmp_path, "KHPTZ_GUI_MODE=user\n") == "user"
 
     def test_unknown_value_falls_back_to_system(self, tmp_path):
         """Never invent a third mode, and never guess 'user' — that would
         disable the only launcher a legacy machine has."""
-        assert self._mode(tmp_path, 'HALLPTZ_GUI_MODE="banana"\n') == "system"
+        assert self._mode(tmp_path, 'KHPTZ_GUI_MODE="banana"\n') == "system"
 
     def test_missing_key_falls_back_to_system(self, tmp_path):
-        assert self._mode(tmp_path, 'HALLPTZ_WIZARD_USER="hallptz"\n') == "system"
+        assert self._mode(tmp_path, 'KHPTZ_WIZARD_USER="khptz"\n') == "system"
 
     def test_missing_file_falls_back_to_system(self, tmp_path):
         assert self._mode(tmp_path, None) == "system"
 
     def test_picks_the_key_out_of_a_full_state_file(self, tmp_path):
         contents = "\n".join([
-            'HALLPTZ_INSTALL_MODE="product"',
-            'HALLPTZ_WIZARD_USER="hallptz"',
-            'HALLPTZ_GUI_MODE="user"',
-            'HALLPTZ_INSTALLED_AT="2026-07-26T00:00:00Z"',
+            'KHPTZ_INSTALL_MODE="product"',
+            'KHPTZ_WIZARD_USER="khptz"',
+            'KHPTZ_GUI_MODE="user"',
+            'KHPTZ_INSTALLED_AT="2026-07-26T00:00:00Z"',
         ]) + "\n"
         assert self._mode(tmp_path, contents) == "user"

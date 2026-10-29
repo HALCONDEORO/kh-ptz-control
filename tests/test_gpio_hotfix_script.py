@@ -59,7 +59,7 @@ class TestPreconditions:
         assert '[[ -f "${SOURCE_FILE}" ]] || fail' in text
 
     def test_refuses_when_there_is_no_installation_to_patch(self, text):
-        """Run from a checkout on a machine with no /opt/hallptz, the script must
+        """Run from a checkout on a machine with no /opt/khptz, the script must
         stop rather than create a stray file."""
         assert '[[ -f "${TARGET_FILE}" ]] || fail' in text
 
@@ -99,9 +99,9 @@ class TestBackupBeforeOverwrite:
 
 class TestInstalledFilePolicy:
     def test_mode_and_ownership_match_the_product(self, text):
-        """0640 root:hallptz is the installer's own policy — a hotfix must not
+        """0640 root:khptz is the installer's own policy — a hotfix must not
         widen access to application code on a customer appliance."""
-        assert "install -m 0640 -o root -g hallptz" in text
+        assert "install -m 0640 -o root -g khptz" in text
 
     def test_no_world_readable_mode_is_used(self, text):
         for bad_mode in ("0644", "0664", "0666", "0777", "a+r", "o+r"):
@@ -143,7 +143,7 @@ class TestServiceHandling:
         assert "journalctl -u" in text
 
     def test_it_targets_the_product_service(self, text):
-        assert 'SERVICE="hallptz-control.service"' in text
+        assert 'SERVICE="khptz-control.service"' in text
 
 
 @pytest.mark.skipif(shutil.which("bash") is None, reason="bash not available")

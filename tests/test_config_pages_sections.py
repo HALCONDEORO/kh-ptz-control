@@ -264,30 +264,30 @@ class TestSimAdvancedAccordion:
         assert toggle.text().startswith("▾")
 
     def test_the_current_profile_is_shown(self, sim_mode, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
         dialog, mw, layout = self._build(sim_active=False)
         assert has_text(layout, "PRODUCTION")
 
     def test_simulation_is_reported_as_the_runtime_profile(self, sim_mode, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
         dialog, mw, layout = self._build(sim_active=True)
         assert has_text(layout, "SIMULATION")
 
     def test_the_current_profile_is_not_offered_as_a_restart_target(self, sim_mode, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "production")
+        monkeypatch.setenv("KHPTZ_PROFILE", "production")
         dialog, mw, layout = self._build()
         assert not any(b.text() == "Restart · Production" for b in buttons(layout))
         assert button_named(layout, "Restart · Demo")
 
     def test_restarting_goes_through_the_dialog_helper(self, sim_mode, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "production")
+        monkeypatch.setenv("KHPTZ_PROFILE", "production")
         dialog, mw, layout = self._build()
         button_named(layout, "Restart · Demo").click()
         assert dialog.restart_requests == ["demo"]
 
     def test_restart_is_locked_during_a_live_session(self, sim_mode, monkeypatch):
         """Restarting mid-event drops every camera."""
-        monkeypatch.setenv("HALLPTZ_PROFILE", "production")
+        monkeypatch.setenv("KHPTZ_PROFILE", "production")
         dialog, mw, layout = self._build(session_active=True)
         btn = button_named(layout, "Restart · Demo")
         assert not btn.isEnabled()
@@ -917,7 +917,7 @@ class TestStatusStrip:
         assert "Disarmed" in strip_texts(strip)
 
     def test_the_runtime_profile_is_badged(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "demo")
+        monkeypatch.setenv("KHPTZ_PROFILE", "demo")
         dialog, mw, strip = build_strip(monkeypatch=monkeypatch)
         assert "DEMO" in strip_texts(strip)
 

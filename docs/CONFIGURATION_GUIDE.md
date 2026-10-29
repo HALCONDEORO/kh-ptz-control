@@ -1,6 +1,6 @@
 # Configuration Guide
 
-This guide explains the current configuration model for Hall PTZ Control.
+This guide explains the current configuration model for KH PTZ Control.
 
 The project is transitioning from legacy root `.txt` files to validated YAML configuration with installation profiles, runtime mode, offline mode and camera registry support.
 
@@ -109,7 +109,7 @@ Do not commit real customer versions of these files.
 
 ```yaml
 site:
-  installation_id: "hallptz-2026-0007"
+  installation_id: "khptz-2026-0007"
   customer_name: "Customer Name"
   room_name: "Main Hall"
   installation_profile: "standard_2_camera"
@@ -117,7 +117,7 @@ site:
 runtime:
   mode: "production"
   connectivity_mode: "offline"
-  data_dir: "~/.config/hallptz"
+  data_dir: "~/.config/khptz"
   fullscreen: true
 
 cameras:
@@ -153,7 +153,7 @@ Every customer install should have stable site metadata:
 
 ```yaml
 site:
-  installation_id: "hallptz-2026-0007"
+  installation_id: "khptz-2026-0007"
   customer_name: "Customer Name"
   room_name: "Main Hall"
   installation_profile: "standard_2_camera"
@@ -228,15 +228,15 @@ python3 -m runtime.cli --profile demo demo reset
 Current legacy-compatible default path:
 
 ```text
-~/.config/hallptz/
+~/.config/khptz/
 ```
 
-This name is legacy from the original HallPTZ project and is retained for compatibility while the MVP is being hardened.
+This name is legacy from the original KHPTZ project and is retained for compatibility while the MVP is being hardened.
 
-Do not rename this path casually. A future HALLPTZ-branded path such as the following may be desirable, but only after an explicit migration PR provides backup, migration, validation and rollback:
+Do not rename this path casually. A future KHPTZ-branded path such as the following may be desirable, but only after an explicit migration PR provides backup, migration, validation and rollback:
 
 ```text
-~/.config/hallptz/
+~/.config/khptz/
 ```
 
 Common files:
@@ -252,7 +252,7 @@ Common files:
 Custom path:
 
 ```bash
-HALLPTZ_DATA_DIR=/mnt/usb/hallptz python3 main.py
+KHPTZ_DATA_DIR=/mnt/usb/khptz python3 main.py
 ```
 
 Customer runtime data must be backed up before update, migration, restore or rollback.
@@ -275,7 +275,7 @@ For every real installation:
 [ ] ATEM enabled only if needed
 [ ] demo profile does not use production data
 [ ] data_dir exists or can be created
-[ ] hallptz doctor reports expected status
+[ ] khptz doctor reports expected status
 [ ] backup created after configuration
 [ ] #381 validation result recorded when claiming MVP/customer readiness
 ```
@@ -292,7 +292,7 @@ python3 -m runtime.cli doctor
 
 - Full removal of legacy root `.txt` dependency from production paths.
 - Complete runtime/customer data separation from source code.
-- Explicit migration decision for legacy `~/.config/hallptz/` path versus future HALLPTZ-branded path.
+- Explicit migration decision for legacy `~/.config/khptz/` path versus future KHPTZ-branded path.
 - Stronger config diff/change history for support.
 - Offline license fields and plan enforcement.
 - More hardware QA for starter/standard profiles.

@@ -5,7 +5,7 @@
 #
 # The first physical Raspberry Pi install failed with:
 #   UnicodeEncodeError: 'charmap' codec can't encode character '—'
-#   Permission denied: '/var/log/hallptz/app.log'
+#   Permission denied: '/var/log/khptz/app.log'
 #
 # A terminal locale or an unwritable log directory must never decide whether a
 # CLI command succeeds.
@@ -72,7 +72,7 @@ class TestSafeTextOnLegacyEncoding:
 
     def test_safe_print_does_not_raise_on_legacy_stream(self):
         stream = _LegacyStream("cp1252")
-        # The exact line that crashed `hallptz setup` on the Pi.
+        # The exact line that crashed `khptz setup` on the Pi.
         safe_print("  [INFO]  Already provisioned — setup wizard not needed.", file=stream)
         assert stream.written  # something was actually emitted
 
@@ -130,7 +130,7 @@ class TestConfigureConsoleEncoding:
 
 class TestWritableLogDir:
     def test_returns_preferred_when_writable(self, tmp_path):
-        preferred = tmp_path / "var-log-hallptz"
+        preferred = tmp_path / "var-log-khptz"
         assert writable_log_dir(preferred) == preferred
         assert preferred.is_dir()
 
@@ -158,7 +158,7 @@ class TestWritableLogDir:
             raise PermissionError("read-only file system")
 
         monkeypatch.setattr(Path, "mkdir", always_denied)
-        assert writable_log_dir(Path("/var/log/hallptz")) is None
+        assert writable_log_dir(Path("/var/log/khptz")) is None
 
     def test_none_preferred_still_yields_user_dir(self, tmp_path, monkeypatch):
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
@@ -170,11 +170,11 @@ class TestWritableLogDir:
 class TestUserStateDir:
     def test_honours_xdg_state_home(self, tmp_path, monkeypatch):
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
-        assert user_state_dir() == tmp_path / "hallptz"
+        assert user_state_dir() == tmp_path / "khptz"
 
     def test_defaults_under_home_without_xdg(self, monkeypatch):
         monkeypatch.delenv("XDG_STATE_HOME", raising=False)
-        assert user_state_dir() == Path.home() / ".local" / "state" / "hallptz"
+        assert user_state_dir() == Path.home() / ".local" / "state" / "khptz"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -195,7 +195,7 @@ class TestCliLogDirSelection:
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
         from runtime.cli import _cli_log_dir
 
-        production = tmp_path / "var-log-hallptz"
+        production = tmp_path / "var-log-khptz"
         result = _cli_log_dir(command, self._resolver(production))
 
         assert result is not None
@@ -206,11 +206,11 @@ class TestCliLogDirSelection:
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
         from runtime.cli import _cli_log_dir
 
-        production = tmp_path / "var-log-hallptz"
+        production = tmp_path / "var-log-khptz"
         assert _cli_log_dir("status", self._resolver(production)) == production
 
     def test_readonly_command_falls_back_instead_of_failing(self, tmp_path, monkeypatch):
-        """`hallptz doctor` as the desktop user must not need /var/log/hallptz."""
+        """`khptz doctor` as the desktop user must not need /var/log/khptz."""
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
         from runtime.cli import _cli_log_dir
 
@@ -238,7 +238,7 @@ class TestCrashReportFallback:
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
         import application.crash_reporter as cr
 
-        readonly = tmp_path / "opt-hallptz-logs"
+        readonly = tmp_path / "opt-khptz-logs"
         monkeypatch.setattr(cr, "_installed_log_dir", readonly)
 
         real_mkdir = Path.mkdir
@@ -270,7 +270,7 @@ class TestCrashReportFallback:
     def test_uses_configured_dir_when_writable(self, tmp_path, monkeypatch):
         import application.crash_reporter as cr
 
-        target = tmp_path / "var-log-hallptz"
+        target = tmp_path / "var-log-khptz"
         monkeypatch.setattr(cr, "_installed_log_dir", target)
         path = cr._write_report("boom")
         assert path is not None
@@ -288,10 +288,10 @@ class TestLoggingSetupTolerance:
         monkeypatch.setattr(ls, "_configured", False)
 
         def always_denied(self, *args, **kwargs):
-            raise PermissionError("Permission denied: '/var/log/hallptz'")
+            raise PermissionError("Permission denied: '/var/log/khptz'")
 
         monkeypatch.setattr(Path, "mkdir", always_denied)
 
         # Console-only is the correct degraded outcome, not an exception.
-        assert ls.setup_logging(log_dir=Path("/var/log/hallptz")) is False
+        assert ls.setup_logging(log_dir=Path("/var/log/khptz")) is False
 

@@ -15,10 +15,10 @@ Covers:
 - diff() detects config_hash, layout_hash, fingerprint_hash changes
 - diff() detects camera changes
 - to_dict() is JSON-serializable
-- hallptz known-good show exits 1 when no snapshot
-- hallptz known-good mark exits 0 and writes state file
-- hallptz known-good diff exits 0 when clean, 1 when changes
-- hallptz known-good show --json produces valid JSON
+- khptz known-good show exits 1 when no snapshot
+- khptz known-good mark exits 0 and writes state file
+- khptz known-good diff exits 0 when clean, 1 when changes
+- khptz known-good show --json produces valid JSON
 """
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ class TestKnownGoodSnapshot:
     def test_to_dict_is_json_serializable(self):
         snap = KnownGoodSnapshot(
             marked_at="2026-05-01T12:00:00+00:00",
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
             cameras=[{"role": "cam1", "configured": "yes"}],
         )
@@ -64,37 +64,37 @@ class TestKnownGoodSnapshot:
     def test_from_dict_roundtrip(self):
         original = KnownGoodSnapshot(
             marked_at="2026-05-01T12:00:00+00:00",
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
             git_commit="abc1234",
             config_hash="deadbeef",
         )
         recovered = KnownGoodSnapshot.from_dict(original.to_dict())
-        assert recovered.installation_id == "hallptz-2026-0042"
+        assert recovered.installation_id == "khptz-2026-0042"
         assert recovered.app_version == "3.18.0"
         assert recovered.config_hash == "deadbeef"
 
     def test_from_dict_ignores_unknown_keys(self):
         data = {
-            "installation_id": "hallptz-2026-0042",
+            "installation_id": "khptz-2026-0042",
             "future_field": "ignored",
         }
         snap = KnownGoodSnapshot.from_dict(data)
-        assert snap.installation_id == "hallptz-2026-0042"
+        assert snap.installation_id == "khptz-2026-0042"
 
     def test_human_summary_returns_list_of_strings(self):
         snap = KnownGoodSnapshot(
             marked_at="2026-05-01T12:00:00+00:00",
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
         )
         lines = snap.human_summary()
         assert isinstance(lines, list)
         assert all(isinstance(l, str) for l in lines)
 
     def test_human_summary_contains_installation_id(self):
-        snap = KnownGoodSnapshot(installation_id="hallptz-2026-0042")
+        snap = KnownGoodSnapshot(installation_id="khptz-2026-0042")
         summary = "\n".join(snap.human_summary())
-        assert "hallptz-2026-0042" in summary
+        assert "khptz-2026-0042" in summary
 
     def test_human_summary_truncates_long_hashes(self):
         snap = KnownGoodSnapshot(config_hash="a" * 64, fingerprint_hash="b" * 64)
@@ -177,7 +177,7 @@ def _make_paths(tmp_path: Path):
 
 
 def _fake_fp(
-    installation_id="hallptz-test",
+    installation_id="khptz-test",
     app_version="3.18.0",
     git_commit="abc1234",
     runtime_profile="production",
@@ -212,14 +212,14 @@ class TestKnownGoodStateServiceLoad:
     def test_load_returns_snapshot_when_file_present(self, tmp_path):
         paths = _make_paths(tmp_path)
         paths.known_good_state_file.parent.mkdir(parents=True, exist_ok=True)
-        snap = KnownGoodSnapshot(installation_id="hallptz-2026-0042", app_version="3.18.0")
+        snap = KnownGoodSnapshot(installation_id="khptz-2026-0042", app_version="3.18.0")
         paths.known_good_state_file.write_text(
             json.dumps(snap.to_dict()), encoding="utf-8"
         )
         svc = KnownGoodStateService(paths=paths)
         loaded = svc.load()
         assert loaded is not None
-        assert loaded.installation_id == "hallptz-2026-0042"
+        assert loaded.installation_id == "khptz-2026-0042"
 
     def test_load_returns_none_on_corrupt_file(self, tmp_path):
         paths = _make_paths(tmp_path)
@@ -257,13 +257,13 @@ class TestKnownGoodStateServiceMark:
     def test_mark_stores_fingerprint_fields(self, tmp_path):
         paths = _make_paths(tmp_path)
         svc = KnownGoodStateService(paths=paths)
-        fp = _fake_fp(installation_id="hallptz-2026-0042", app_version="3.18.0")
+        fp = _fake_fp(installation_id="khptz-2026-0042", app_version="3.18.0")
         with patch("application.known_good_state_service.KnownGoodStateService._find_blockers", return_value=[]), \
              patch("application.fingerprint_service.FingerprintService") as mock_svc:
             mock_svc.return_value.generate.return_value = fp
             svc.mark()
         loaded = svc.load()
-        assert loaded.installation_id == "hallptz-2026-0042"
+        assert loaded.installation_id == "khptz-2026-0042"
         assert loaded.app_version == "3.18.0"
 
     def test_mark_backs_up_previous_snapshot(self, tmp_path):
@@ -444,7 +444,7 @@ class TestKnownGoodCLI:
     def test_show_exits_zero_when_snapshot_present(self, tmp_path, capsys):
         from runtime.cli import main
         snap = KnownGoodSnapshot(
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             marked_at="2026-05-01T12:00:00+00:00",
         )
         with patch("application.known_good_state_service.KnownGoodStateService.load",
@@ -454,13 +454,13 @@ class TestKnownGoodCLI:
 
     def test_show_json_produces_valid_json(self, capsys):
         from runtime.cli import main
-        snap = KnownGoodSnapshot(installation_id="hallptz-2026-0042")
+        snap = KnownGoodSnapshot(installation_id="khptz-2026-0042")
         with patch("application.known_good_state_service.KnownGoodStateService.load",
                    return_value=snap):
             rc = main(["known-good", "show", "--json"])
         assert rc == 0
         data = json.loads(capsys.readouterr().out)
-        assert data["installation_id"] == "hallptz-2026-0042"
+        assert data["installation_id"] == "khptz-2026-0042"
 
     def test_mark_exits_zero_on_success(self, tmp_path):
         from runtime.cli import main

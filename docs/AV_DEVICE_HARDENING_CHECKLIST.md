@@ -1,6 +1,6 @@
 # AV Device Hardening Checklist
 
-Use this checklist for cameras, ATEM devices, switches and routers used with Hall PTZ Control installations.
+Use this checklist for cameras, ATEM devices, switches and routers used with KH PTZ Control installations.
 
 This checklist is verification guidance. It does not automate vendor device configuration and does not require storing device passwords.
 

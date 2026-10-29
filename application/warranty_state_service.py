@@ -195,7 +195,7 @@ class WarrantyStateService:
                 reason="No known-good state has been recorded",
                 customer_message=(
                     "No validated baseline has been recorded for this installation. "
-                    "Run 'hallptz known-good mark' after a successful doctor pass."
+                    "Run 'khptz known-good mark' after a successful doctor pass."
                 ),
             )
 
@@ -416,21 +416,21 @@ class SupportHintEngine:
                 priority=3,
                 hint="No validated baseline recorded for this installation.",
                 trigger="warranty_state:unknown",
-                action="Run 'hallptz doctor' and then 'hallptz known-good mark --after-doctor-pass'.",
+                action="Run 'khptz doctor' and then 'khptz known-good mark --after-doctor-pass'.",
             ))
         elif warranty_state.state == WarrantyState.CHANGED_SINCE_VALIDATION:
             hints.append(SupportHint(
                 priority=2,
                 hint="Installation state has changed since last validation.",
                 trigger="warranty_state:changed_since_validation",
-                action="Review the changes with 'hallptz known-good diff', then re-validate.",
+                action="Review the changes with 'khptz known-good diff', then re-validate.",
             ))
         elif warranty_state.state == WarrantyState.REVALIDATION_REQUIRED:
             hints.append(SupportHint(
                 priority=1,
                 hint="Revalidation required before this installation can be considered supported.",
                 trigger="warranty_state:revalidation_required",
-                action="Fix all blocking doctor checks, then run 'hallptz known-good mark'.",
+                action="Fix all blocking doctor checks, then run 'khptz known-good mark'.",
             ))
 
         # Incident suspicion hints

@@ -7,8 +7,8 @@
 # the bundled demo templates from config/demo/.
 #
 # Safety guarantees:
-#   - Only writes inside the demo data path (HALLPTZ_DATA_DIR when in demo mode).
-#   - Never touches production paths (~/.config/hallptz/).
+#   - Only writes inside the demo data path (KHPTZ_DATA_DIR when in demo mode).
+#   - Never touches production paths (~/.config/khptz/).
 #   - Never deletes password, config.yaml, or PTZ/ATEM config files.
 #   - Validates the target path before writing anything.
 
@@ -58,13 +58,13 @@ class DemoResetError(RuntimeError):
     pass
 
 
-_PRODUCTION_PATH = Path.home() / ".config" / "hallptz"
+_PRODUCTION_PATH = Path.home() / ".config" / "khptz"
 
 
 def _production_paths() -> list[Path]:
     """Return all recognized production data directories (legacy + env overrides)."""
     paths = [_PRODUCTION_PATH]
-    for var in ("HALLPTZ_DATA_DIR", "HALLPTZ_DATA_DIR"):
+    for var in ("KHPTZ_DATA_DIR", "KHPTZ_DATA_DIR"):
         val = os.environ.get(var, "").strip()
         if val:
             p = Path(val)
@@ -81,7 +81,7 @@ class DemoResetService:
     ----------
     demo_data_dir:
         Path to reset. Must not be the production directory.
-        Defaults to the current HALLPTZ_DATA_DIR env var value.
+        Defaults to the current KHPTZ_DATA_DIR env var value.
     templates_dir:
         Source of clean demo templates. Defaults to config/demo/ in the app.
     """
@@ -152,7 +152,7 @@ class DemoResetService:
             if resolved == production:
                 raise DemoResetError(
                     "Demo reset refused: target path is the production directory. "
-                    "Set HALLPTZ_DATA_DIR to a demo-specific path before resetting."
+                    "Set KHPTZ_DATA_DIR to a demo-specific path before resetting."
                 )
             try:
                 resolved.relative_to(production)

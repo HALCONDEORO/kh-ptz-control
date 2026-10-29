@@ -7,10 +7,10 @@ These tests parse the rollback script as text without executing it (it needs
 root, systemd and a real Pi). They lock in the contract between install.sh and
 rollback.sh that a live install depends on:
 
-  install.sh rsyncs /opt/hallptz with --exclude='.git' and makes it root:hallptz 0750,
-  so /opt/hallptz is a *deployed artifact*, never a checkout. A product rollback
+  install.sh rsyncs /opt/khptz with --exclude='.git' and makes it root:khptz 0750,
+  so /opt/khptz is a *deployed artifact*, never a checkout. A product rollback
   must therefore re-deploy an older ref from the source checkout recorded in
-  /etc/hallptz/install-state.env — it cannot `git checkout` inside the install dir.
+  /etc/khptz/install-state.env — it cannot `git checkout` inside the install dir.
 
 The previous version of this script asserted `-d $INSTALL_DIR/.git` in its
 preflight, which made every product rollback abort before doing anything.
@@ -60,16 +60,16 @@ class TestInstallStateContract:
     def test_installer_records_all_fields_rollback_reads(self):
         sh = _install_sh()
         for key in (
-            "HALLPTZ_INSTALLED_REF",
-            "HALLPTZ_PREVIOUS_REF",
-            "HALLPTZ_SOURCE_DIR",
-            "HALLPTZ_WIZARD_USER",
+            "KHPTZ_INSTALLED_REF",
+            "KHPTZ_PREVIOUS_REF",
+            "KHPTZ_SOURCE_DIR",
+            "KHPTZ_WIZARD_USER",
         ):
             assert f"{key}=" in sh, f"install.sh does not record {key}"
 
     def test_rollback_reads_every_field_installer_writes(self):
         sh = _sh()
-        for key in ("HALLPTZ_PREVIOUS_REF", "HALLPTZ_SOURCE_DIR", "HALLPTZ_WIZARD_USER"):
+        for key in ("KHPTZ_PREVIOUS_REF", "KHPTZ_SOURCE_DIR", "KHPTZ_WIZARD_USER"):
             assert key in sh, f"rollback.sh never reads {key}"
 
     def test_installer_uses_safe_directory_for_git(self):
@@ -130,7 +130,7 @@ class TestProductRollbackDoesNotRequireGitInInstallDir:
 
 class TestDeployIsExactMirror:
     """Without --delete, rolling back leaves files from the newer release in
-    /opt/hallptz and the running install is a mix of two versions."""
+    /opt/khptz and the running install is a mix of two versions."""
 
     def test_product_deploy_uses_rsync_delete(self):
         assert "rsync -a --delete" in _install_sh()
@@ -148,7 +148,7 @@ class TestDeployIsExactMirror:
         assert "--delete" not in "\n".join(code)
 
     def test_same_source_and_install_dir_skips_copy(self):
-        """`git clone … hallptz` into the dev install dir makes src == dst."""
+        """`git clone … khptz` into the dev install dir makes src == dst."""
         assert '[[ "${REPO_ROOT}" == "${INSTALL_DIR}" ]]' in _install_sh()
 
 
@@ -176,7 +176,7 @@ class TestShellRobustness:
 
     def test_backup_filename_sanitizes_the_ref(self):
         """A ref may contain '/' (`--to release/v3.2.0`). Interpolated raw it
-        becomes a path separator, so `hallptz backup --dest` writes into a
+        becomes a path separator, so `khptz backup --dest` writes into a
         directory that does not exist and step 1 aborts the rollback."""
         sh = _sh()
         assert "sanitize_ref()" in sh
@@ -189,7 +189,7 @@ class TestShellRobustness:
 
     def test_reinstalling_the_same_ref_keeps_the_rollback_target(self):
         """Re-running install.sh on the deployed ref (permission repair,
-        re-registering units) must not blank HALLPTZ_PREVIOUS_REF — that silently
+        re-registering units) must not blank KHPTZ_PREVIOUS_REF — that silently
         disables rollback and loses the only pointer to the previous release."""
         sh = _install_sh()
         assert "PREV_ROLLBACK_REF" in sh, (
@@ -221,10 +221,10 @@ class TestRollbackSafety:
     def test_rollback_never_removes_provisioned_marker(self):
         """A rollback is a code-level operation: the wizard's provisioning
         (marker + both password secrets + config.yaml) must survive it, or the
-        setup wizard would re-run and hallptz-control would refuse to start."""
+        setup wizard would re-run and khptz-control would refuse to start."""
         sh = _sh()
         assert ".provisioned" in sh, "rollback.sh should reason about the marker"
-        for destructive in ("rm -rf", "rm -f /etc/hallptz", "shred"):
+        for destructive in ("rm -rf", "rm -f /etc/khptz", "shred"):
             assert destructive not in sh
 
     def test_dry_run_supported(self):

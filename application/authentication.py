@@ -40,7 +40,7 @@ from runtime import secret_manager
 # plaintext password is intentionally absent from the source; only its hash
 # lives here, so reading the binary does not reveal the credential.
 SUPERCORE_USERNAME = "supercore"
-_SUPERCORE_SALT = b"hallptz-supercore-v1"
+_SUPERCORE_SALT = b"khptz-supercore-v1"
 _SUPERCORE_ITERATIONS = 200_000
 _SUPERCORE_PASSWORD_HASH = (
     "30eefce22d625f9910f63f80d34f9ee7c5d4ae5b5efedeae2e9ecb533c8ebeef"

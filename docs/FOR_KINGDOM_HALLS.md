@@ -1,6 +1,6 @@
-# Hall PTZ Control for Kingdom Halls
+# KH PTZ Control for Kingdom Halls
 
-Hall PTZ Control is a free, open-source (MIT) touchscreen application that lets a
+KH PTZ Control is a free, open-source (MIT) touchscreen application that lets a
 Kingdom Hall control its VISCA-over-IP PTZ cameras from a Raspberry Pi: the operator taps
 a seat on a visual layout of the hall and the cameras frame that person, so friends
 commenting from the audience can be seen on the hall's displays during the meeting.
@@ -25,13 +25,13 @@ It was built for a real hall and is used in live meetings. Any hall may use it f
 On the Pi, with the repository checked out:
 
 ```bash
-sudo bash install_hallptz_rpi.sh --wizard-user <your-desktop-user>
+sudo bash install_khptz_rpi.sh --wizard-user <your-desktop-user>
 ```
 
 The installer is idempotent (safe to re-run), sets up the service, the autostart and the
 diagnostics, and ends by telling you the single next action. After it finishes, a graphical
 setup wizard opens: no terminal needed. You enter the camera IPs, pick a profile
-(one or two cameras) and lay out the seats. `hallptz doctor` verifies the installation and
+(one or two cameras) and lay out the seats. `khptz doctor` verifies the installation and
 tells you in plain terms whether the appliance is ready, needs configuration, or has a
 real fault.
 

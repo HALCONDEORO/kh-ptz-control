@@ -3,12 +3,12 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # tests/test_cli_gui_mode_awareness.py — diagnostics respect the GUI mode (#885/#887)
 #
-# `hallptz verify-install` used to assume hallptz-control.service owns the GUI. Under
+# `khptz verify-install` used to assume khptz-control.service owns the GUI. Under
 # --gui-mode user that service is deliberately disabled, so the old check
-# reported "inactive -> sudo systemctl start hallptz-control" — advice that would
+# reported "inactive -> sudo systemctl start khptz-control" — advice that would
 # launch a SECOND GUI competing for the same cameras. These tests pin the
-# corrected behaviour, which is decided entirely by HALLPTZ_GUI_MODE in
-# /etc/hallptz/install-state.env.
+# corrected behaviour, which is decided entirely by KHPTZ_GUI_MODE in
+# /etc/khptz/install-state.env.
 
 from __future__ import annotations
 
@@ -31,24 +31,24 @@ def _state(tmp_path, contents: str):
 
 class TestInstalledGuiMode:
     def test_reads_user_mode(self, tmp_path):
-        r = _state(tmp_path, 'HALLPTZ_GUI_MODE="user"\n')
+        r = _state(tmp_path, 'KHPTZ_GUI_MODE="user"\n')
         assert _installed_gui_mode(r) == "user"
 
     def test_reads_system_mode(self, tmp_path):
-        r = _state(tmp_path, 'HALLPTZ_GUI_MODE="system"\n')
+        r = _state(tmp_path, 'KHPTZ_GUI_MODE="system"\n')
         assert _installed_gui_mode(r) == "system"
 
     def test_tolerates_unquoted_values(self, tmp_path):
-        r = _state(tmp_path, "HALLPTZ_GUI_MODE=user\n")
+        r = _state(tmp_path, "KHPTZ_GUI_MODE=user\n")
         assert _installed_gui_mode(r) == "user"
 
     def test_picks_the_key_out_of_a_full_state_file(self, tmp_path):
         r = _state(tmp_path, "\n".join([
-            'HALLPTZ_INSTALL_MODE="product"',
-            'HALLPTZ_INSTALLED_VERSION="3.38.3"',
-            'HALLPTZ_WIZARD_USER="hallptz"',
-            'HALLPTZ_GUI_MODE="user"',
-            'HALLPTZ_INSTALLED_AT="2026-07-25T00:00:00Z"',
+            'KHPTZ_INSTALL_MODE="product"',
+            'KHPTZ_INSTALLED_VERSION="3.38.3"',
+            'KHPTZ_WIZARD_USER="khptz"',
+            'KHPTZ_GUI_MODE="user"',
+            'KHPTZ_INSTALLED_AT="2026-07-25T00:00:00Z"',
         ]) + "\n")
         assert _installed_gui_mode(r) == "user"
 
@@ -57,12 +57,12 @@ class TestInstalledGuiMode:
         assert _installed_gui_mode(_Resolver(tmp_path)) == "system"
 
     def test_defaults_to_system_when_the_key_is_absent(self, tmp_path):
-        r = _state(tmp_path, 'HALLPTZ_WIZARD_USER="hallptz"\n')
+        r = _state(tmp_path, 'KHPTZ_WIZARD_USER="khptz"\n')
         assert _installed_gui_mode(r) == "system"
 
     def test_rejects_an_unrecognised_value(self, tmp_path):
         """A corrupt state file must not invent a third mode."""
-        r = _state(tmp_path, 'HALLPTZ_GUI_MODE="banana"\n')
+        r = _state(tmp_path, 'KHPTZ_GUI_MODE="banana"\n')
         assert _installed_gui_mode(r) == "system"
 
     def test_survives_an_unreadable_config_dir(self, tmp_path):
@@ -80,7 +80,7 @@ class TestVerifyInstallRespectsTheMode:
             import runtime.path_resolver as pr
 
             (tmp_path / "install-state.env").write_text(
-                f'HALLPTZ_GUI_MODE="{gui_mode}"\n', encoding="utf-8"
+                f'KHPTZ_GUI_MODE="{gui_mode}"\n', encoding="utf-8"
             )
 
             # cmd_verify_install imports RuntimePathResolver *inside* the
@@ -109,7 +109,7 @@ class TestVerifyInstallRespectsTheMode:
 
     def test_user_mode_never_advises_starting_the_system_service(self, run_verify):
         out = run_verify("user", "inactive")
-        assert "sudo systemctl start hallptz-control" not in out
+        assert "sudo systemctl start khptz-control" not in out
 
     def test_user_mode_flags_an_active_system_service(self, run_verify):
         out = run_verify("user", "active")
@@ -117,4 +117,4 @@ class TestVerifyInstallRespectsTheMode:
 
     def test_system_mode_still_advises_starting_it(self, run_verify):
         out = run_verify("system", "inactive")
-        assert "systemctl start hallptz-control" in out
+        assert "systemctl start khptz-control" in out

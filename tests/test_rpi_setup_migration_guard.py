@@ -6,7 +6,7 @@ from runtime.setup_launcher import setup_wizard_needed
 
 
 class _ProductResolver:
-    config_dir = Path("/etc/hallptz")
+    config_dir = Path("/etc/khptz")
 
     def __init__(self, root: Path):
         self.provisioned_marker_file = root / ".provisioned"

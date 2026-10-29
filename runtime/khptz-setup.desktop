@@ -1,12 +1,12 @@
 [Desktop Entry]
-Name=HALLPTZ Setup
+Name=KHPTZ Setup
 Comment=First-run setup and Raspberry Pi integration wizard
-Exec=hallptz setup
+Exec=khptz setup
 Icon=preferences-system
 Terminal=false
 Type=Application
 Categories=Settings;System;
 StartupNotify=false
 # Autostart entry only — self-suppresses after both provisioning and Raspberry Pi
-# integration complete. The applications menu uses hallptz-setup-menu.desktop with
-# Exec=hallptz setup --force so Repair can always be opened deliberately.
+# integration complete. The applications menu uses khptz-setup-menu.desktop with
+# Exec=khptz setup --force so Repair can always be opened deliberately.

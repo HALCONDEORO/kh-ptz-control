@@ -1,6 +1,6 @@
 # Release Process
 
-This process defines how Hall PTZ Control becomes a tagged, traceable, installable release.
+This process defines how KH PTZ Control becomes a tagged, traceable, installable release.
 
 ## Rule
 
@@ -185,7 +185,7 @@ Every customer-facing release should state:
 Support must be able to check the installed version without reading Git manually:
 
 ```bash
-hallptz version
+khptz version
 python3 -m runtime.cli version
 cat VERSION
 ```

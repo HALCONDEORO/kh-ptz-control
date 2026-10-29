@@ -5,9 +5,9 @@
 #
 # core.atomic_write creates files privately (0600). Correct for secrets, wrong
 # for shared runtime data once the service and a session-owned GUI both use
-# /var/lib/hallptz through the hallptz group:
+# /var/lib/khptz through the khptz group:
 #
-#   - `hallptz restore` writes every file 0600 as whoever ran it, so the other
+#   - `khptz restore` writes every file 0600 as whoever ran it, so the other
 #     identity cannot read the restored presets, seats or layout;
 #   - layout import and the preset verification report have the same problem.
 #

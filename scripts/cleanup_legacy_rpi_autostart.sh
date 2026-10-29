@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Hall PTZ Control - Raspberry Pi autostart migration
+# KH PTZ Control - Raspberry Pi autostart migration
 #
-# Removes obsolete pre-HALLPTZ controller autostarts and installs the canonical HALLPTZ
+# Removes obsolete pre-KHPTZ controller autostarts and installs the canonical KHPTZ
 # desktop-to-systemd startup chain. The setup installer can call this script later.
 # Legacy program files are never deleted; changed startup files are backed up.
 
@@ -9,11 +9,11 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 readonly SCRIPT_VERSION="3"
-readonly SERVICE="hallptz-control.service"
-readonly DISPLAY_HELPER="/usr/local/libexec/hallptz-display-session"
-readonly DISPLAY_PATH="hallptz-display-ready.path"
-readonly DISPLAY_SERVICE="hallptz-display-ready.service"
-readonly AUTOSTART_NAME="hallptz-display-session.desktop"
+readonly SERVICE="khptz-control.service"
+readonly DISPLAY_HELPER="/usr/local/libexec/khptz-display-session"
+readonly DISPLAY_PATH="khptz-display-ready.path"
+readonly DISPLAY_SERVICE="khptz-display-ready.service"
+readonly AUTOSTART_NAME="khptz-display-session.desktop"
 
 DESKTOP_USER="${SUDO_USER:-}"
 TARGET_DISPLAY="${DISPLAY:-:0}"
@@ -21,7 +21,7 @@ EXTRA_PATTERN=""
 DRY_RUN=false
 MATCHES=0
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-BACKUP_DIR="/var/backups/hallptz/autostart-migration-${TIMESTAMP}"
+BACKUP_DIR="/var/backups/khptz/autostart-migration-${TIMESTAMP}"
 REPORT="${BACKUP_DIR}/report.txt"
 
 info() { printf '[INFO]  %s\n' "$*"; }
@@ -54,10 +54,10 @@ done
 
 [[ "$(id -u)" -eq 0 ]] || fail "Run this script with sudo."
 [[ -n "${DESKTOP_USER}" ]] || fail "Could not detect the desktop user. Use --wizard-user USER."
-[[ "${DESKTOP_USER}" != "root" && "${DESKTOP_USER}" != "hallptz" ]] || fail "Use the human desktop user."
+[[ "${DESKTOP_USER}" != "root" && "${DESKTOP_USER}" != "khptz" ]] || fail "Use the human desktop user."
 [[ "${TARGET_DISPLAY}" =~ ^:[0-9]+(\.[0-9]+)?$ ]] || fail "Invalid display: ${TARGET_DISPLAY}"
 id "${DESKTOP_USER}" >/dev/null 2>&1 || fail "User does not exist: ${DESKTOP_USER}"
-id hallptz >/dev/null 2>&1 || fail "The hallptz user does not exist. Run the installer first."
+id khptz >/dev/null 2>&1 || fail "The khptz user does not exist. Run the installer first."
 
 for command in cp find getent grep install mktemp pgrep runuser stat systemctl systemd-tmpfiles tee; do
     command -v "${command}" >/dev/null 2>&1 || fail "Required command missing: ${command}"
@@ -80,39 +80,39 @@ if [[ -r "${_state_lib}" ]]; then
     # shellcheck source=/dev/null
     source "${_state_lib}"
 else
-    hallptz_gui_mode() { printf 'system\n'; }
+    khptz_gui_mode() { printf 'system\n'; }
 fi
-GUI_MODE="$(hallptz_gui_mode)"
+GUI_MODE="$(khptz_gui_mode)"
 readonly GUI_MODE
 
 # Never remove the old startup unless the replacement is ready to be activated.
-[[ -f /opt/hallptz/main.py ]] || fail "HALLPTZ is not installed at /opt/hallptz/main.py."
+[[ -f /opt/khptz/main.py ]] || fail "KHPTZ is not installed at /opt/khptz/main.py."
 
 if [[ "${GUI_MODE}" == "user" ]]; then
     # Session-owned GUI: the launcher is the user unit plus its autostart shim.
-    # hallptz-control.service is deliberately disabled here, so do not require it.
-    [[ -f /etc/systemd/user/hallptz-gui.service ]] \
-        || fail "GUI mode is 'user' but /etc/systemd/user/hallptz-gui.service is missing.
-  Re-run: sudo bash install_hallptz_rpi.sh --wizard-user ${DESKTOP_USER} --gui-mode user"
-    [[ -x /usr/local/libexec/hallptz-gui-session ]] \
+    # khptz-control.service is deliberately disabled here, so do not require it.
+    [[ -f /etc/systemd/user/khptz-gui.service ]] \
+        || fail "GUI mode is 'user' but /etc/systemd/user/khptz-gui.service is missing.
+  Re-run: sudo bash install_khptz_rpi.sh --wizard-user ${DESKTOP_USER} --gui-mode user"
+    [[ -x /usr/local/libexec/khptz-gui-session ]] \
         || fail "GUI mode is 'user' but the session launcher is missing.
-  Re-run: sudo bash install_hallptz_rpi.sh --wizard-user ${DESKTOP_USER} --gui-mode user"
-    grep -Fq '/opt/hallptz/main.py' /etc/systemd/user/hallptz-gui.service \
-        || fail "hallptz-gui.service does not launch /opt/hallptz/main.py."
+  Re-run: sudo bash install_khptz_rpi.sh --wizard-user ${DESKTOP_USER} --gui-mode user"
+    grep -Fq '/opt/khptz/main.py' /etc/systemd/user/khptz-gui.service \
+        || fail "khptz-gui.service does not launch /opt/khptz/main.py."
 else
-    [[ -f /etc/systemd/system/hallptz-control.service ]] || fail "${SERVICE} is not installed. Run repair v3 first."
+    [[ -f /etc/systemd/system/khptz-control.service ]] || fail "${SERVICE} is not installed. Run repair v3 first."
     [[ -x "${DISPLAY_HELPER}" ]] || fail "${DISPLAY_HELPER} is missing. Run repair v3 first."
     [[ -f "/etc/systemd/system/${DISPLAY_PATH}" ]] || fail "${DISPLAY_PATH} is missing. Run repair v3 first."
     [[ -f "/etc/systemd/system/${DISPLAY_SERVICE}" ]] || fail "${DISPLAY_SERVICE} is missing. Run repair v3 first."
-    grep -Fq '/opt/hallptz/main.py' /etc/systemd/system/hallptz-control.service \
-        || fail "${SERVICE} does not launch /opt/hallptz/main.py."
+    grep -Fq '/opt/khptz/main.py' /etc/systemd/system/khptz-control.service \
+        || fail "${SERVICE} does not launch /opt/khptz/main.py."
 fi
 
 if [[ "${DRY_RUN}" == "true" ]]; then
-    REPORT="/tmp/hallptz-autostart-migration-${TIMESTAMP}.txt"
+    REPORT="/tmp/khptz-autostart-migration-${TIMESTAMP}.txt"
     : > "${REPORT}"
 else
-    install -d -m 0750 -o hallptz -g hallptz "${BACKUP_DIR}"
+    install -d -m 0750 -o khptz -g khptz "${BACKUP_DIR}"
     : > "${REPORT}"
 fi
 
@@ -130,17 +130,17 @@ is_canonical() {
     local text="${1,,}"
     [[ "${text}" == *"${DISPLAY_HELPER,,}"* \
         || "${text}" == *"${AUTOSTART_NAME,,}"* \
-        || "${text}" == *"hallptz-display-ready"* \
-        || "${text}" == *"hallptz-control.service"* \
-        || "${text}" == *"hallptz-provision"* \
-        || "${text}" == *"/usr/local/bin/hallptz"* \
-        || "${text}" == *"hallptz-adaptive"* \
+        || "${text}" == *"khptz-display-ready"* \
+        || "${text}" == *"khptz-control.service"* \
+        || "${text}" == *"khptz-provision"* \
+        || "${text}" == *"/usr/local/bin/khptz"* \
+        || "${text}" == *"khptz-adaptive"* \
         || "${text}" == *"repair_rpi_runtime"* \
         || "${text}" == *"cleanup_legacy_rpi_autostart"* \
-        || "${text}" == *"/run/hallptz"* \
-        || "${text}" == *"hallptz-gui.service"* \
-        || "${text}" == *"hallptz-gui.desktop"* \
-        || "${text}" == *"hallptz-gui-session"* ]]
+        || "${text}" == *"/run/khptz"* \
+        || "${text}" == *"khptz-gui.service"* \
+        || "${text}" == *"khptz-gui.desktop"* \
+        || "${text}" == *"khptz-gui-session"* ]]
 }
 
 is_conflict() {
@@ -149,10 +149,13 @@ is_conflict() {
     is_canonical "${text}" && return 1
 
     # A direct desktop launch of the installed GUI would create a second instance.
-    [[ "${lower}" == *"/opt/hallptz/main.py"* ]] && return 0
+    [[ "${lower}" == *"/opt/khptz/main.py"* ]] && return 0
 
-    # Known names used by previous Dublin ISL/PTZ controller generations.
-    [[ "${lower}" =~ dublin[_[:space:]-]?isl|hallptz|hallptz_controls|ptz[_[:space:]-]?(control|controller)|camera[_[:space:]-]?controller ]] && return 0
+    # Known names used by previous PTZ controller generations. The current
+    # install user's home prefix is stripped first so /home/khptz itself never
+    # counts as a product-name match.
+    local stripped="${lower//${HOME_DIR,,}/}"
+    [[ "${stripped}" =~ khptz|khptz_controls|hallptz|hallptz_controls|ptz[_[:space:]-]?(control|controller)|camera[_[:space:]-]?controller ]] && return 0
 
     [[ -n "${EXTRA_PATTERN}" ]] \
         && printf '%s\n' "${text}" | grep -Eiq -- "${EXTRA_PATTERN}" \
@@ -161,7 +164,7 @@ is_conflict() {
     # Conservative fallback: require a home-directory script plus a camera term.
     [[ "${lower}" == *"${HOME_DIR,,}/"* \
         && "${lower}" =~ /(main|app|run)\.py|/(start|launch|run)\.sh \
-        && "${lower}" =~ ptz|visca|atem|camera|joystick|dublin|isl ]]
+        && "${stripped}" =~ ptz|visca|atem|camera|joystick|hallptz|khptz ]]
 }
 
 quarantine_desktop_dir() {
@@ -176,7 +179,7 @@ quarantine_desktop_dir() {
             record "Would quarantine desktop autostart: ${file}"
         else
             backup "${file}"
-            destination="${file}.disabled-by-hallptz-${TIMESTAMP}"
+            destination="${file}.disabled-by-khptz-${TIMESTAMP}"
             mv -- "${file}" "${destination}"
             record "Quarantined desktop autostart: ${file} -> ${destination}"
         fi
@@ -195,7 +198,7 @@ rewrite_lines() {
                 printf '%s\n' "${line}" >> "${tmp}"
                 record "Would disable startup line in ${file}: ${line}"
             else
-                printf '# disabled by HALLPTZ autostart migration %s: %s\n' "${TIMESTAMP}" "${line}" >> "${tmp}"
+                printf '# disabled by KHPTZ autostart migration %s: %s\n' "${TIMESTAMP}" "${line}" >> "${tmp}"
                 record "Disabled startup line in ${file}: ${line}"
             fi
         else
@@ -226,7 +229,7 @@ scan_cron() {
                 printf '%s\n' "${line}" >> "${filtered}"
                 record "Would disable cron entry for ${DESKTOP_USER}: ${line}"
             else
-                printf '# disabled by HALLPTZ autostart migration %s: %s\n' "${TIMESTAMP}" "${line}" >> "${filtered}"
+                printf '# disabled by KHPTZ autostart migration %s: %s\n' "${TIMESTAMP}" "${line}" >> "${filtered}"
                 record "Disabled cron entry for ${DESKTOP_USER}: ${line}"
             fi
         else
@@ -279,7 +282,7 @@ quarantine_user_services() {
             backup "${file}"
             runuser -u "${DESKTOP_USER}" -- env XDG_RUNTIME_DIR="/run/user/${USER_UID}" \
                 systemctl --user disable --now "${unit}" >/dev/null 2>&1 || true
-            destination="${file}.disabled-by-hallptz-${TIMESTAMP}"; mv -- "${file}" "${destination}"
+            destination="${file}.disabled-by-khptz-${TIMESTAMP}"; mv -- "${file}" "${destination}"
             record "Disabled user service: ${unit}"
         fi
     done < <(find "${directory}" -maxdepth 1 -type f -name '*.service' -print0 2>/dev/null)
@@ -289,7 +292,7 @@ disable_system_services() {
     local unit details fragment destination
     while read -r unit _; do
         [[ -n "${unit}" ]] || continue
-        case "${unit}" in hallptz-control.service|hallptz-display-ready.service|hallptz-provision.service) continue ;; esac
+        case "${unit}" in khptz-control.service|khptz-display-ready.service|khptz-provision.service) continue ;; esac
         details="$(systemctl show "${unit}" -p Description -p ExecStart --no-pager 2>/dev/null || true)"
         details+=$'\n'"$(systemctl cat "${unit}" --no-pager 2>/dev/null || true)"
         is_conflict "${unit}"$'\n'"${details}" || continue
@@ -301,7 +304,7 @@ disable_system_services() {
             [[ -n "${fragment}" ]] && backup "${fragment}"
             systemctl disable --now "${unit}" >/dev/null 2>&1 || warn "Could not stop ${unit}."
             if [[ "${fragment}" == /etc/systemd/system/* && -f "${fragment}" ]]; then
-                destination="${fragment}.disabled-by-hallptz-${TIMESTAMP}"; mv -- "${fragment}" "${destination}"
+                destination="${fragment}.disabled-by-khptz-${TIMESTAMP}"; mv -- "${fragment}" "${destination}"
             else
                 systemctl mask "${unit}" >/dev/null 2>&1 || warn "Could not mask ${unit}."
             fi
@@ -310,22 +313,22 @@ disable_system_services() {
     done < <(systemctl list-unit-files --type=service --no-legend --no-pager 2>/dev/null || true)
 }
 
-# True when PID belongs to a unit HALLPTZ itself manages.
+# True when PID belongs to a unit KHPTZ itself manages.
 #
 # Under --gui-mode user the supported GUI runs as the DESKTOP user with the
-# command line "/usr/bin/python3 /opt/hallptz/main.py" — which is_conflict matches
+# command line "/usr/bin/python3 /opt/khptz/main.py" — which is_conflict matches
 # on purpose, because a hand-rolled desktop launcher of that same command is a
 # second instance. The cgroup is what tells the two apart: one is inside
-# hallptz-gui.service, the other is not. Without this check, reopening the wizard
+# khptz-gui.service, the other is not. Without this check, reopening the wizard
 # on a session-owned appliance killed the very GUI this script exists to
 # guarantee (systemd restarted it, but the operator saw the screen die
 # mid-setup).
-_pid_is_hallptz_managed() {
+_pid_is_khptz_managed() {
     local pid="$1" cgroup=""
     [[ "${pid}" =~ ^[0-9]+$ ]] || return 1
     [[ -r "/proc/${pid}/cgroup" ]] || return 1
     cgroup="$(tr -d ' ' < "/proc/${pid}/cgroup" 2>/dev/null || true)"
-    [[ "${cgroup}" == *"hallptz-gui.service"* || "${cgroup}" == *"hallptz-control.service"* ]]
+    [[ "${cgroup}" == *"khptz-gui.service"* || "${cgroup}" == *"khptz-control.service"* ]]
 }
 
 stop_conflicts() {
@@ -335,8 +338,8 @@ stop_conflicts() {
         [[ -n "${row}" ]] || continue
         pid="${row%% *}"; command_line="${row#* }"; [[ "${pid}" =~ ^[0-9]+$ ]] || continue
         is_conflict "${command_line}" || continue
-        if _pid_is_hallptz_managed "${pid}"; then
-            record "Kept HALLPTZ-managed process ${pid}: ${command_line}"
+        if _pid_is_khptz_managed "${pid}"; then
+            record "Kept KHPTZ-managed process ${pid}: ${command_line}"
             continue
         fi
         ((MATCHES += 1))
@@ -348,18 +351,18 @@ stop_conflicts() {
     for pid in "${pids[@]}"; do kill -0 "${pid}" 2>/dev/null && kill -KILL "${pid}" 2>/dev/null || true; done
 }
 
-install_hallptz_startup() {
+install_khptz_startup() {
     if [[ "${GUI_MODE}" == "user" ]]; then
         # The session-owned GUI is activated by install.sh (user unit + XDG
         # autostart). There is no display-ready chain to enable here, and
         # installing the xhost bridge would add a second, pointless launcher.
-        local session_autostart="${AUTOSTART_DIR}/hallptz-gui.desktop"
+        local session_autostart="${AUTOSTART_DIR}/khptz-gui.desktop"
         if [[ -f "${session_autostart}" ]]; then
             record "Session-owned GUI autostart present: ${session_autostart}"
         else
             warn "GUI mode is 'user' but ${session_autostart} is missing."
             warn "The GUI will not start at login. Re-run:"
-            warn "  sudo bash install_hallptz_rpi.sh --wizard-user ${DESKTOP_USER} --gui-mode user"
+            warn "  sudo bash install_khptz_rpi.sh --wizard-user ${DESKTOP_USER} --gui-mode user"
         fi
         return 0
     fi
@@ -374,8 +377,8 @@ install_hallptz_startup() {
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=HALLPTZ display session
-Comment=Start HALLPTZ after the Raspberry Pi desktop display is ready
+Name=KHPTZ display session
+Comment=Start KHPTZ after the Raspberry Pi desktop display is ready
 TryExec=${DISPLAY_HELPER}
 Exec=${DISPLAY_HELPER}
 Terminal=false
@@ -385,13 +388,13 @@ StartupNotify=false
 X-GNOME-Autostart-enabled=true
 EOF_DESKTOP
     chown "${DESKTOP_USER}:${USER_GROUP}" "${AUTOSTART_FILE}"; chmod 0644 "${AUTOSTART_FILE}"
-    backup "${AUTOSTART_DIR}/hallptz-display-permission.desktop"
-    rm -f -- "${AUTOSTART_DIR}/hallptz-display-permission.desktop"
-    systemd-tmpfiles --create /etc/tmpfiles.d/hallptz.conf
+    backup "${AUTOSTART_DIR}/khptz-display-permission.desktop"
+    rm -f -- "${AUTOSTART_DIR}/khptz-display-permission.desktop"
+    systemd-tmpfiles --create /etc/tmpfiles.d/khptz.conf
     systemctl daemon-reload
     systemctl enable "${SERVICE}" >/dev/null
     systemctl enable --now "${DISPLAY_PATH}" >/dev/null
-    record "Installed canonical HALLPTZ desktop autostart and enabled its systemd chain."
+    record "Installed canonical KHPTZ desktop autostart and enabled its systemd chain."
 }
 
 find_xauthority() {
@@ -403,7 +406,7 @@ find_xauthority() {
         \( -name '*Xauthority*' -o -name '.mutter-Xwaylandauth.*' \) -print -quit 2>/dev/null || true
 }
 
-start_hallptz_now() {
+start_khptz_now() {
     local xauth="" active=false
     local -a environment=("HOME=${HOME_DIR}" "USER=${DESKTOP_USER}" "LOGNAME=${DESKTOP_USER}" "DISPLAY=${TARGET_DISPLAY}")
     [[ "${DRY_RUN}" == "true" ]] && return 0
@@ -411,7 +414,7 @@ start_hallptz_now() {
         # The GUI belongs to the desktop session's own systemd manager, which
         # this root context cannot meaningfully drive. It starts at the next
         # login via the autostart entry.
-        record "GUI mode 'user': HALLPTZ starts at the next desktop login."
+        record "GUI mode 'user': KHPTZ starts at the next desktop login."
         return 0
     fi
     xauth="$(find_xauthority)"; [[ -n "${xauth}" ]] && environment+=("XAUTHORITY=${xauth}")
@@ -421,7 +424,7 @@ start_hallptz_now() {
             systemctl is-active --quiet "${SERVICE}" && { active=true; break; }; sleep 1
         done
         [[ "${active}" == "true" ]] || { journalctl -u "${SERVICE}" -n 60 --no-pager || true; fail "${SERVICE} did not start."; }
-        record "HALLPTZ is active through the canonical display-ready chain."
+        record "KHPTZ is active through the canonical display-ready chain."
     else
         warn "Current display could not be authorised; reboot will test the installed autostart."
     fi
@@ -432,8 +435,8 @@ verify() {
     if [[ "${GUI_MODE}" == "user" ]]; then
         # Exactly one launcher must remain. The system service staying enabled
         # alongside the session GUI is the two-competing-GUIs failure (#885).
-        [[ -f /etc/systemd/user/hallptz-gui.service ]] || fail "hallptz-gui.service is missing."
-        [[ -x /usr/local/libexec/hallptz-gui-session ]] || fail "The session launcher is missing."
+        [[ -f /etc/systemd/user/khptz-gui.service ]] || fail "khptz-gui.service is missing."
+        [[ -x /usr/local/libexec/khptz-gui-session ]] || fail "The session launcher is missing."
         if systemctl is-enabled --quiet "${SERVICE}" 2>/dev/null; then
             fail "${SERVICE} is still enabled while the GUI is session-owned.
   Two GUIs would compete for the cameras. Disable it with:
@@ -446,7 +449,7 @@ verify() {
     systemctl is-enabled --quiet "${DISPLAY_PATH}" || fail "${DISPLAY_PATH} is not enabled."
 }
 
-info "HALLPTZ autostart migration v${SCRIPT_VERSION} for ${DESKTOP_USER} on ${TARGET_DISPLAY}"
+info "KHPTZ autostart migration v${SCRIPT_VERSION} for ${DESKTOP_USER} on ${TARGET_DISPLAY}"
 quarantine_desktop_dir "${HOME_DIR}/.config/autostart"
 quarantine_desktop_dir "/etc/xdg/autostart"
 for directory in "${HOME_DIR}/.config/lxsession" "/etc/xdg/lxsession"; do
@@ -464,9 +467,9 @@ scan_cron
 quarantine_user_services
 disable_system_services
 stop_conflicts
-install_hallptz_startup
+install_khptz_startup
 [[ "${DRY_RUN}" == "true" ]] || { systemctl daemon-reload; runuser -u "${DESKTOP_USER}" -- env XDG_RUNTIME_DIR="/run/user/${USER_UID}" systemctl --user daemon-reload >/dev/null 2>&1 || true; }
-start_hallptz_now
+start_khptz_now
 verify
 
 [[ "${MATCHES}" -gt 0 ]] || warn "No recognised old startup was found; use --legacy-pattern when its name is unusual."
@@ -475,5 +478,5 @@ info "Mode       : $([[ "${DRY_RUN}" == "true" ]] && printf 'dry-run' || printf 
 info "Report     : ${REPORT}"
 if [[ "${DRY_RUN}" != "true" ]]; then
     info "Backup     : ${BACKUP_DIR}"
-    info "Next action: reboot and confirm that only HALLPTZ opens."
+    info "Next action: reboot and confirm that only KHPTZ opens."
 fi

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-APP_NAME = "Hall PTZ Control"
+APP_NAME = "KH PTZ Control"
 VERSION_FILE = Path(__file__).resolve().parent / "VERSION"
 
 

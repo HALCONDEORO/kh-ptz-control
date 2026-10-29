@@ -17,7 +17,7 @@ from runtime.logging_setup import setup_logging
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _reset_root_logger():
-    """Remove only HALLPTZ-added handlers from the root logger and reset config flag."""
+    """Remove only KHPTZ-added handlers from the root logger and reset config flag."""
     root = logging.getLogger()
     for h in list(_logging_setup_mod._added_handlers):
         root.removeHandler(h)
@@ -108,10 +108,10 @@ def test_rotating_handler_backup_count(tmp_path):
 
 def test_version_line_appears_in_log_file(tmp_path):
     log_dir = tmp_path / "logs"
-    setup_logging(log_dir=log_dir, version_line="Hall PTZ Control 0.1.0 (abc1234)")
+    setup_logging(log_dir=log_dir, version_line="KH PTZ Control 0.1.0 (abc1234)")
     log_path = log_dir / "app.log"
     content = log_path.read_text(encoding="utf-8")
-    assert "Hall PTZ Control 0.1.0 (abc1234)" in content
+    assert "KH PTZ Control 0.1.0 (abc1234)" in content
 
 
 def test_log_path_banner_appears_in_log_file(tmp_path):
@@ -174,10 +174,10 @@ class _FakeResolver:
     """Minimal RuntimePathResolver stand-in for testing log_startup_summary."""
 
     def __init__(self, tmp_path, *, with_config: bool = False, overrides: dict | None = None):
-        self.config_dir  = tmp_path / "etc_hallptz"
-        self.data_dir    = tmp_path / "var_lib_hallptz"
-        self.log_dir     = tmp_path / "var_log_hallptz"
-        self.backup_dir  = tmp_path / "var_backups_hallptz"
+        self.config_dir  = tmp_path / "etc_khptz"
+        self.data_dir    = tmp_path / "var_lib_khptz"
+        self.log_dir     = tmp_path / "var_log_khptz"
+        self.backup_dir  = tmp_path / "var_backups_khptz"
         self._with_config = with_config
         self._overrides   = overrides or {}
         if with_config:
@@ -231,10 +231,10 @@ def test_startup_summary_config_missing_warns(tmp_path, caplog):
 def test_startup_summary_logs_env_overrides(tmp_path, caplog):
     from runtime.logging_setup import log_startup_summary
     setup_logging()
-    resolver = _FakeResolver(tmp_path, overrides={"HALLPTZ_CONFIG_DIR": "/custom/etc"})
+    resolver = _FakeResolver(tmp_path, overrides={"KHPTZ_CONFIG_DIR": "/custom/etc"})
     with caplog.at_level(logging.INFO, logger="runtime.logging_setup"):
         log_startup_summary(resolver)
-    assert any("HALLPTZ_CONFIG_DIR" in r.message for r in caplog.records)
+    assert any("KHPTZ_CONFIG_DIR" in r.message for r in caplog.records)
 
 
 def test_startup_summary_no_overrides_message(tmp_path, caplog):

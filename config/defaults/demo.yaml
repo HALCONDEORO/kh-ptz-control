@@ -1,6 +1,6 @@
-# Hall PTZ Control — Demo profile
+# KH PTZ Control — Demo profile
 # Used for sales/training sessions with no real hardware.
-# Data is stored in ~/.config/hallptz-demo/ and never touches production config.
+# Data is stored in ~/.config/khptz-demo/ and never touches production config.
 
 site:
   name: "Demo Venue"

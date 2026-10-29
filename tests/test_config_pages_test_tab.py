@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # tests/test_config_pages_test_tab.py — ui/config_pages/test_tab.py had no coverage
 #
-# The Test tab runs `hallptz doctor` from the touchscreen so a technician on a
+# The Test tab runs `khptz doctor` from the touchscreen so a technician on a
 # customer site never needs a terminal. It is the in-app diagnostics path, so:
 #
 #   - a probe that fails must say so. Silently showing nothing looks like a
@@ -201,18 +201,18 @@ class TestRuntimeProfile:
         import ui.config_pages.test_tab as tab
         from domain.runtime_mode import RuntimeMode
         run_threads_inline(monkeypatch, tab)
-        monkeypatch.setenv("HALLPTZ_PROFILE", "demo")
+        monkeypatch.setenv("KHPTZ_PROFILE", "demo")
         dialog, mw, layout = build()
         button_named(layout, "Run Diagnostics").click()
         assert diagnostics["modes"] == [RuntimeMode.DEMO]
 
     def test_an_unknown_profile_falls_back_to_production(self, monkeypatch, diagnostics):
-        """A typo in HALLPTZ_PROFILE must not stop a technician from running the
+        """A typo in KHPTZ_PROFILE must not stop a technician from running the
         checks — production is the safe reading."""
         import ui.config_pages.test_tab as tab
         from domain.runtime_mode import RuntimeMode
         run_threads_inline(monkeypatch, tab)
-        monkeypatch.setenv("HALLPTZ_PROFILE", "produciton")
+        monkeypatch.setenv("KHPTZ_PROFILE", "produciton")
         dialog, mw, layout = build()
         button_named(layout, "Run Diagnostics").click()
         assert diagnostics["modes"] == [RuntimeMode.PRODUCTION]
@@ -221,7 +221,7 @@ class TestRuntimeProfile:
         import ui.config_pages.test_tab as tab
         from domain.runtime_mode import RuntimeMode
         run_threads_inline(monkeypatch, tab)
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
         dialog, mw, layout = build()
         button_named(layout, "Run Diagnostics").click()
         assert diagnostics["modes"] == [RuntimeMode.PRODUCTION]

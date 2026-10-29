@@ -1,7 +1,7 @@
 # PTZ / VISCA Camera Compatibility Matrix
 
 This document records which physical VISCA-over-IP PTZ camera models have been
-validated with Hall PTZ Control, and how each model behaves against the
+validated with KH PTZ Control, and how each model behaves against the
 assumptions the application makes.
 
 VISCA-over-IP support is **not** identical across brands and firmware. Without a

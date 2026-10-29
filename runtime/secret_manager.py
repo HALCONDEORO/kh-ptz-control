@@ -24,9 +24,9 @@ from core.atomic_write import write_text_atomic
 _logger = logging.getLogger(__name__)
 
 _CONFIG_DIR = Path(
-    os.environ.get("HALLPTZ_DATA_DIR")
-    or os.environ.get("HALLPTZ_DATA_DIR")
-    or (Path.home() / ".config" / "hallptz")
+    os.environ.get("KHPTZ_DATA_DIR")
+    or os.environ.get("KHPTZ_DATA_DIR")
+    or (Path.home() / ".config" / "khptz")
 )
 _ENC_FILE = _CONFIG_DIR / "password.enc"
 

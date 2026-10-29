@@ -212,8 +212,8 @@ class LayoutService:
         if version > SCHEMA_VERSION:
             raise LayoutError(
                 f"Unsupported schema version {version} "
-                f"(this version of HALLPTZ supports up to {SCHEMA_VERSION}). "
-                "Upgrade Hall PTZ Control to read this layout."
+                f"(this version of KHPTZ supports up to {SCHEMA_VERSION}). "
+                "Upgrade KH PTZ Control to read this layout."
             )
         if version not in _SUPPORTED_VERSIONS:
             raise LayoutError(f"Unknown schema version {version}")

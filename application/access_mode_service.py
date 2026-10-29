@@ -9,7 +9,7 @@
 # Rol por defecto: CAMERA_OPERATOR (operador de sala — #718 #719).
 #
 # Precedencia al determinar el rol inicial:
-#   1. Variable de entorno HALLPTZ_ACCESS_ROLE (o HALLPTZ_ACCESS_MODE como alias legacy).
+#   1. Variable de entorno KHPTZ_ACCESS_ROLE (o KHPTZ_ACCESS_MODE como alias legacy).
 #   2. Archivo persistido ACCESS_MODE_FILE (si existe y contiene un valor válido).
 #   3. Defecto del producto: CAMERA_OPERATOR.
 #
@@ -47,8 +47,8 @@ _LEGACY_MAP: dict[str, OperatingMode] = {
 
 
 def _resolve_env_override() -> OperatingMode | None:
-    """Lee HALLPTZ_ACCESS_ROLE (o el alias legacy HALLPTZ_ACCESS_MODE) del entorno."""
-    raw = os.environ.get("HALLPTZ_ACCESS_ROLE") or os.environ.get("HALLPTZ_ACCESS_MODE")
+    """Lee KHPTZ_ACCESS_ROLE (o el alias legacy KHPTZ_ACCESS_MODE) del entorno."""
+    raw = os.environ.get("KHPTZ_ACCESS_ROLE") or os.environ.get("KHPTZ_ACCESS_MODE")
     if not raw:
         return None
     # Intenta migración de valores legacy primero.

@@ -3,9 +3,9 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # tests/test_main_crash_reporter.py — the GUI captures its own crashes (#118/#882)
 #
-# The crash reporter existed but was only installed by the `hallptz` CLI. The
+# The crash reporter existed but was only installed by the `khptz` CLI. The
 # process that actually crashes on an appliance is the GUI — main.py, which is
-# what hallptz-control.service and hallptz-gui.service run — so every field failure
+# what khptz-control.service and khptz-gui.service run — so every field failure
 # that ended in `status=6/ABRT` left nothing behind but a photograph of the
 # screen.
 #

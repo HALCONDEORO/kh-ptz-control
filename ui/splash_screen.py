@@ -508,7 +508,7 @@ class SplashScreen(QWidget):
         footer.setContentsMargins(48, 0, 48, 36)
         footer.setSpacing(0)
 
-        org_lbl = QLabel('Hall PTZ Control')
+        org_lbl = QLabel('KH PTZ Control')
         org_lbl.setFont(QFont('Inter Tight', 13))
         org_lbl.setStyleSheet("color: rgba(255,255,255,51); background: transparent;")
 

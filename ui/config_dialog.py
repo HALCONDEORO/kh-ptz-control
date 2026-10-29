@@ -934,7 +934,7 @@ class ConfigDialog(QDialog):
     @staticmethod
     def _current_runtime_mode(sim_active: bool) -> str:
         """Devuelve el perfil efectivo mostrado por la pantalla técnica."""
-        profile = os.environ.get("HALLPTZ_PROFILE", "production").strip().lower()
+        profile = os.environ.get("KHPTZ_PROFILE", "production").strip().lower()
         if profile in {"demo", "simulation"}:
             return profile
         return "simulation" if sim_active else "production"
@@ -973,7 +973,7 @@ class ConfigDialog(QDialog):
         if reply != QMessageBox.Yes:
             return
 
-        demo_dir = Path.home() / ".config" / "hallptz-demo"
+        demo_dir = Path.home() / ".config" / "khptz-demo"
 
         if target_mode == "production":
             try:
@@ -1020,11 +1020,11 @@ class ConfigDialog(QDialog):
                     return
 
         env = os.environ.copy()
-        env["HALLPTZ_PROFILE"] = target_mode
+        env["KHPTZ_PROFILE"] = target_mode
         if target_mode in {"demo", "simulation"}:
-            env["HALLPTZ_DATA_DIR"] = str(demo_dir)
-        elif Path(env.get("HALLPTZ_DATA_DIR", "")).expanduser() == demo_dir:
-            env.pop("HALLPTZ_DATA_DIR", None)
+            env["KHPTZ_DATA_DIR"] = str(demo_dir)
+        elif Path(env.get("KHPTZ_DATA_DIR", "")).expanduser() == demo_dir:
+            env.pop("KHPTZ_DATA_DIR", None)
 
         main_path = Path(__file__).with_name("main.py")
         try:

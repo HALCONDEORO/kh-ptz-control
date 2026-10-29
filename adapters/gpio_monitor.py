@@ -15,8 +15,8 @@ from PyQt5.QtCore import QThread, pyqtSignal
 logger = logging.getLogger(__name__)
 
 # BCM pin number for the physical screen power button.
-# Override via environment variable: HALLPTZ_GPIO_SCREEN_BTN_PIN=<pin>
-GPIO_SCREEN_BUTTON_PIN: int = int(os.getenv("HALLPTZ_GPIO_SCREEN_BTN_PIN", "17"))
+# Override via environment variable: KHPTZ_GPIO_SCREEN_BTN_PIN=<pin>
+GPIO_SCREEN_BUTTON_PIN: int = int(os.getenv("KHPTZ_GPIO_SCREEN_BTN_PIN", "17"))
 
 # Minimum seconds between two button-press events (debounce)
 _DEBOUNCE_SECS = 0.5

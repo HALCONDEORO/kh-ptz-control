@@ -46,15 +46,15 @@ def _mapping_file() -> Path:
 
     This file is rewritten at RUNTIME, by the operator, from the running app —
     `set_pip_automation_enabled` and `update_mapping` both save it. It used to
-    resolve to /etc/hallptz/atem_mapping.json, which on a product install is
-    root:hallptz 2751: the service runs as User=hallptz and has no write permission
+    resolve to /etc/khptz/atem_mapping.json, which on a product install is
+    root:khptz 2751: the service runs as User=khptz and has no write permission
     there, so every save failed with EACCES and was swallowed as a warning.
     The operator toggled PiP automation, saw no error, and lost the change on
     the next restart.
 
     docs/RUNTIME_PATH_CONTRACT.md already says which directory this belongs to:
     config_dir is admin-write only, data_dir is where the service persists
-    customer/runtime data. Moving it also puts it inside `hallptz backup`, which
+    customer/runtime data. Moving it also puts it inside `khptz backup`, which
     only ever collects config.yaml out of config_dir.
     """
     try:
@@ -83,7 +83,7 @@ def _migrate_legacy_mapping() -> None:
 
     Done on read rather than left to the next save, because a site that never
     touches the ATEM settings again would otherwise keep its mapping in a
-    directory `hallptz backup` does not collect — the file would survive until the
+    directory `khptz backup` does not collect — the file would survive until the
     first restore quietly dropped it.
     """
     legacy = _legacy_mapping_file()

@@ -4,7 +4,7 @@ Use this file as the working contract for Claude Code in this repository.
 
 ## Product context
 
-Hall PTZ Control is a Raspberry Pi touchscreen application for VISCA-over-IP PTZ camera control. It is moving from a working fixed-site application into a configurable commercial product.
+KH PTZ Control is a Raspberry Pi touchscreen application for VISCA-over-IP PTZ camera control. It is moving from a working fixed-site application into a configurable commercial product.
 
 **Current version:** 3.38.3
 
@@ -56,7 +56,7 @@ The product must stay reliable for offline-first customer installations. It runs
 | `adapters/` | Hardware, storage and simulation implementations |
 | `ptz/visca/` | VISCA protocol commands, parser, worker and transport |
 | `ui/` | PyQt widgets, windows and UI wiring |
-| `runtime/` | CLI (`hallptz`), installer helpers, systemd and diagnostics entry points |
+| `runtime/` | CLI (`khptz`), installer helpers, systemd and diagnostics entry points |
 | `core/` | Event bus (`AsyncEventBus`), `SystemState`, `Controller`, `Supervisor`, `AppContext` |
 | `config/` | Config loading, schema, registry and writer |
 | `tests/` | All automated tests (mirrors source layout) |
@@ -126,26 +126,26 @@ Architecture boundary tests enforce these rules automatically — see `tests/tes
 ## Runtime paths (Raspberry Pi install)
 
 ```text
-/opt/hallptz/           Application code (read-only in service use)
-/etc/hallptz/           Customer/site config (config.yaml, room_layout.json)
-/var/lib/hallptz/       Persistent runtime data (presets, session state, change history)
-/var/log/hallptz/       Production logs and blackbox events
-/var/backups/hallptz/   Local backup ZIPs
-~/.config/hallptz/ Legacy data location — read-migrate source only
+/opt/khptz/           Application code (read-only in service use)
+/etc/khptz/           Customer/site config (config.yaml, room_layout.json)
+/var/lib/khptz/       Persistent runtime data (presets, session state, change history)
+/var/log/khptz/       Production logs and blackbox events
+/var/backups/khptz/   Local backup ZIPs
+~/.config/khptz/ Legacy data location — read-migrate source only
 ```
 
 **Environment overrides** (tests/demo):
 
 ```bash
-HALLPTZ_CONFIG_DIR        # overrides /etc/hallptz/
-HALLPTZ_DATA_DIR          # overrides /var/lib/hallptz/
-HALLPTZ_DATA_DIR     # legacy alias for HALLPTZ_DATA_DIR
-HALLPTZ_LOG_DIR           # overrides /var/log/hallptz/
-HALLPTZ_BACKUP_DIR        # overrides /var/backups/hallptz/
-HALLPTZ_PROFILE           # runtime profile: production | demo | simulation
+KHPTZ_CONFIG_DIR        # overrides /etc/khptz/
+KHPTZ_DATA_DIR          # overrides /var/lib/khptz/
+KHPTZ_DATA_DIR     # legacy alias for KHPTZ_DATA_DIR
+KHPTZ_LOG_DIR           # overrides /var/log/khptz/
+KHPTZ_BACKUP_DIR        # overrides /var/backups/khptz/
+KHPTZ_PROFILE           # runtime profile: production | demo | simulation
 ```
 
-Tests run with `HALLPTZ_DATA_DIR` pointing to `.pytest-runtime/data/` (set in `conftest.py`) and `QT_QPA_PLATFORM=offscreen`. Never override these in code; they are set once in conftest.
+Tests run with `KHPTZ_DATA_DIR` pointing to `.pytest-runtime/data/` (set in `conftest.py`) and `QT_QPA_PLATFORM=offscreen`. Never override these in code; they are set once in conftest.
 
 ---
 
@@ -169,7 +169,7 @@ Session MUST NOT start automatically on boot. See `docs/LIFECYCLE_CONTRACT.md`.
 | `AsyncEventBus` | `core/events.py` | Notification/integration bus |
 | `SystemState` | `core/state.py` | In-memory runtime state |
 | `Controller` | `core/controller.py` | Bus subscriber, routes events to services |
-| `DiagnosticsService` | `application/diagnostics_service.py` | `hallptz status`/`hallptz doctor` |
+| `DiagnosticsService` | `application/diagnostics_service.py` | `khptz status`/`khptz doctor` |
 | `BackupService` | `application/backup_service.py` | Backup ZIP creation |
 | `RestoreService` | `application/restore_service.py` | Backup ZIP restore |
 | `LayoutService` | `application/layout_service.py` | Room layout load/save |
@@ -227,7 +227,7 @@ A task is done when:
 - `python3 -m pytest` passes.
 - `python3 -m ruff check .` passes.
 - Normal and demo startup not broken (check if touched).
-- `hallptz doctor`/`hallptz status` considered for runtime/config/diagnostics changes.
+- `khptz doctor`/`khptz status` considered for runtime/config/diagnostics changes.
 - README or docs updated when behaviour, setup or operation changes.
 - No secrets, customer config or sensitive data committed.
 - No new business logic in legacy Qt controllers.

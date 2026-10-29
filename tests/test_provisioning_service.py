@@ -26,8 +26,8 @@ def isolated(tmp_path, monkeypatch):
     """Point config/data dirs and secret files at a temp tree."""
     config_dir = tmp_path / "etc"
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(config_dir))
-    monkeypatch.setenv("HALLPTZ_DATA_DIR", str(data_dir))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("KHPTZ_DATA_DIR", str(data_dir))
     monkeypatch.setattr(secret_manager, "_CONFIG_DIR", data_dir)
     monkeypatch.setattr(secret_manager, "_ENC_FILE", data_dir / "password.enc")
     return RuntimePathResolver()
@@ -251,10 +251,10 @@ class TestApplyFilesPreservesUnmodeledFields:
 
     def test_repair_rewrites_seeded_profile_to_match_camera_count(self, isolated):
         """The installer seeds config.yaml with 'starter_1_camera' before the
-        wizard runs. Two things must hold after `hallptz setup`:
+        wizard runs. Two things must hold after `khptz setup`:
 
         1. The bogus hardcoded 'wizard' value is never written — it is not a
-           known installation_profile and would make `hallptz doctor` warn.
+           known installation_profile and would make `khptz doctor` warn.
         2. The seeded profile is corrected to match the cameras actually
            configured. Preserving 'starter_1_camera' on a two-camera install
            left the appliance permanently reporting
@@ -278,7 +278,7 @@ class TestApplyFilesPreservesUnmodeledFields:
 
     def test_merge_preserves_installation_id_over_blank_wizard_answers(self, isolated):
         """Reproduces the actual bug scenario: on first boot the wizard user's
-        `hallptz` group membership may not be active yet (pre-relogin), so
+        `khptz` group membership may not be active yet (pre-relogin), so
         cmd_setup's prefill silently fails and the wizard opens with blank
         ProvisioningAnswers (installation_id=""). apply_files() runs on the
         privileged (root) side and CAN read the existing config.yaml — the
@@ -289,7 +289,7 @@ class TestApplyFilesPreservesUnmodeledFields:
         starter = svc.to_app_settings(ProvisioningAnswers())
         from dataclasses import replace
         starter = replace(
-            starter, site=replace(starter.site, installation_id="HALLPTZ-2026-STARTER99")
+            starter, site=replace(starter.site, installation_id="KHPTZ-2026-STARTER99")
         )
         write_full_config(starter, isolated.config_dir / "config.yaml")
 
@@ -298,7 +298,7 @@ class TestApplyFilesPreservesUnmodeledFields:
         svc.apply_files(blank_answers, resolver=isolated)
 
         reloaded = load_config(isolated.config_dir / "config.yaml")
-        assert reloaded.site.installation_id == "HALLPTZ-2026-STARTER99"
+        assert reloaded.site.installation_id == "KHPTZ-2026-STARTER99"
 
     def test_fresh_install_unaffected_no_prior_config(self, isolated):
         """No config.yaml on disk yet — nothing to merge onto, behaves as before."""
@@ -321,7 +321,7 @@ class TestApplyFilesPreservesUnmodeledFields:
             "  name: Stadium\n"
             "  contact: IT\n"
             "  installation_profile: starter_1_camera\n"
-            "  installation_id: HALLPTZ-2026-RESCUE01\n"
+            "  installation_id: KHPTZ-2026-RESCUE01\n"
             "cameras:\n"
             "  - id: platform\n"
             "    role: platform\n"
@@ -340,7 +340,7 @@ class TestApplyFilesPreservesUnmodeledFields:
         ProvisioningService().apply_files(_ready_answers(), resolver=isolated)
 
         reloaded = load_config(config_path)  # apply_files() writes a clean config
-        assert reloaded.site.installation_id == "HALLPTZ-2026-RESCUE01"
+        assert reloaded.site.installation_id == "KHPTZ-2026-RESCUE01"
         assert reloaded.site.installation_profile == "starter_1_camera"
 
     def test_unparseable_config_falls_back_without_raising(self, isolated):

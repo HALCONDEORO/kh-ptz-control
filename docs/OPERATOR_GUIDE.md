@@ -1,6 +1,6 @@
 # Operator & Support Guide — Safety Actions
 
-This guide explains the four runtime safety actions available in Hall PTZ Control.
+This guide explains the four runtime safety actions available in KH PTZ Control.
 Knowing which one to use prevents mistakes during a live meeting.
 
 ---
@@ -68,7 +68,7 @@ Knowing which one to use prevents mistakes during a live meeting.
 
 ### EXIT — Keep cameras on
 
-**What it does:** Closes the Hall PTZ Control application without sending a camera standby or power-off command.
+**What it does:** Closes the KH PTZ Control application without sending a camera standby or power-off command.
 
 **When to use:**
 - You need to restart the app but cameras should stay powered and in position.

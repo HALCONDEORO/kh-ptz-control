@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# runtime/cli.py — hallptz command-line interface
+# runtime/cli.py — khptz command-line interface
 #
-# Entry point for all hallptz subcommands.
+# Entry point for all khptz subcommands.
 # Run locally:  python -m runtime.cli <command>
-# After install: hallptz <command>
+# After install: khptz <command>
 #
 # Current commands:
-#   hallptz version   — print app name and version
-#   hallptz status    — print service readiness summary
-#   hallptz doctor    — run diagnostic checks and report health
-#   hallptz setup     — launch the graphical first-run setup wizard
+#   khptz version   — print app name and version
+#   khptz status    — print service readiness summary
+#   khptz doctor    — run diagnostic checks and report health
+#   khptz setup     — launch the graphical first-run setup wizard
 
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ from domain.runtime_mode import RuntimeMode, parse_mode
 # ── Command handlers ──────────────────────────────────────────────────────────
 
 def _resolve_mode(args) -> RuntimeMode:
-    """Return RuntimeMode from --profile flag or HALLPTZ_PROFILE env var."""
-    raw = getattr(args, "profile", None) or os.environ.get("HALLPTZ_PROFILE", "production")
+    """Return RuntimeMode from --profile flag or KHPTZ_PROFILE env var."""
+    raw = getattr(args, "profile", None) or os.environ.get("KHPTZ_PROFILE", "production")
     try:
         return parse_mode(raw)
     except ValueError:
@@ -52,7 +52,7 @@ def _prepare_runtime_mode(args) -> RuntimeMode:
     """Aplica el perfil runtime antes de crear servicios dependientes de rutas."""
     global _demo_guard
     mode = _resolve_mode(args)
-    os.environ["HALLPTZ_PROFILE"] = mode.value
+    os.environ["KHPTZ_PROFILE"] = mode.value
     guard, _ = _apply_demo_mode(mode)
     if guard is not None:
         _demo_guard = guard  # prevent premature GC of demo isolation
@@ -120,7 +120,7 @@ def cmd_status(args) -> int:
     try:
         import subprocess
         result = subprocess.run(
-            ["systemctl", "show", "hallptz-control",
+            ["systemctl", "show", "khptz-control",
              "--property=ActiveEnterTimestamp,NRestarts"],
             capture_output=True, text=True, timeout=5,
         )
@@ -166,7 +166,7 @@ def cmd_uptime(args) -> int:
 
     try:
         result = subprocess.run(
-            ["systemctl", "show", "hallptz-control",
+            ["systemctl", "show", "khptz-control",
              "--property=ActiveEnterTimestamp"],
             capture_output=True, text=True, timeout=5,
         )
@@ -323,7 +323,7 @@ def cmd_known_good(args) -> int:
         snap = svc.load()
         if snap is None:
             print("  No known-good state recorded.")
-            print("  Run: hallptz known-good mark --after-doctor-pass")
+            print("  Run: khptz known-good mark --after-doctor-pass")
             return 1
         if getattr(args, "json", False):
             import json as _json
@@ -538,9 +538,9 @@ def cmd_support_bundle(args) -> int:
 def _installed_gui_mode(resolver) -> str:
     """Return which launcher owns the GUI on this install: "system" or "user".
 
-    Recorded as HALLPTZ_GUI_MODE by install.sh (#885). Installs predating the flag
+    Recorded as KHPTZ_GUI_MODE by install.sh (#885). Installs predating the flag
     have no entry, and those were all system-mode — so that is the fallback.
-    Diagnostics must respect it: in user mode hallptz-control.service is
+    Diagnostics must respect it: in user mode khptz-control.service is
     deliberately disabled, and telling the operator to start it would launch a
     second GUI competing for the same cameras.
     """
@@ -607,7 +607,7 @@ def cmd_verify_install(args) -> int:
                  "Run installer to create: sudo ./runtime/installer/install.sh")
         elif not os.access(path, os.W_OK):
             _add(label, _FAIL, f"{label} not writable: {path}",
-                 "Check directory ownership (expected hallptz:hallptz, mode 0750)")
+                 "Check directory ownership (expected khptz:khptz, mode 0750)")
         else:
             _add(label, _PASS, f"{label} writable: {path}")
 
@@ -620,15 +620,15 @@ def cmd_verify_install(args) -> int:
              "sudo apt install -y python3-pyqt5 python3-pyqt5.qtsvg")
 
     # Systemd unit
-    service_path = _Path("/etc/systemd/system/hallptz-control.service")
+    service_path = _Path("/etc/systemd/system/khptz-control.service")
     if service_path.exists():
         _add("systemd_unit", _PASS, f"Service unit exists: {service_path}")
         # Check user/group in service file
         svc_text = service_path.read_text(encoding="utf-8", errors="replace")
-        if "User=hallptz" in svc_text and "Group=hallptz" in svc_text:
-            _add("systemd_user", _PASS, "Service user/group: hallptz")
+        if "User=khptz" in svc_text and "Group=khptz" in svc_text:
+            _add("systemd_user", _PASS, "Service user/group: khptz")
         else:
-            _add("systemd_user", _WARN, "Service user/group may not be 'hallptz'",
+            _add("systemd_user", _WARN, "Service user/group may not be 'khptz'",
                  "Re-run installer to regenerate the service file")
     else:
         if resolver.running_from_source:
@@ -645,7 +645,7 @@ def cmd_verify_install(args) -> int:
     try:
         import subprocess
         result = subprocess.run(
-            ["systemctl", "is-active", "hallptz-control"],
+            ["systemctl", "is-active", "khptz-control"],
             capture_output=True, text=True, timeout=5,
         )
         active_state = result.stdout.strip()
@@ -654,34 +654,34 @@ def cmd_verify_install(args) -> int:
             # down. An active one means two GUIs driving the same cameras.
             if active_state == "active":
                 _add("service_active", _FAIL,
-                     "hallptz-control is running while the GUI is session-owned "
+                     "khptz-control is running while the GUI is session-owned "
                      "(two GUIs would compete for the cameras)",
-                     "sudo systemctl disable --now hallptz-control")
+                     "sudo systemctl disable --now khptz-control")
             else:
                 _add("service_active", _PASS,
-                     f"hallptz-control correctly {active_state or 'not running'} "
+                     f"khptz-control correctly {active_state or 'not running'} "
                      "(GUI mode: user — the desktop session owns it)")
         elif active_state == "active":
-            _add("service_active", _PASS, "hallptz-control service: active")
+            _add("service_active", _PASS, "khptz-control service: active")
         elif active_state == "inactive":
-            _add("service_active", _WARN, "hallptz-control service: inactive",
-                 "sudo systemctl start hallptz-control")
+            _add("service_active", _WARN, "khptz-control service: inactive",
+                 "sudo systemctl start khptz-control")
         else:
-            _add("service_active", _WARN, f"hallptz-control service: {active_state or 'unknown'}",
-                 "sudo systemctl status hallptz-control --no-pager")
+            _add("service_active", _WARN, f"khptz-control service: {active_state or 'unknown'}",
+                 "sudo systemctl status khptz-control --no-pager")
     except Exception:
         _add("service_active", _WARN, "Could not query systemd service status",
-             "Run: sudo systemctl status hallptz-control --no-pager")
+             "Run: sudo systemctl status khptz-control --no-pager")
 
     # Session-owned GUI assets — only meaningful in user mode.
     if gui_mode == "user":
-        gui_unit = _Path("/etc/systemd/user/hallptz-gui.service")
-        gui_helper = _Path("/usr/local/libexec/hallptz-gui-session")
+        gui_unit = _Path("/etc/systemd/user/khptz-gui.service")
+        gui_helper = _Path("/usr/local/libexec/khptz-gui-session")
         missing = [str(p) for p in (gui_unit, gui_helper) if not p.exists()]
         if missing:
             _add("session_gui", _FAIL,
                  "Session GUI launcher incomplete: " + ", ".join(missing),
-                 "sudo bash install_hallptz_rpi.sh --wizard-user <user> --gui-mode user")
+                 "sudo bash install_khptz_rpi.sh --wizard-user <user> --gui-mode user")
         else:
             _add("session_gui", _PASS, "Session GUI launcher installed")
 
@@ -731,7 +731,7 @@ def cmd_setup(args) -> int:
     # (--force on a provisioned install). Pre-fill from any existing
     # config.yaml — not just when already provisioned: the installer writes
     # config.yaml (with a generated site.installation_id) before the wizard
-    # ever runs, so a plain first-run `hallptz setup` must still pick that up or
+    # ever runs, so a plain first-run `khptz setup` must still pick that up or
     # apply_files() would overwrite the stable ID with a blank one.
     answers = None
     from application.provisioning_service import ProvisioningService
@@ -755,12 +755,12 @@ def cmd_setup(args) -> int:
             print("          Refusing to open the wizard: continuing would silently")
             print("          overwrite cameras, ATEM and network settings with")
             print("          wizard defaults on save.")
-            print("          Run 'hallptz doctor' to diagnose, or fix config.yaml by hand.")
+            print("          Run 'khptz doctor' to diagnose, or fix config.yaml by hand.")
             return 1
     # Reconfiguring an already-provisioned install requires the current admin
     # password first — desktop-session access to the wizard user alone must
     # not be enough to change cameras/network or reset both passwords via the
-    # password-free /run/hallptz channel. Not required on a fresh install: there
+    # password-free /run/khptz channel. Not required on a fresh install: there
     # is nothing to protect yet, and no admin password may even be set.
     return run_setup_wizard(answers=answers, require_admin_auth=provisioned)
 
@@ -769,7 +769,7 @@ def cmd_demo(args) -> int:
     if args.demo_command == "reset":
         from application.demo_reset_service import DemoResetService
         mode = _resolve_mode(args)
-        os.environ["HALLPTZ_PROFILE"] = mode.value
+        os.environ["KHPTZ_PROFILE"] = mode.value
         guard, demo_dir = _apply_demo_mode(mode)
         if guard is not None and demo_dir is not None:
             svc = DemoResetService(
@@ -789,7 +789,7 @@ def cmd_demo(args) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="hallptz",
+        prog="khptz",
         description=f"{APP_NAME} command-line interface",
     )
     parser.add_argument(
@@ -797,7 +797,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="MODE",
         default=None,
         help="Runtime mode: production (default), demo, simulation. "
-             "Can also be set via HALLPTZ_PROFILE env var.",
+             "Can also be set via KHPTZ_PROFILE env var.",
     )
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     sub.required = True
@@ -964,7 +964,7 @@ _COMMANDS = {
 
 
 #: Commands the desktop user runs interactively. These must never require write
-#: access to service-owned production paths such as /var/log/hallptz (#884).
+#: access to service-owned production paths such as /var/log/khptz (#884).
 _INTERACTIVE_COMMANDS = frozenset({"setup", "demo"})
 
 
@@ -1004,14 +1004,14 @@ def main(argv: list[str] | None = None) -> int:
     from application.crash_reporter import install_crash_reporter
     install_crash_reporter(
         version=read_version(),
-        mode=os.environ.get("HALLPTZ_PROFILE", "production"),
+        mode=os.environ.get("KHPTZ_PROFILE", "production"),
         log_dir=_cli_log_dir(getattr(args, "command", None), resolver),
     )
     handler = _COMMANDS.get(args.command)
     if handler is None:
         parser.print_help()
         return 1
-    tracked_env = ("HALLPTZ_PROFILE", "HALLPTZ_DATA_DIR", "HALLPTZ_DATA_DIR")
+    tracked_env = ("KHPTZ_PROFILE", "KHPTZ_DATA_DIR", "KHPTZ_DATA_DIR")
     previous_env = {name: os.environ.get(name) for name in tracked_env}
     try:
         return handler(args)

@@ -1,4 +1,4 @@
-# Hall PTZ Control — Standard install template
+# KH PTZ Control — Standard install template
 # Two PTZ cameras, optional ATEM monitoring, layout editor enabled.
 # Copy to config.yaml and fill in real IPs / VISCA IDs before first run.
 

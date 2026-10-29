@@ -187,7 +187,7 @@ class TestBackupKeyValidation:
 class TestSimModeCli:
 
     def _run_cli(self, tmp_path, *args):
-        env = {**os.environ, "HALLPTZ_APP_DIR": str(tmp_path)}
+        env = {**os.environ, "KHPTZ_APP_DIR": str(tmp_path)}
         return subprocess.run(
             [sys.executable, "-m", "adapters.sim_mode", *args],
             env=env,
@@ -253,14 +253,14 @@ class TestCwdIndependence:
         assert sim_mode.BACKUP.is_absolute()
 
     def test_backup_path_is_anchored_to_script_dir_or_env_override(self, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_APP_DIR", raising=False)
+        monkeypatch.delenv("KHPTZ_APP_DIR", raising=False)
         import importlib
         reloaded = importlib.reload(sim_mode)
         assert reloaded.BACKUP.is_absolute()
         assert reloaded.BACKUP.parent == reloaded._APP_DIR
 
-    def test_hallptz_app_dir_env_override_changes_backup_location(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_APP_DIR", str(tmp_path))
+    def test_khptz_app_dir_env_override_changes_backup_location(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("KHPTZ_APP_DIR", str(tmp_path))
         import importlib
         reloaded = importlib.reload(sim_mode)
         assert reloaded.BACKUP == tmp_path / "sim_ip_backup.json"

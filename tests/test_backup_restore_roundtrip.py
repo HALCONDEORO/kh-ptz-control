@@ -139,7 +139,7 @@ class TestTheTwoSidesCannotDrift:
 
 
 class TestAtemMappingIsCoveredNow:
-    """The ATEM mapping moved out of config_dir, which `hallptz backup` never
+    """The ATEM mapping moved out of config_dir, which `khptz backup` never
     collected beyond config.yaml. If it were not in the contract, a restore
     would silently drop the operator's ATEM action mapping and their
     PiP-automation setting."""

@@ -5,14 +5,14 @@ Parent: #232.
 Depends on: [Runtime Path Contract](RUNTIME_PATH_CONTRACT.md) (#530),
             [Backup/Restore Contract](BACKUP_RESTORE_CONTRACT.md) (#531).
 
-This document defines what a Hall PTZ Control support bundle may collect, what
+This document defines what a KH PTZ Control support bundle may collect, what
 must be redacted, and why a support bundle is not a restore backup.
 
 ---
 
 ## Purpose
 
-A support bundle is a diagnostic snapshot exported by `hallptz support-bundle` (or
+A support bundle is a diagnostic snapshot exported by `khptz support-bundle` (or
 equivalent). Its purpose is to give support personnel enough information to
 diagnose a customer installation remotely — not to restore or copy the installation.
 
@@ -23,12 +23,12 @@ diagnose a customer installation remotely — not to restore or copy the install
 ```text
 support-<ISO8601>-<installation_id_prefix>.zip
 ├── manifest.json          Required. restore_capable: false.
-├── version.txt            hallptz version output.
-├── doctor.txt             hallptz doctor output (structured, sanitized).
+├── version.txt            khptz version output.
+├── doctor.txt             khptz doctor output (structured, sanitized).
 ├── config_summary.json    Sanitized config summary (no secrets).
 ├── install_summary.json   Installation/profile/connectivity summary.
 ├── logs/
-│   └── hallptz.log.redacted  Recent app logs after redaction (windowed).
+│   └── khptz.log.redacted  Recent app logs after redaction (windowed).
 ├── errors_summary.txt     Recent critical errors summary.
 ├── systemd_status.txt     systemd status summary (where available).
 ├── platform_summary.json  Raspberry Pi OS/runtime summary.
@@ -57,8 +57,8 @@ is non-conforming and must not be distributed to support channels.
 The following may be included in a support bundle by default:
 
 ```text
-hallptz version and build identity
-hallptz doctor output (sanitized — no raw config values)
+khptz version and build identity
+khptz doctor output (sanitized — no raw config values)
 sanitized config summary (keys present/absent, not values for secrets)
 installation ID and profile
 connectivity summary (reachable/unreachable, not raw IPs unless safe)
@@ -77,7 +77,7 @@ network readiness summary without private secrets
 The following must never appear in a support bundle:
 
 ```text
-Password fields (/etc/shadow, hallptz passwords, customer passwords)
+Password fields (/etc/shadow, khptz passwords, customer passwords)
 Private keys (SSH keys, licence signing keys, TLS private keys)
 API tokens or bearer tokens
 Licence private keys or signing material
@@ -144,7 +144,7 @@ Older rotated logs: excluded by default.
 All included log lines must pass through the RedactionGuard.
 ```
 
-Log file name in ZIP: `logs/hallptz.log.redacted` (never `hallptz.log`).
+Log file name in ZIP: `logs/khptz.log.redacted` (never `khptz.log`).
 
 ---
 
@@ -252,7 +252,7 @@ without operator confirmation.
 
 ```text
 Add RedactionGuard class to domain/supportability.py or application/
-Implement hallptz support-bundle command in runtime/cli.py
+Implement khptz support-bundle command in runtime/cli.py
 Implement config_summary generator (no raw values)
 Implement network_summary from doctor check results
 Implement log windowing with redaction pass

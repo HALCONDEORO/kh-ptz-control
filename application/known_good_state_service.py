@@ -264,7 +264,7 @@ class KnownGoodStateService:
             return StateDiff(
                 has_known_good=False,
                 no_known_good_reason="No known-good state has been recorded. "
-                                     "Run 'hallptz known-good mark --after-doctor-pass' to set one.",
+                                     "Run 'khptz known-good mark --after-doctor-pass' to set one.",
             )
 
         from application.fingerprint_service import FingerprintService

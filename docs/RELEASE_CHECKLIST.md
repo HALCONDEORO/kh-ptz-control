@@ -98,11 +98,11 @@ python3 -m runtime.cli doctor
 ## CLI/runtime validation
 
 ```text
-[ ] hallptz version works, or local python3 -m runtime.cli version works
-[ ] hallptz status works, or local fallback works
-[ ] hallptz doctor works, or local fallback works
-[ ] hallptz backup creates a manifest ZIP
-[ ] hallptz restore rejects invalid/corrupt backup safely
+[ ] khptz version works, or local python3 -m runtime.cli version works
+[ ] khptz status works, or local fallback works
+[ ] khptz doctor works, or local fallback works
+[ ] khptz backup creates a manifest ZIP
+[ ] khptz restore rejects invalid/corrupt backup safely
 [ ] sanitized support bundle export is available before first pilot readiness
 [ ] demo reset works in demo profile
 [ ] migrate command behaves as expected on test data
@@ -146,7 +146,7 @@ Setup wizard (product installs):
 [ ] every camera in the room can be entered (Add camera for a 2-camera site)
 [ ] added camera keeps a unique id, IP and VISCA address
 [ ] operator and administrator passwords set, and different
-[ ] hallptz-control starts by itself once the wizard finishes
+[ ] khptz-control starts by itself once the wizard finishes
 [ ] repair mode (menu entry) rejects a wrong administrator password
 [ ] rejected repair leaves config and both passwords unchanged
 [ ] wizard does not reopen on the next login once provisioned
@@ -198,7 +198,7 @@ Do not update without a backup unless there is an explicit emergency.
 [ ] app starts manually
 [ ] app starts from systemd if applicable
 [ ] touchscreen responds
-[ ] hallptz-control service status checked if installed
+[ ] khptz-control service status checked if installed
 [ ] journalctl logs checked
 [ ] camera 1 connects
 [ ] camera 2 connects if applicable
@@ -250,14 +250,14 @@ python3 sim_mode.py off
 [ ] pre-restore backup is created
 [ ] rollback script reviewed for this target image
 [ ] source checkout still present on the device (or --source recorded)
-[ ] /etc/hallptz/install-state.env names the expected installed and previous refs
+[ ] /etc/khptz/install-state.env names the expected installed and previous refs
 [ ] rollback --dry-run reviewed before the real run
 [ ] rollback preserves customer/runtime data
-[ ] /opt/hallptz contains no files from the newer release after rollback
-[ ] /etc/hallptz/.provisioned survives — the setup wizard does NOT re-run
+[ ] /opt/khptz contains no files from the newer release after rollback
+[ ] /etc/khptz/.provisioned survives — the setup wizard does NOT re-run
 [ ] both passwords still work at login after rollback
 [ ] app starts after rollback
-[ ] hallptz doctor and hallptz verify-install run after rollback
+[ ] khptz doctor and khptz verify-install run after rollback
 ```
 
 Rollback script:
@@ -306,7 +306,7 @@ Do not release if any of these apply:
 [ ] ruff fails on real issues
 [ ] architecture tests fail
 [ ] app does not start
-[ ] hallptz doctor cannot run
+[ ] khptz doctor cannot run
 [ ] main camera does not connect in required hardware profile
 [ ] real Raspberry Pi validation has not passed for pilot/customer use
 [ ] support bundle MVP is unavailable for first pilot readiness

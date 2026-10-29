@@ -13,8 +13,8 @@ sys.path.insert(0, str(ROOT))
 
 # Mantiene los tests lejos de los datos reales del operador y hace Qt
 # importable en ejecuciones headless de CI/local.
-os.environ.setdefault("HALLPTZ_DATA_DIR", str(PYTEST_DATA_DIR))
-os.environ.setdefault("HALLPTZ_DATA_DIR", str(PYTEST_DATA_DIR))
+os.environ.setdefault("KHPTZ_DATA_DIR", str(PYTEST_DATA_DIR))
+os.environ.setdefault("KHPTZ_DATA_DIR", str(PYTEST_DATA_DIR))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 # The crash reporter falls back to the user state directory when the production
 # log path is unwritable (#884). Without this, a test exercising that path
@@ -249,7 +249,7 @@ def _clear_simulator_queues():
 # ── Test isolation: redirect atem_mapping.json writes to a temp file ──────────
 # Tests that call set_pip_automation_enabled() or update_mapping() without
 # patching _save_mapping would write to the real runtime data path
-# (e.g. /var/lib/hallptz/atem_mapping.json), contaminating subsequent non-mocked
+# (e.g. /var/lib/khptz/atem_mapping.json), contaminating subsequent non-mocked
 # dispatchers.  This fixture redirects _mapping_file() to an isolated per-test
 # temp path for the duration of each test.
 #

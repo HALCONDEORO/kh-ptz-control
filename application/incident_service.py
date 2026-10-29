@@ -56,7 +56,7 @@ class IncidentService:
                 from runtime.path_resolver import RuntimePathResolver
                 incidents_dir = RuntimePathResolver().incidents_dir
             except Exception:  # noqa: BLE001
-                incidents_dir = Path.home() / ".config" / "hallptz" / "incidents"
+                incidents_dir = Path.home() / ".config" / "khptz" / "incidents"
         self._dir = Path(incidents_dir)
         self._recorder = flight_recorder
         self._max = max_incidents

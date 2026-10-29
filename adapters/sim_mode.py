@@ -15,8 +15,8 @@ import sys
 from pathlib import Path
 
 _APP_DIR: Path = (
-    Path(os.environ["HALLPTZ_APP_DIR"]).resolve()
-    if os.environ.get("HALLPTZ_APP_DIR")
+    Path(os.environ["KHPTZ_APP_DIR"]).resolve()
+    if os.environ.get("KHPTZ_APP_DIR")
     else Path(__file__).resolve().parent.parent  # adapters/ -> project root
 )
 

@@ -147,7 +147,7 @@ def _make_service(tmp_path: Path, *, free_mb: int = 10_000, temp: float | None =
     config = {
         "site": {
             "installation_profile": "starter_1_camera",
-            "installation_id": "hallptz-2026-0001",
+            "installation_id": "khptz-2026-0001",
         },
         "cameras": [
             {"id": "platform", "role": "platform", "ip": "172.16.1.11", "visca_id": "81"}

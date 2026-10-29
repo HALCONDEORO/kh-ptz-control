@@ -31,7 +31,7 @@ CONFIG_ARCHIVE_NAME: Final[str] = "config.yaml"
 #: data_dir on both the backup and the restore side.
 #:
 #: Order is stable and meaningful: it is the order files appear in the ZIP and
-#: in `hallptz backup` output, so a changed order shows up as a diff in review
+#: in `khptz backup` output, so a changed order shows up as a diff in review
 #: rather than as silent churn in customer-visible output.
 DATA_ARCHIVE_NAMES: Final[Tuple[str, ...]] = (
     "chairman_presets.json",
@@ -40,7 +40,7 @@ DATA_ARCHIVE_NAMES: Final[Tuple[str, ...]] = (
     "room_layout.json",
     "change_history.json",
     "preset_brightness.json",
-    # Moved out of /etc/hallptz, which the service cannot write (see
+    # Moved out of /etc/khptz, which the service cannot write (see
     # adapters/atem_dispatcher.py). It is customer configuration of installed
     # hardware, so a restore that omitted it would silently drop the ATEM
     # action mapping and the PiP-automation setting.

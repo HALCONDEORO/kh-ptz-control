@@ -32,7 +32,7 @@ def _ensure_runtime_dirs() -> None:
     """
     Create data and config directories if they do not yet exist.
 
-    This is especially important in production (/var/lib/hallptz/, /etc/hallptz/)
+    This is especially important in production (/var/lib/khptz/, /etc/khptz/)
     where the directories are not pre-created by the OS.  Runs silently on
     failure (e.g. permission denied in tests) so the app always starts.
     """

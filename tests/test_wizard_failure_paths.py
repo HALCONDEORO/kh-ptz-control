@@ -10,9 +10,9 @@
 # Two reachable cases were unguarded:
 #
 #   1. InstallingPage.initializePage calls handoff.begin(), which writes into
-#      /run/hallptz. The desktop user cannot create that directory, and install.sh
+#      /run/khptz. The desktop user cannot create that directory, and install.sh
 #      deliberately tolerates `systemd-tmpfiles --create` failing with a warning
-#      ("/run/hallptz will be created on next boot") — so an operator who runs
+#      ("/run/khptz will be created on next boot") — so an operator who runs
 #      setup before rebooting hit an OSError and lost the wizard.
 #
 #   2. DeviceCheckPage.initializePage calls run_preflight(), which measured disk

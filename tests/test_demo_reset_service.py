@@ -40,19 +40,19 @@ class TestDemoResetSafety:
         assert not result.success
         assert "production" in result.error.lower()
 
-    def test_refuses_hallptz_data_dir_override(self, tmp_path, monkeypatch):
-        """When HALLPTZ_DATA_DIR is set, that path is also treated as production (#600)."""
+    def test_refuses_khptz_data_dir_override(self, tmp_path, monkeypatch):
+        """When KHPTZ_DATA_DIR is set, that path is also treated as production (#600)."""
         override = tmp_path / "custom_prod"
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(override))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(override))
         svc = DemoResetService(demo_data_dir=override)
         result = svc.reset()
         assert not result.success
         assert "production" in result.error.lower()
 
-    def test_refuses_hallptz_data_dir_override(self, tmp_path, monkeypatch):
-        """When HALLPTZ_DATA_DIR is set, that path is also treated as production (#600)."""
+    def test_refuses_khptz_data_dir_override(self, tmp_path, monkeypatch):
+        """When KHPTZ_DATA_DIR is set, that path is also treated as production (#600)."""
         override = tmp_path / "legacy_prod"
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(override))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(override))
         svc = DemoResetService(demo_data_dir=override)
         result = svc.reset()
         assert not result.success
@@ -62,8 +62,8 @@ class TestDemoResetSafety:
         templates = _make_templates(tmp_path)
         demo_dir = tmp_path / "demo"
         prod_dir = tmp_path / "prod"
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(demo_dir))
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(demo_dir))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(demo_dir))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(demo_dir))
 
         svc = DemoResetService(
             demo_data_dir=demo_dir,

@@ -45,7 +45,7 @@ def test_legacy_autostart_detection_is_conservative():
     clean = check_legacy_autostart(entries=["Exec=nm-applet"])
     assert clean.ok
     old = check_legacy_autostart(entries=[
-        "Exec=/usr/bin/python3 /home/hallptz/hallptz-control/main.py"
+        "Exec=/usr/bin/python3 /home/khptz/khptz-control/main.py"
     ])
     assert not old.ok
     assert "disable" in old.remediation
@@ -54,13 +54,13 @@ def test_legacy_autostart_detection_is_conservative():
 def test_commented_and_quarantined_entries_are_not_active(tmp_path: Path):
     autostart = tmp_path / ".config" / "autostart"
     autostart.mkdir(parents=True)
-    (autostart / "old.desktop.disabled-by-hallptz-20260722").write_text(
-        "Exec=/home/hallptz/hallptz-control/main.py\n", encoding="utf-8"
+    (autostart / "old.desktop.disabled-by-khptz-20260722").write_text(
+        "Exec=/home/khptz/khptz-control/main.py\n", encoding="utf-8"
     )
     openbox = tmp_path / ".config" / "openbox"
     openbox.mkdir(parents=True)
     (openbox / "autostart").write_text(
-        "# disabled: /home/hallptz/hallptz-control/main.py\n",
+        "# disabled: /home/khptz/khptz-control/main.py\n",
         encoding="utf-8",
     )
     assert check_legacy_autostart(home=tmp_path).ok

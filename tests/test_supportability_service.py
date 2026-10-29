@@ -16,8 +16,8 @@ Covers:
 - Warranty state is reflected in summary
 - Maintenance overdue is reflected in summary
 - next_recommended_action is set when hints present
-- hallptz supportability exits with doctor exit code
-- hallptz supportability --json produces valid JSON with required keys
+- khptz supportability exits with doctor exit code
+- khptz supportability --json produces valid JSON with required keys
 """
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ class TestSupportabilitySummaryResult:
 
     def test_to_dict_is_json_serializable(self):
         r = SupportabilitySummaryResult(
-            installation_id="hallptz-2026-0042",
+            installation_id="khptz-2026-0042",
             app_version="3.18.0",
         )
         json.dumps(r.to_dict())  # must not raise
@@ -85,9 +85,9 @@ class TestSupportabilitySummaryResult:
         assert all(isinstance(l, str) for l in lines)
 
     def test_human_summary_contains_installation_id(self):
-        r = SupportabilitySummaryResult(installation_id="hallptz-2026-0042")
+        r = SupportabilitySummaryResult(installation_id="khptz-2026-0042")
         summary = "\n".join(r.human_summary())
-        assert "hallptz-2026-0042" in summary
+        assert "khptz-2026-0042" in summary
 
     def test_human_summary_shows_changed_when_not_clean(self):
         r = SupportabilitySummaryResult(
@@ -100,10 +100,10 @@ class TestSupportabilitySummaryResult:
 
     def test_human_summary_shows_next_action(self):
         r = SupportabilitySummaryResult(
-            next_recommended_action="Run hallptz doctor",
+            next_recommended_action="Run khptz doctor",
         )
         summary = "\n".join(r.human_summary())
-        assert "hallptz doctor" in summary
+        assert "khptz doctor" in summary
 
     def test_human_summary_shows_top_hints(self):
         r = SupportabilitySummaryResult(
@@ -117,7 +117,7 @@ class TestSupportabilitySummaryResult:
 
 # ── SupportabilityService ─────────────────────────────────────────────────────
 
-def _fake_fp(installation_id="hallptz-test", app_version="3.18.0", git_commit="abc", profile="production"):
+def _fake_fp(installation_id="khptz-test", app_version="3.18.0", git_commit="abc", profile="production"):
     from application.fingerprint_service import InstallationFingerprint
     fp = InstallationFingerprint(
         installation_id=installation_id,
@@ -140,7 +140,7 @@ def _fake_report(overall="OK", exit_code=0):
 
 def _fake_snap(marked_at="2026-05-01T10:00:00+00:00"):
     from application.known_good_state_service import KnownGoodSnapshot
-    return KnownGoodSnapshot(marked_at=marked_at, installation_id="hallptz-test")
+    return KnownGoodSnapshot(marked_at=marked_at, installation_id="khptz-test")
 
 
 def _fake_diff(has_known_good=True, is_clean=True, changes=None):
@@ -202,9 +202,9 @@ class TestSupportabilityServiceGenerate:
         assert isinstance(result, SupportabilitySummaryResult)
 
     def test_fingerprint_fields_populated(self):
-        svc = _make_svc(fp=_fake_fp(installation_id="hallptz-2026-0042"))
+        svc = _make_svc(fp=_fake_fp(installation_id="khptz-2026-0042"))
         result = svc.generate()
-        assert result.installation_id == "hallptz-2026-0042"
+        assert result.installation_id == "khptz-2026-0042"
         assert result.app_version == "3.18.0"
 
     def test_doctor_fields_populated(self):
@@ -351,13 +351,13 @@ class TestSupportabilityCLI:
         from runtime.cli import main
         with patch("application.supportability_service.SupportabilityService.generate") as mock_gen:
             mock_gen.return_value = SupportabilitySummaryResult(
-                installation_id="hallptz-2026-0042",
+                installation_id="khptz-2026-0042",
                 doctor_exit_code=0,
             )
             rc = main(["supportability", "--json"])
         assert rc == 0
         data = json.loads(capsys.readouterr().out)
-        assert data["installation_id"] == "hallptz-2026-0042"
+        assert data["installation_id"] == "khptz-2026-0042"
         assert "doctor_overall" in data
         assert "known_good" in data
         assert "warranty_state" in data

@@ -131,7 +131,7 @@ class TestRealDeviceScenarios:
         """image-1784735737244: healthy runtime, ATEM enabled with no address."""
         report = _report(
             _ok("service_state"), _ok("cameras"),
-            _config("atem_reachable", "Set the ATEM IP with `hallptz setup --force`"),
+            _config("atem_reachable", "Set the ATEM IP with `khptz setup --force`"),
             _advisory("network_profile"),
         )
         assert report.outcome is DoctorOutcome.CONFIG_REQUIRED
@@ -188,7 +188,7 @@ class TestIdentityAwarePermissions:
         service-owned paths as FAIL, producing a false "Overall: FAIL"."""
         import application.diagnostics_service as ds
 
-        data_dir = tmp_path / "var-lib-hallptz"
+        data_dir = tmp_path / "var-lib-khptz"
         data_dir.mkdir()
 
         # The mocked caller uid must differ from the uid that owns tmp_path,
@@ -197,8 +197,8 @@ class TestIdentityAwarePermissions:
         # (CI runners use 1001; a uid-1000 workstation made this fail).
         import os
         monkeypatch.setattr(ds, "_current_uid", lambda: os.getuid() + 1)
-        monkeypatch.setattr(ds, "_owner_label", lambda p: "hallptz")
-        monkeypatch.setattr(ds, "_current_user_label", lambda: "hallptz")
+        monkeypatch.setattr(ds, "_owner_label", lambda p: "khptz")
+        monkeypatch.setattr(ds, "_current_user_label", lambda: "khptz")
         monkeypatch.setattr(ds.os, "access", lambda p, mode: False)
 
         svc = ds.DiagnosticsService.__new__(ds.DiagnosticsService)
@@ -211,7 +211,7 @@ class TestIdentityAwarePermissions:
     def test_root_unable_to_write_is_still_a_real_failure(self, tmp_path, monkeypatch):
         import application.diagnostics_service as ds
 
-        data_dir = tmp_path / "var-lib-hallptz"
+        data_dir = tmp_path / "var-lib-khptz"
         data_dir.mkdir()
 
         monkeypatch.setattr(ds, "_current_uid", lambda: 0)  # root

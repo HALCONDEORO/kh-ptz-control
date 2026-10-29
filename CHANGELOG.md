@@ -12,13 +12,13 @@ This project uses a simple versioning approach while it is still in early produc
 
 ### Fixed
 
-- **Product rollback could never run.** `install.sh` deploys `/opt/hallptz` with
-  `rsync --exclude='.git'` and leaves it `root:hallptz` 0750, so `rollback.sh`'s
+- **Product rollback could never run.** `install.sh` deploys `/opt/khptz` with
+  `rsync --exclude='.git'` and leaves it `root:khptz` 0750, so `rollback.sh`'s
   preflight check for a git repository in the install directory always failed —
   and past it, `git checkout` and the `PREVIOUS_VERSION` write targeted a tree
   the service user cannot write. Rollback is now a re-deploy: `install.sh`
   records the source checkout, the live ref and the ref it replaced in
-  `/etc/hallptz/install-state.env`, and `rollback.sh` checks that checkout out at
+  `/etc/khptz/install-state.env`, and `rollback.sh` checks that checkout out at
   the previous ref and re-runs `install.sh` (preserving `--wizard-user`).
   Customer config, both password secrets and the `.provisioned` marker live
   outside the deploy target, so a rollback does not re-run the setup wizard or
@@ -33,7 +33,7 @@ This project uses a simple versioning approach while it is still in early produc
   the one-camera starter template and the wizard pre-fills from it, but the
   Cameras page rendered only what it was given and offered no way to add more —
   so a two-camera room (`platform` for the first seats, `comments` for the rest)
-  was unreachable through first-run setup or repair, and `/etc/hallptz` is not
+  was unreachable through first-run setup or repair, and `/etc/khptz` is not
   editable from the desktop session either. The page now supports Add camera and
   per-camera Remove; the rule for an added camera's role, id, VISCA address and
   IP lives in `application/provisioning_service.next_camera_answer` so it stays
@@ -47,7 +47,7 @@ This project uses a simple versioning approach while it is still in early produc
 
 ### Changed
 
-- Product deploys use `rsync --delete`, so `/opt/hallptz` is an exact mirror of the
+- Product deploys use `rsync --delete`, so `/opt/khptz` is an exact mirror of the
   installed release and a downgrade cannot leave newer files behind. A developer
   checkout cloned directly into the install directory is no longer rsynced onto
   itself.
@@ -266,4 +266,4 @@ This project uses a simple versioning approach while it is still in early produc
 - Chairman personal preset allocation.
 - Optional ATEM monitoring.
 - Simulation mode for VISCA cameras.
-- Persistent data directory under `~/.config/hallptz/` by default.
+- Persistent data directory under `~/.config/khptz/` by default.

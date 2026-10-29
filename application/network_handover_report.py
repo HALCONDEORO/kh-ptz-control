@@ -48,7 +48,7 @@ class NetworkDeviceRecord:
 @dataclass
 class NetworkHandoverReport:
     """
-    Network handover record for one HALLPTZ installation.
+    Network handover record for one KHPTZ installation.
 
     Fields are populated from config.yaml and optional preflight results.
     Unknown or unverified fields use honest status strings, not silently empty.
@@ -95,9 +95,9 @@ class NetworkHandoverReport:
     # ── Human-readable output ─────────────────────────────────────────────────
 
     def human_summary(self) -> list[str]:
-        """Return list of lines for hallptz network-report output (ASCII-safe)."""
+        """Return list of lines for khptz network-report output (ASCII-safe)."""
         lines = [
-            "HALLPTZ Network Handover Report",
+            "KHPTZ Network Handover Report",
             "=" * 44,
             f"Site:              {self.site_name}",
             f"Installation ID:   {self.installation_id}",

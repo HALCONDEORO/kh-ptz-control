@@ -1,6 +1,6 @@
 # Dependency Pinning Policy
 
-This policy defines how Hall PTZ Control should manage Python dependencies for development, CI and installable releases.
+This policy defines how KH PTZ Control should manage Python dependencies for development, CI and installable releases.
 
 The goal is reproducible customer installs without blocking normal security updates.
 

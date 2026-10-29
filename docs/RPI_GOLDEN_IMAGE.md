@@ -1,6 +1,6 @@
 # Raspberry Pi Golden Image and Provisioning Checklist
 
-Use this checklist to prepare a new Raspberry Pi for Hall PTZ Control.
+Use this checklist to prepare a new Raspberry Pi for KH PTZ Control.
 A technician must be able to follow this document on site without guessing.
 
 ---
@@ -23,7 +23,7 @@ A technician must be able to follow this document on site without guessing.
   (see [Raspberry Pi runtime baseline](RPI_RUNTIME_BASELINE.md)). Bookworm/3.11
   is **not** validated — do not provision it for a pilot without re-validation.
 - **User**: `pi` (default) — do not rename unless you update all scripts
-- **Hostname**: `hallptz-control` (optional, helps identify on network)
+- **Hostname**: `khptz-control` (optional, helps identify on network)
 
 Do **not** bake customer-specific passwords, IPs or names into the base image.
 Apply those after provisioning using the configuration steps below.
@@ -83,8 +83,8 @@ sudo pip3 install PyATEMMax
 ```bash
 # Clone the repository (use a tagged release)
 cd /home/pi
-git clone https://github.com/HALCONDEORO/legacy-ptz-controller.git hallptz
-cd hallptz
+git clone https://github.com/HALCONDEORO/legacy-ptz-controller.git khptz
+cd khptz
 git checkout v3.x.y    # replace with the target release tag
 
 # Run the installer
@@ -93,13 +93,13 @@ sudo bash runtime/installer/install.sh
 
 The installer will:
 - Create runtime data directories.
-- Install the systemd service (`hallptz-control.service`).
+- Install the systemd service (`khptz-control.service`).
 - Enable the service on boot.
 
 Verify with:
 
 ```bash
-systemctl status hallptz-control
+systemctl status khptz-control
 ```
 
 ---
@@ -119,11 +119,11 @@ Never bake these into a shared golden image.
 | `Contact.txt` | Support contact message shown in Help |
 | `password.enc` | Operator login password (set via app UI) |
 
-Write each file to `/home/pi/hallptz/`:
+Write each file to `/home/pi/khptz/`:
 
 ```bash
-echo "172.16.1.11" > /home/pi/hallptz/PTZ1IP.txt
-echo "172.16.1.12" > /home/pi/hallptz/PTZ2IP.txt
+echo "172.16.1.11" > /home/pi/khptz/PTZ1IP.txt
+echo "172.16.1.12" > /home/pi/khptz/PTZ2IP.txt
 # VISCA IDs are now set in config.yaml: cameras[0].visca_id and cameras[1].visca_id
 ```
 
@@ -134,16 +134,16 @@ echo "172.16.1.12" > /home/pi/hallptz/PTZ2IP.txt
 After installation the following structure must exist:
 
 ```text
-/home/pi/hallptz/           ← app code (git repo)
-/home/pi/hallptz/logs/      ← runtime logs
-/home/pi/hallptz_backups/   ← backup archives (created by rollback/backup scripts)
-/etc/systemd/system/hallptz-control.service
+/home/pi/khptz/           ← app code (git repo)
+/home/pi/khptz/logs/      ← runtime logs
+/home/pi/khptz_backups/   ← backup archives (created by rollback/backup scripts)
+/etc/systemd/system/khptz-control.service
 ```
 
 Permissions:
 
 ```bash
-sudo chown -R pi:pi /home/pi/hallptz /home/pi/hallptz_backups
+sudo chown -R pi:pi /home/pi/khptz /home/pi/khptz_backups
 ```
 
 ---
@@ -152,16 +152,16 @@ sudo chown -R pi:pi /home/pi/hallptz /home/pi/hallptz_backups
 
 ```bash
 # 1. Start the service
-sudo systemctl start hallptz-control
+sudo systemctl start khptz-control
 
 # 2. Check status
-sudo systemctl status hallptz-control
+sudo systemctl status khptz-control
 
 # 3. View logs
-journalctl -u hallptz-control -n 50
+journalctl -u khptz-control -n 50
 
 # 4. Run unit tests (on the Pi — hardware-free)
-cd /home/pi/hallptz
+cd /home/pi/khptz
 python -m pytest --tb=short -q
 ```
 
@@ -205,4 +205,4 @@ To replicate a working installation to a new card:
 - `docs/SOAK_TEST.md` — real-world soak test after deployment
 - `runtime/installer/install.sh` — automated installer script
 - `runtime/installer/rollback.sh` — safe rollback script
-- `runtime/systemd/hallptz-control.service` — systemd service template
+- `runtime/systemd/khptz-control.service` — systemd service template

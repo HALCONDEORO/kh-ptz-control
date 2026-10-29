@@ -150,7 +150,7 @@ Important rules:
 - `python3 -m ruff check .` passes or the reason is documented;
 - normal startup is not broken;
 - demo/simulation is not broken if touched;
-- `hallptz` CLI impact is considered if runtime/config/diagnostics changed;
+- `khptz` CLI impact is considered if runtime/config/diagnostics changed;
 - documentation updated if usage/installation/configuration changed;
 - no secrets, private keys or customer-sensitive data are committed;
 - no new business logic is added to legacy PyQt controllers unless explicitly accepted;

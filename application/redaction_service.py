@@ -6,7 +6,7 @@
 # Thin application wrapper around domain/redaction.RedactionGuard.
 #
 # Use this service for:
-#   - hallptz doctor output before logging or export
+#   - khptz doctor output before logging or export
 #   - support bundle content before ZIP
 #   - black box events and incident snapshots
 #   - handover reports and setup completion reports
@@ -125,7 +125,7 @@ class RedactionService:
 
     def redact_doctor_report(self, report_dict: dict) -> RedactionResult:
         """
-        Redact a `hallptz doctor --json` output dict before export.
+        Redact a `khptz doctor --json` output dict before export.
 
         Convenience wrapper: applies dict redaction, then verifies the JSON
         serialized output is free from obvious secrets.

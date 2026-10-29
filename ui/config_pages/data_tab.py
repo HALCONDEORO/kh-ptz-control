@@ -49,7 +49,7 @@ def build_data_tab(dialog, data_layout, mw, panel_layout):
     def _export():
         from PyQt5.QtWidgets import QFileDialog, QMessageBox
         from application.backup_service import BackupService
-        default_name = f"hallptz_backup_{datetime.now():%Y%m%d_%H%M}.zip"
+        default_name = f"khptz_backup_{datetime.now():%Y%m%d_%H%M}.zip"
         dest, _ = QFileDialog.getSaveFileName(
             dialog, "Export Backup", default_name, "ZIP files (*.zip)"
         )

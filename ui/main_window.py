@@ -468,7 +468,7 @@ class MainWindow(QMainWindow):
 
     def _build_background(self):
         from pathlib import Path
-        bg_path = Path(__file__).resolve().parent / "hallptz_background.jpg"
+        bg_path = Path(__file__).resolve().parent / "khptz_background.jpg"
         if not bg_path.exists():
             logger.warning("%s no encontrado — fondo vacío", bg_path)
             return
@@ -700,7 +700,7 @@ class MainWindow(QMainWindow):
         WA_TransparentForMouseEvents, so the hotspot receives clicks as BtnSession
         already does.
         """
-        if os.environ.get("HALLPTZ_PROFILE", "production") != "production":
+        if os.environ.get("KHPTZ_PROFILE", "production") != "production":
             return
         btn = QPushButton(self)
         btn.setGeometry(0, 0, 64, 64)
@@ -902,7 +902,7 @@ class MainWindow(QMainWindow):
     def _build_atem_button(self) -> None:
         """Create the ATEM panel toggle button and its connection-state dot indicator."""
         import os as _os
-        profile = _os.environ.get("HALLPTZ_PROFILE", "production")
+        profile = _os.environ.get("KHPTZ_PROFILE", "production")
         is_demo = profile in ("demo", "simulation") or self._fake_atem is not None
 
         if not is_demo and self._atem_panel is None:
@@ -1467,7 +1467,7 @@ class MainWindow(QMainWindow):
             self._on_atem_state_changed(ATEMState.CONNECTED)
             import os as _os
             logger.info("[DEMO] FakeATEM selected (profile=%s sim=%s)",
-                        _os.environ.get("HALLPTZ_PROFILE", "production"), _sim.is_active())
+                        _os.environ.get("KHPTZ_PROFILE", "production"), _sim.is_active())
             return
 
         # Keep the manual-command write adapter pointed at the current IP. It is

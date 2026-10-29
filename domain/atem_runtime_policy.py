@@ -19,7 +19,7 @@ def is_fake_atem_mode(profile: str | None = None, sim_active: bool = False) -> b
     Parameters
     ----------
     profile:
-        HALLPTZ_PROFILE value.  When None, reads from the environment.
+        KHPTZ_PROFILE value.  When None, reads from the environment.
     sim_active:
         Whether simulation mode is currently active (sim_ip_backup.json present).
         Callers should pass ``adapters.sim_mode.is_active()``; default False.
@@ -30,5 +30,5 @@ def is_fake_atem_mode(profile: str | None = None, sim_active: bool = False) -> b
     2. sim_mode is active                  → FakeATEM (overrides production profile).
     3. Otherwise                           → ATEMMonitor (real hardware).
     """
-    p = profile if profile is not None else os.environ.get("HALLPTZ_PROFILE", "production")
+    p = profile if profile is not None else os.environ.get("KHPTZ_PROFILE", "production")
     return p in ("demo", "simulation") or sim_active

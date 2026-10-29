@@ -1,6 +1,6 @@
 # Architecture
 
-This document defines the intended architecture boundaries for Hall PTZ Control.
+This document defines the intended architecture boundaries for KH PTZ Control.
 
 The goal is to stop new duplication, keep the codebase installable and make future work safer.
 
@@ -255,9 +255,9 @@ Owns non-UI entry points.
 
 Examples:
 
-- `hallptz version`
-- `hallptz status`
-- `hallptz doctor`
+- `khptz version`
+- `khptz status`
+- `khptz doctor`
 - installer helpers
 - systemd integration
 

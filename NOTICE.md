@@ -1,6 +1,6 @@
 # Notice
 
-Hall PTZ Control, formerly HallPTZ Controls, is open-source software owned by
+KH PTZ Control, formerly KHPTZ Controls, is open-source software owned by
 MACD Adaptive Limited and published under the MIT License (see [LICENSE](LICENSE)).
 
 Anyone may use, copy, modify and distribute it, including Kingdom Halls running their own

@@ -24,8 +24,8 @@ from runtime.path_resolver import RuntimePathResolver
 @pytest.fixture
 def isolated(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(tmp_path / "etc"))
-    monkeypatch.setenv("HALLPTZ_DATA_DIR", str(data_dir))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(tmp_path / "etc"))
+    monkeypatch.setenv("KHPTZ_DATA_DIR", str(data_dir))
     monkeypatch.setattr(secret_manager, "_CONFIG_DIR", data_dir)
     monkeypatch.setattr(secret_manager, "_ENC_FILE", data_dir / "password.enc")
     return RuntimePathResolver(), tmp_path
@@ -122,7 +122,7 @@ class _CorruptThenFail(provision.ProvisioningService):
 class TestAdminAuthVerification:
     """The privileged oneshot must enforce the admin-password check itself —
     not just the wizard's UI (AdminAuthPage), which cannot reliably decrypt
-    the hallptz:hallptz-owned secret to verify it. /run/hallptz is writable by the
+    the khptz:khptz-owned secret to verify it. /run/khptz is writable by the
     unprivileged wizard user, so a raw request dropped there directly
     (bypassing the wizard entirely) must not be enough to reconfigure or
     reset passwords on an already-provisioned install. See PR #867 review."""
@@ -245,7 +245,7 @@ class TestSnapshotRollback:
         assert not target.exists()  # cleaned up
 
     def test_capture_treats_a_symlink_as_absent(self, tmp_path):
-        """/var/lib/hallptz is writable by the hallptz service user itself — a
+        """/var/lib/khptz is writable by the khptz service user itself — a
         compromised process running as that user could plant a symlink there
         before capture() even runs. It must never trust a symlink's target as
         if it were the real captured secret; restore() then just removes
@@ -281,10 +281,10 @@ class TestSnapshotRollback:
 
     def test_restore_reapplies_captured_owner_and_mode(self, tmp_path, monkeypatch):
         """A mid-repair failure can replace a secret's inode (new owner/mode)
-        with good content before it gets chowned back to hallptz:hallptz. restore()
+        with good content before it gets chowned back to khptz:khptz. restore()
         must not just fix the bytes — it must also restore the original
         owner/mode, or a "successful" rollback silently leaves the secret
-        unreadable by hallptz-control.service. See PR #867 review."""
+        unreadable by khptz-control.service. See PR #867 review."""
         target = tmp_path / "secret.enc"
         target.write_bytes(b"good-content")
         target.chmod(0o600)
@@ -383,7 +383,7 @@ class TestFifoHardening:
 
 
 class TestSymlinkHardening:
-    """/run/hallptz is writable by the unprivileged wizard user, so the privileged
+    """/run/khptz is writable by the unprivileged wizard user, so the privileged
     oneshot must never follow a symlink planted there — see PR #867 review."""
 
     def test_request_symlink_is_rejected_not_followed(self, isolated):
@@ -472,12 +472,12 @@ class TestSystemSteps:
         flat = [" ".join(c) for c in cmds]
         assert any("useradd" in c for c in flat)
         assert any("2751" in c for c in flat)  # config dir mode
-        assert any("systemctl enable hallptz-control" in c for c in flat)
+        assert any("systemctl enable khptz-control" in c for c in flat)
 
     def test_apply_system_steps_uses_injected_runner(self):
         recorded = []
         provision.apply_system_steps(runner=lambda cmd: recorded.append(cmd))
-        # useradd may be skipped if the dev box happens to have a 'hallptz' user;
+        # useradd may be skipped if the dev box happens to have a 'khptz' user;
         # the directory installs and systemctl calls must always be issued.
         flat = [" ".join(c) for c in recorded]
         assert any("install -d" in c for c in flat)
@@ -485,7 +485,7 @@ class TestSystemSteps:
 
 
 class TestRestartControlService:
-    """hallptz-control.service gates on ConditionPathExists=.../.provisioned, so
+    """khptz-control.service gates on ConditionPathExists=.../.provisioned, so
     it may have been skipped at an earlier boot and needs an explicit restart
     once the marker is written — systemd doesn't retry on its own. See PR
     #867 review."""
@@ -493,7 +493,7 @@ class TestRestartControlService:
     def test_restarts_control_service_via_injected_runner(self):
         calls = []
         provision._restart_control_service(runner=lambda cmd: calls.append(cmd))
-        assert calls == [["systemctl", "restart", "hallptz-control"]]
+        assert calls == [["systemctl", "restart", "khptz-control"]]
 
     def test_restart_failure_is_swallowed(self):
         def _boom(cmd):
@@ -510,7 +510,7 @@ class TestRestartControlService:
             runner=lambda cmd: calls.append(cmd),
         )
         assert result["ok"] is True
-        assert ["systemctl", "restart", "hallptz-control"] in calls
+        assert ["systemctl", "restart", "khptz-control"] in calls
 
     def test_run_provision_skips_restart_when_not_do_system(self, isolated):
         resolver, tmp_path = isolated
@@ -525,8 +525,8 @@ class TestRestartControlService:
 
 class TestSafeChown:
     """_safe_chown() is the default chown for the secrets/config handoff to
-    the hallptz service user: fd-based (O_NOFOLLOW + fstat + fchown), never
-    reopening by name — /var/lib/hallptz is owned hallptz:hallptz and writable by the
+    the khptz service user: fd-based (O_NOFOLLOW + fstat + fchown), never
+    reopening by name — /var/lib/khptz is owned khptz:khptz and writable by the
     service user itself, so a compromised process running as that user could
     otherwise swap the real secret for a symlink between apply_files()
     writing it and this chown running. See PR #867 review."""
@@ -564,10 +564,10 @@ class TestSafeChown:
 
 class TestChownSecretsToServiceUser:
     """Secrets are written by whichever user runs the oneshot (root once
-    HALLPTZ_DATA_DIR is pinned to match hallptz-control.service's dir) — without a
-    chown, hallptz-control.service (User=hallptz) could never decrypt them to
+    KHPTZ_DATA_DIR is pinned to match khptz-control.service's dir) — without a
+    chown, khptz-control.service (User=khptz) could never decrypt them to
     validate a login. resolve_ids/chown are injected so this is testable
-    without real pwd/grp or the hallptz system user — see PR #867 review."""
+    without real pwd/grp or the khptz system user — see PR #867 review."""
 
     def test_chowns_both_secrets_present_in_written(self, isolated):
         resolver, tmp_path = isolated
@@ -588,10 +588,10 @@ class TestChownSecretsToServiceUser:
         assert str(secret_manager._secret_file(secret_manager.SECRET_ADMIN)) in chowned_paths
 
     def test_noop_when_ids_unresolvable(self):
-        """Non-POSIX platform, or the hallptz user doesn't exist yet — must not raise."""
+        """Non-POSIX platform, or the khptz user doesn't exist yet — must not raise."""
         calls = []
         provision._chown_secrets_to_service_user(
-            ["/var/lib/hallptz/password.enc"],
+            ["/var/lib/khptz/password.enc"],
             resolve_ids=lambda: None,
             chown=lambda *a: calls.append(a),
         )
@@ -642,8 +642,8 @@ class TestChownSecretsToServiceUser:
 
 class TestChgrpConfigToServiceGroup:
     """apply_files() writes config.yaml via write_text_atomic, which replaces
-    the inode outright — losing the installer's root:hallptz ownership, landing
-    root:root. hallptz-control.service (User=hallptz, Group=hallptz) could then never
+    the inode outright — losing the installer's root:khptz ownership, landing
+    root:root. khptz-control.service (User=khptz, Group=khptz) could then never
     read its own config.yaml after any successful provision/repair. See PR
     #867 review."""
 
@@ -662,10 +662,10 @@ class TestChgrpConfigToServiceGroup:
         assert calls == [(str(config_path), -1, 999)]  # uid=-1 → owner untouched
 
     def test_noop_when_ids_unresolvable(self):
-        """Non-POSIX platform, or the hallptz user doesn't exist yet — must not raise."""
+        """Non-POSIX platform, or the khptz user doesn't exist yet — must not raise."""
         calls = []
         provision._chgrp_config_to_service_group(
-            Path("/etc/hallptz/config.yaml"),
+            Path("/etc/khptz/config.yaml"),
             resolve_ids=lambda: None,
             chown=lambda *a: calls.append(a),
         )
@@ -677,7 +677,7 @@ class TestChgrpConfigToServiceGroup:
 
         # Must not raise — a chgrp failure should never fail provisioning.
         provision._chgrp_config_to_service_group(
-            Path("/etc/hallptz/config.yaml"), resolve_ids=lambda: (1, 1), chown=_boom
+            Path("/etc/khptz/config.yaml"), resolve_ids=lambda: (1, 1), chown=_boom
         )
 
     def test_run_provision_chgrps_config_when_do_system(self, isolated, monkeypatch):

@@ -17,13 +17,13 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-USER_UNIT = REPO_ROOT / "runtime" / "systemd" / "user" / "hallptz-gui.service"
-SYSTEM_UNIT = REPO_ROOT / "runtime" / "systemd" / "hallptz-control.service"
-HELPER = REPO_ROOT / "runtime" / "hallptz-gui-session.sh"
-AUTOSTART = REPO_ROOT / "runtime" / "hallptz-gui.desktop"
+USER_UNIT = REPO_ROOT / "runtime" / "systemd" / "user" / "khptz-gui.service"
+SYSTEM_UNIT = REPO_ROOT / "runtime" / "systemd" / "khptz-control.service"
+HELPER = REPO_ROOT / "runtime" / "khptz-gui-session.sh"
+AUTOSTART = REPO_ROOT / "runtime" / "khptz-gui.desktop"
 INSTALLER = REPO_ROOT / "runtime" / "installer" / "install.sh"
 ROLLBACK = REPO_ROOT / "runtime" / "installer" / "rollback.sh"
-BOOTSTRAP = REPO_ROOT / "install_hallptz_rpi.sh"
+BOOTSTRAP = REPO_ROOT / "install_khptz_rpi.sh"
 
 
 def _sections(text: str) -> dict[str, list[tuple[str, str]]]:
@@ -111,11 +111,11 @@ class TestUserUnitInheritsTheSession:
             assert expected in env, f"{expected} missing (#884 regression risk)"
 
     def test_is_gated_on_provisioning(self, user_unit):
-        assert "/etc/hallptz/.provisioned" in _values(user_unit, "Unit", "ConditionPathExists")
+        assert "/etc/khptz/.provisioned" in _values(user_unit, "Unit", "ConditionPathExists")
 
     def test_does_not_sandbox_away_its_own_data_paths(self, user_unit):
-        """ProtectSystem=strict would block the writes to /var/lib/hallptz and
-        /var/log/hallptz this unit must make."""
+        """ProtectSystem=strict would block the writes to /var/lib/khptz and
+        /var/log/khptz this unit must make."""
         assert not _values(user_unit, "Service", "ProtectSystem")
 
     def test_is_not_enabled_into_a_target_lxde_may_never_reach(self, user_unit):
@@ -150,7 +150,7 @@ class TestLauncherImportsTheEnvironment:
 
     def test_autostart_points_at_the_helper(self):
         desktop = AUTOSTART.read_text(encoding="utf-8")
-        assert "Exec=/usr/local/libexec/hallptz-gui-session" in desktop
+        assert "Exec=/usr/local/libexec/khptz-gui-session" in desktop
         assert "Type=Application" in desktop
 
 
@@ -176,13 +176,13 @@ class TestExactlyOneLauncher:
         assert "Invalid --gui-mode" in installer_text
 
     def test_gui_mode_is_recorded_for_rollback(self, installer_text):
-        assert "HALLPTZ_GUI_MODE=" in installer_text
+        assert "KHPTZ_GUI_MODE=" in installer_text
 
     def test_rollback_preserves_the_recorded_mode(self):
         """Without this a rollback silently reverts to the system service and
         leaves the session launcher behind — two launchers again."""
         text = ROLLBACK.read_text(encoding="utf-8")
-        assert "HALLPTZ_GUI_MODE" in text
+        assert "KHPTZ_GUI_MODE" in text
         assert "--gui-mode" in text
 
 

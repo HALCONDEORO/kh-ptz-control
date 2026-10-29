@@ -222,7 +222,7 @@ class TestDonePage:
 
     def test_a_failure_names_the_next_step(self, qapp, monkeypatch):
         page = self._page(monkeypatch, False, "Provisioning marker missing")
-        assert "hallptz doctor" in page._verdict.text()
+        assert "khptz doctor" in page._verdict.text()
 
     def test_the_verdict_is_rendered_as_plain_text(self, qapp, monkeypatch):
         """#886: a verdict containing stray markup or braces must not be parsed

@@ -4,9 +4,9 @@
 """application/provision_handoff.py — the wizard side of the provisioning channel.
 
 The setup wizard runs unprivileged in the desktop session; the OS-mutating work
-(write /etc/hallptz, install + enable the systemd service) runs as root in
+(write /etc/khptz, install + enable the systemd service) runs as root in
 runtime/provision.py. They never share a process. This module is the bridge the
-wizard uses: it drops a request file the privileged ``hallptz-provision`` path-unit
+wizard uses: it drops a request file the privileged ``khptz-provision`` path-unit
 reacts to, then polls for the result file that unit writes back.
 
 It is deliberately Qt-free and path-agnostic — the request/result paths are
@@ -19,7 +19,7 @@ Split for a non-blocking GUI:
   - submit() = begin() + a blocking poll loop, for headless/CLI use and tests.
 
 Security note: the request carries both plaintext passwords. In production the
-request path is on tmpfs (/run/hallptz) and the privileged side shreds it after
+request path is on tmpfs (/run/khptz) and the privileged side shreds it after
 applying; this module writes it 0600 so it is never world-readable even briefly.
 """
 

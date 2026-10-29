@@ -4,12 +4,12 @@
 # tests/test_atem_mapping_location.py - the ATEM mapping lives where the service
 # can actually write it.
 #
-# It used to resolve to /etc/hallptz/atem_mapping.json. On a product install that
-# directory is root:hallptz 2751 and the service runs as User=hallptz, so every save
+# It used to resolve to /etc/khptz/atem_mapping.json. On a product install that
+# directory is root:khptz 2751 and the service runs as User=khptz, so every save
 # failed with EACCES - and the failure was swallowed as a log warning. The
 # operator toggled PiP automation in the UI, saw no error, and the change was
 # gone after the next restart. It also broke two written rules: config_dir is
-# admin-write only (docs/RUNTIME_PATH_CONTRACT.md) and `hallptz backup` only ever
+# admin-write only (docs/RUNTIME_PATH_CONTRACT.md) and `khptz backup` only ever
 # collects config.yaml out of config_dir, so the file was outside backups too.
 
 from __future__ import annotations
@@ -40,8 +40,8 @@ def dirs(tmp_path, monkeypatch):
     config_dir.mkdir()
     data_dir.mkdir()
     monkeypatch.setattr(atem_dispatcher, "_mapping_file", _REAL_MAPPING_FILE)
-    monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(config_dir))
-    monkeypatch.setenv("HALLPTZ_DATA_DIR", str(data_dir))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("KHPTZ_DATA_DIR", str(data_dir))
     return config_dir, data_dir
 
 
@@ -179,7 +179,7 @@ class TestPersistence:
 
     def test_saving_creates_a_missing_data_directory(self, tmp_path, monkeypatch):
         monkeypatch.setattr(atem_dispatcher, "_mapping_file", _REAL_MAPPING_FILE)
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "absent"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "absent"))
         atem_dispatcher._save_mapping({"1": "none"})
         assert (tmp_path / "absent" / "atem_mapping.json").exists()
 

@@ -7,14 +7,14 @@
 # config/data paths. Call DemoGuard.apply() once at startup before any I/O.
 #
 # Data directory isolation:
-#   Production: ~/.config/hallptz/          (HALLPTZ_DATA_DIR or default)
-#   Demo:       ~/.config/hallptz-demo/     (always; cannot be overridden by env)
+#   Production: ~/.config/khptz/          (KHPTZ_DATA_DIR or default)
+#   Demo:       ~/.config/khptz-demo/     (always; cannot be overridden by env)
 #
 # Protected production paths (never touched in demo mode):
 #   config.yaml, PTZ1IP.txt, PTZ2IP.txt, Cam1ID.txt, Cam2ID.txt,
 #   ATEMIP.txt, Contact.txt, password.enc, room_layout.json,
 #   chairman_presets.json, seat_names.json, schedule.json
-#   (from the production data dir ~/.config/hallptz/)
+#   (from the production data dir ~/.config/khptz/)
 
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ from domain.runtime_mode import RuntimeMode
 
 logger = logging.getLogger(__name__)
 
-_DEMO_DATA_DIR = Path.home() / ".config" / "hallptz-demo"
-_PRODUCTION_DATA_DIR = Path.home() / ".config" / "hallptz"
+_DEMO_DATA_DIR = Path.home() / ".config" / "khptz-demo"
+_PRODUCTION_DATA_DIR = Path.home() / ".config" / "khptz"
 
 # Legacy .txt files that live in the app directory
 _PROTECTED_TXT_NAMES = frozenset({
@@ -61,7 +61,7 @@ class DemoGuard:
 
     Usage:
         guard = DemoGuard()
-        guard.apply()          # sets HALLPTZ_DATA_DIR to demo dir, logs [DEMO]
+        guard.apply()          # sets KHPTZ_DATA_DIR to demo dir, logs [DEMO]
         guard.assert_safe(p)   # raises DemoModeViolation if p is a protected path
     """
 
@@ -86,7 +86,7 @@ class DemoGuard:
 
     def apply(self) -> Path:
         """
-        Set up the demo data directory and point HALLPTZ_DATA_DIR at it.
+        Set up the demo data directory and point KHPTZ_DATA_DIR at it.
 
         Returns the demo data directory path.
         Idempotent — safe to call multiple times.
@@ -95,8 +95,8 @@ class DemoGuard:
             return self._prod_dir
 
         self._demo_dir.mkdir(parents=True, exist_ok=True)
-        os.environ["HALLPTZ_DATA_DIR"] = str(self._demo_dir)
-        os.environ["HALLPTZ_DATA_DIR"] = str(self._demo_dir)
+        os.environ["KHPTZ_DATA_DIR"] = str(self._demo_dir)
+        os.environ["KHPTZ_DATA_DIR"] = str(self._demo_dir)
         logger.info("[DEMO] Data directory isolated to: %s", self._demo_dir)
         logger.info("[DEMO] Production config at %s is protected", self._prod_dir)
         return self._demo_dir

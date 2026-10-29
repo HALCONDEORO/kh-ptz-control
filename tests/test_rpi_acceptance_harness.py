@@ -71,7 +71,7 @@ class TestReadOnlyByDefault:
         assert not active, f"harness would run '{forbidden}': {active}"
 
     def test_backup_is_opt_in(self, text):
-        """`hallptz backup` writes a ZIP, so it must not run unless asked."""
+        """`khptz backup` writes a ZIP, so it must not run unless asked."""
         assert "--with-backup" in text
         assert 'WITH_BACKUP=false' in text
 
@@ -87,8 +87,8 @@ class TestReporting:
         assert "disagrees" in text
 
     def test_is_gui_mode_aware(self, text):
-        """Under --gui-mode user, hallptz-control is meant to be disabled (#885)."""
-        assert "HALLPTZ_GUI_MODE" in text
+        """Under --gui-mode user, khptz-control is meant to be disabled (#885)."""
+        assert "KHPTZ_GUI_MODE" in text
         assert "two guis would compete" in text.lower()
 
     def test_surfaces_manual_checks_rather_than_hiding_them(self, text):
@@ -114,10 +114,10 @@ class TestRuntimePathPermissions:
     """
 
     @pytest.mark.parametrize("path", [
-        "/var/lib/hallptz",
-        "/var/log/hallptz",
-        "/var/backups/hallptz",
-        "/etc/hallptz",
+        "/var/lib/khptz",
+        "/var/log/khptz",
+        "/var/backups/khptz",
+        "/etc/khptz",
     ])
     def test_directory_is_inspected(self, text, path):
         assert path in text, f"acceptance never inspects {path}"
@@ -129,11 +129,11 @@ class TestRuntimePathPermissions:
         assert '_expect_runtime_mode="0750"' in text
 
     def test_application_code_is_asserted_read_only_for_the_service(self, text):
-        assert "0750 root:hallptz" in text
+        assert "0750 root:khptz" in text
 
     def test_secret_modes_are_asserted(self, text):
         """The key is derived from the world-readable /etc/machine-id, so a
-        group-readable secret is effectively plaintext to the hallptz group."""
+        group-readable secret is effectively plaintext to the khptz group."""
         assert "password.enc" in text
         assert "admin.enc" in text
 

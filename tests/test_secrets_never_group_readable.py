@@ -3,13 +3,13 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # tests/test_secrets_never_group_readable.py — encrypted passwords stay private
 #
-# The encrypted password files live in HALLPTZ_DATA_DIR (/var/lib/hallptz), the same
+# The encrypted password files live in KHPTZ_DATA_DIR (/var/lib/khptz), the same
 # directory whose data files --gui-mode user deliberately makes group-writable
 # so the session GUI and the service can share them (#885).
 #
 # Secrets must be excluded from that. Their key is derived from
 # /etc/machine-id, which is world-readable, so a group-readable admin.enc is
-# effectively plaintext to every member of the hallptz group — including the
+# effectively plaintext to every member of the khptz group — including the
 # desktop account. That would hand the administrator password to the operator
 # and defeat the operator/administrator split the whole role model rests on.
 #

@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# runtime/path_resolver.py — Single source of truth for Hall PTZ Control runtime paths.
+# runtime/path_resolver.py — Single source of truth for KH PTZ Control runtime paths.
 #
 # Production paths (Raspberry Pi service install):
-#   /opt/hallptz/          installed application code (read-only)
-#   /etc/hallptz/          customer/site configuration
-#   /var/lib/hallptz/      persistent customer/runtime data
-#   /var/log/hallptz/      production logs
-#   /var/backups/hallptz/  local backups
+#   /opt/khptz/          installed application code (read-only)
+#   /etc/khptz/          customer/site configuration
+#   /var/lib/khptz/      persistent customer/runtime data
+#   /var/log/khptz/      production logs
+#   /var/backups/khptz/  local backups
 #
 # Override variables (tests, demo, support):
-#   HALLPTZ_CONFIG_DIR     overrides /etc/hallptz/
-#   HALLPTZ_DATA_DIR  overrides /var/lib/hallptz/ (legacy compat variable)
-#   HALLPTZ_LOG_DIR        overrides /var/log/hallptz/
-#   HALLPTZ_BACKUP_DIR     overrides /var/backups/hallptz/
+#   KHPTZ_CONFIG_DIR     overrides /etc/khptz/
+#   KHPTZ_DATA_DIR  overrides /var/lib/khptz/ (legacy compat variable)
+#   KHPTZ_LOG_DIR        overrides /var/log/khptz/
+#   KHPTZ_BACKUP_DIR     overrides /var/backups/khptz/
 #
 # See docs/RUNTIME_PATH_CONTRACT.md for ownership, permissions and migration rules.
 
@@ -26,16 +26,16 @@ from pathlib import Path
 
 # ── Production defaults ───────────────────────────────────────────────────────
 
-_PROD_CONFIG_DIR  = Path("/etc/hallptz")
-_PROD_DATA_DIR    = Path("/var/lib/hallptz")
-_PROD_LOG_DIR     = Path("/var/log/hallptz")
-_PROD_BACKUP_DIR  = Path("/var/backups/hallptz")
+_PROD_CONFIG_DIR  = Path("/etc/khptz")
+_PROD_DATA_DIR    = Path("/var/lib/khptz")
+_PROD_LOG_DIR     = Path("/var/log/khptz")
+_PROD_BACKUP_DIR  = Path("/var/backups/khptz")
 # Volatile provisioning channel (tmpfs). The unprivileged wizard drops a request
-# here; the privileged hallptz-provision path-unit reacts and writes the result.
-_PROD_RUN_DIR     = Path("/run/hallptz")
+# here; the privileged khptz-provision path-unit reacts and writes the result.
+_PROD_RUN_DIR     = Path("/run/khptz")
 
 # Legacy location — read-migrate source only, never written by new code.
-LEGACY_DATA_DIR = Path.home() / ".config" / "hallptz"
+LEGACY_DATA_DIR = Path.home() / ".config" / "khptz"
 
 
 def _resolve(env_var: str, production_default: Path) -> Path:
@@ -53,7 +53,7 @@ def _resolve(env_var: str, production_default: Path) -> Path:
 
 class RuntimePathResolver:
     """
-    One source of truth for all Hall PTZ Control runtime paths.
+    One source of truth for all KH PTZ Control runtime paths.
 
     Instantiate once at startup. Paths are resolved eagerly from environment
     variables or production defaults. No I/O is performed — callers are
@@ -64,23 +64,23 @@ class RuntimePathResolver:
     """
 
     def __init__(self) -> None:
-        # Allow HALLPTZ_DATA_DIR as the legacy override for the data dir
+        # Allow KHPTZ_DATA_DIR as the legacy override for the data dir
         # (same variable honoured by data_paths.py for backward compat).
-        data_env = os.environ.get("HALLPTZ_DATA_DIR") or ""
+        data_env = os.environ.get("KHPTZ_DATA_DIR") or ""
 
-        self._config_dir  = _resolve("HALLPTZ_CONFIG_DIR",  _PROD_CONFIG_DIR)
-        self._log_dir     = _resolve("HALLPTZ_LOG_DIR",    _PROD_LOG_DIR)
-        self._backup_dir  = _resolve("HALLPTZ_BACKUP_DIR", _PROD_BACKUP_DIR)
-        self._run_dir     = _resolve("HALLPTZ_RUN_DIR",    _PROD_RUN_DIR)
+        self._config_dir  = _resolve("KHPTZ_CONFIG_DIR",  _PROD_CONFIG_DIR)
+        self._log_dir     = _resolve("KHPTZ_LOG_DIR",    _PROD_LOG_DIR)
+        self._backup_dir  = _resolve("KHPTZ_BACKUP_DIR", _PROD_BACKUP_DIR)
+        self._run_dir     = _resolve("KHPTZ_RUN_DIR",    _PROD_RUN_DIR)
 
-        # data_dir honours HALLPTZ_DATA_DIR / HALLPTZ_DATA_DIR (resolved into
+        # data_dir honours KHPTZ_DATA_DIR / KHPTZ_DATA_DIR (resolved into
         # data_env above); empty → production default, relative → error.
         self._data_dir = _PROD_DATA_DIR
         if data_env:
             p = Path(data_env)
             if not p.is_absolute():
                 raise ValueError(
-                    f"HALLPTZ_DATA_DIR / HALLPTZ_DATA_DIR={data_env!r} must be an absolute path."
+                    f"KHPTZ_DATA_DIR / KHPTZ_DATA_DIR={data_env!r} must be an absolute path."
                 )
             self._data_dir = p
 
@@ -88,22 +88,22 @@ class RuntimePathResolver:
 
     @property
     def config_dir(self) -> Path:
-        """Site configuration directory (/etc/hallptz/ or override)."""
+        """Site configuration directory (/etc/khptz/ or override)."""
         return self._config_dir
 
     @property
     def data_dir(self) -> Path:
-        """Persistent customer/runtime data directory (/var/lib/hallptz/ or override)."""
+        """Persistent customer/runtime data directory (/var/lib/khptz/ or override)."""
         return self._data_dir
 
     @property
     def log_dir(self) -> Path:
-        """Production log directory (/var/log/hallptz/ or override)."""
+        """Production log directory (/var/log/khptz/ or override)."""
         return self._log_dir
 
     @property
     def backup_dir(self) -> Path:
-        """Local backup output directory (/var/backups/hallptz/ or override)."""
+        """Local backup output directory (/var/backups/khptz/ or override)."""
         return self._backup_dir
 
     @property
@@ -113,7 +113,7 @@ class RuntimePathResolver:
 
     @property
     def run_dir(self) -> Path:
-        """Volatile provisioning channel directory (/run/hallptz/ or override).
+        """Volatile provisioning channel directory (/run/khptz/ or override).
 
         tmpfs in production: created 0750 root:<desktop-user> by tmpfiles.d so
         only the wizard's session user can drop a request. Never holds data at
@@ -137,7 +137,7 @@ class RuntimePathResolver:
     def provisioned_marker_file(self) -> Path:
         """Sentinel written by the provisioner once install+verify succeeds.
 
-        Lives in config_dir (e.g. /etc/hallptz/.provisioned). In production the dir
+        Lives in config_dir (e.g. /etc/khptz/.provisioned). In production the dir
         is mode 2751 and this file 0644, so the unprivileged desktop session can
         stat it to decide whether to launch the setup wizard, without read access
         to config.yaml or the secrets.
@@ -158,7 +158,7 @@ class RuntimePathResolver:
 
     @property
     def blackbox_dir(self) -> Path:
-        """Black box / flight recorder directory (/var/log/hallptz/blackbox/ or override)."""
+        """Black box / flight recorder directory (/var/log/khptz/blackbox/ or override)."""
         return self._log_dir / "blackbox"
 
     @property
@@ -217,7 +217,7 @@ class RuntimePathResolver:
     def running_from_source(self) -> bool:
         """
         Return True if the process is running from a git checkout rather than
-        a service install under /opt/hallptz/.
+        a service install under /opt/khptz/.
 
         Detection heuristic: check for a .git directory near the source root.
         This is intentionally conservative — false-negative (source reported as
@@ -232,14 +232,14 @@ class RuntimePathResolver:
         """Return a dict of env variables that are overriding the production defaults."""
         overrides: dict[str, str] = {}
         for var, default in (
-            ("HALLPTZ_CONFIG_DIR",  str(_PROD_CONFIG_DIR)),
-            ("HALLPTZ_LOG_DIR",     str(_PROD_LOG_DIR)),
-            ("HALLPTZ_BACKUP_DIR",  str(_PROD_BACKUP_DIR)),
+            ("KHPTZ_CONFIG_DIR",  str(_PROD_CONFIG_DIR)),
+            ("KHPTZ_LOG_DIR",     str(_PROD_LOG_DIR)),
+            ("KHPTZ_BACKUP_DIR",  str(_PROD_BACKUP_DIR)),
         ):
             val = os.environ.get(var, "")
             if val:
                 overrides[var] = val
-        for var in ("HALLPTZ_DATA_DIR", "HALLPTZ_DATA_DIR"):
+        for var in ("KHPTZ_DATA_DIR", "KHPTZ_DATA_DIR"):
             val = os.environ.get(var, "")
             if val:
                 overrides[var] = val
@@ -247,7 +247,7 @@ class RuntimePathResolver:
         return overrides
 
     def to_dict(self) -> dict[str, str]:
-        """Return a plain dict summary suitable for hallptz doctor or support bundles."""
+        """Return a plain dict summary suitable for khptz doctor or support bundles."""
         return {
             "config_dir":                  str(self.config_dir),
             "data_dir":                    str(self.data_dir),

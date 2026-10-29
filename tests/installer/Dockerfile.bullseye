@@ -12,8 +12,8 @@
 # Product mode takes all runtime dependencies from apt (never pip), so the
 # install itself needs no network — only this build does.
 #
-# Build:  docker build -f tests/installer/Dockerfile.bullseye -t hallptz-install-test .
-# Run:    docker run --rm hallptz-install-test
+# Build:  docker build -f tests/installer/Dockerfile.bullseye -t khptz-install-test .
+# Run:    docker run --rm khptz-install-test
 
 FROM debian:bullseye-slim
 

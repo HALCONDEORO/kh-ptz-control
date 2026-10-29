@@ -52,7 +52,7 @@ def wizard(_qapp):
 
 @pytest.fixture
 def repair_wizard(_qapp):
-    """A wizard built the way Repair (`hallptz setup --force` on a provisioned
+    """A wizard built the way Repair (`khptz setup --force` on a provisioned
     install) constructs it — with the admin sign-in gate as the first page."""
     from ui.setup_wizard import SetupWizard
     return SetupWizard(require_admin_auth=True)
@@ -98,7 +98,7 @@ class TestCamerasPageAddRemove:
     cmd_setup pre-fills the wizard from that config.yaml. Without add/remove
     here, a two-camera room (the product's normal shape: `platform` for the
     first seats, `comments` for the rest — see application/preset_sources.py)
-    was unreachable through setup or repair, and /etc/hallptz is root:hallptz 0640
+    was unreachable through setup or repair, and /etc/khptz is root:khptz 0640
     so the desktop user cannot fix it by hand either."""
 
     def _single_camera_page(self, wizard):
@@ -311,7 +311,7 @@ class TestInstallingPage:
         from application.provision_handoff import HandoffResult
         from ui.setup_wizard import SetupWizard
 
-        ok = HandoffResult(ok=True, written=["/etc/hallptz/config.yaml"])
+        ok = HandoffResult(ok=True, written=["/etc/khptz/config.yaml"])
         wizard = SetupWizard(handoff=_FakeHandoff(result=ok))
         page = _page(wizard, "InstallingPage")
         page.initializePage()
@@ -337,8 +337,8 @@ class TestDonePageVerification:
     def test_done_warns_when_marker_missing(self, _qapp, tmp_path, monkeypatch):
         from ui.setup_wizard import SetupWizard
 
-        monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(tmp_path / "etc"))
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "data"))
+        monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(tmp_path / "etc"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "data"))
         wizard = SetupWizard()
         done = _page(wizard, "DonePage")
         done.initializePage()  # nothing provisioned in this temp tree
@@ -347,8 +347,8 @@ class TestDonePageVerification:
     def test_done_confirms_when_provisioned(self, _qapp, tmp_path, monkeypatch):
         from ui.setup_wizard import SetupWizard
 
-        monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(tmp_path / "etc"))
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(tmp_path / "data"))
+        monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(tmp_path / "etc"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(tmp_path / "data"))
         resolver = RuntimePathResolver()
         resolver.config_dir.mkdir(parents=True, exist_ok=True)
         (resolver.config_dir / "config.yaml").write_text("x", encoding="utf-8")
@@ -363,7 +363,7 @@ class TestDonePageVerification:
 class TestAdminAuthPage:
     """Repair (require_admin_auth=True) shows an admin sign-in page first, but
     it only COLLECTS the password — the wizard's own (desktop-session)
-    process cannot reliably decrypt the hallptz:hallptz-owned admin secret to
+    process cannot reliably decrypt the khptz:khptz-owned admin secret to
     verify it itself. Real verification happens in the privileged
     runtime.provision.run_provision() (see TestAdminAuthVerification in
     test_provision_entrypoint.py). See PR #867 review."""
@@ -393,8 +393,8 @@ class TestEndToEndApply:
         from ui.setup_wizard import SetupWizard
 
         data_dir = tmp_path / "data"
-        monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(tmp_path / "etc"))
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(data_dir))
+        monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(tmp_path / "etc"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(data_dir))
         monkeypatch.setattr(secret_manager, "_CONFIG_DIR", data_dir)
         monkeypatch.setattr(secret_manager, "_ENC_FILE", data_dir / "password.enc")
 

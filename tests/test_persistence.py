@@ -11,7 +11,7 @@ Cobertura:
   - data_paths       : migrate_legacy_files / export_backup / import_backup
 
 Los tests usan monkeypatch de pytest para apuntar las rutas de archivos a
-tmp_path, de forma que nunca tocan ~/.config/hallptz/ del sistema.
+tmp_path, de forma que nunca tocan ~/.config/khptz/ del sistema.
 """
 
 import json

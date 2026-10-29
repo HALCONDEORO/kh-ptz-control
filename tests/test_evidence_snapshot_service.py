@@ -18,9 +18,9 @@ from application.evidence_snapshot_service import EvidenceSnapshot, EvidenceSnap
 
 def _make_resolver(tmp_path: Path):
     """Return a RuntimePathResolver pointing all paths to tmp_path."""
-    os.environ["HALLPTZ_LOG_DIR"] = str(tmp_path / "logs")
-    os.environ["HALLPTZ_DATA_DIR"] = str(tmp_path / "data")
-    os.environ["HALLPTZ_CONFIG_DIR"] = str(tmp_path / "config")
+    os.environ["KHPTZ_LOG_DIR"] = str(tmp_path / "logs")
+    os.environ["KHPTZ_DATA_DIR"] = str(tmp_path / "data")
+    os.environ["KHPTZ_CONFIG_DIR"] = str(tmp_path / "config")
     from runtime.path_resolver import RuntimePathResolver
     return RuntimePathResolver()
 
@@ -28,7 +28,7 @@ def _make_resolver(tmp_path: Path):
 @pytest.fixture(autouse=True)
 def clean_env():
     yield
-    for var in ("HALLPTZ_LOG_DIR", "HALLPTZ_DATA_DIR", "HALLPTZ_CONFIG_DIR"):
+    for var in ("KHPTZ_LOG_DIR", "KHPTZ_DATA_DIR", "KHPTZ_CONFIG_DIR"):
         os.environ.pop(var, None)
 
 

@@ -42,7 +42,7 @@ def _read_rpi_temperature() -> Optional[float]:
 
 class HealthDiagnosticsService:
     """
-    Checks disk space and CPU temperature for the `hallptz doctor` command.
+    Checks disk space and CPU temperature for the `khptz doctor` command.
 
     Parameters
     ----------

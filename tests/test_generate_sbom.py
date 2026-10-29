@@ -46,7 +46,7 @@ def test_sbom_has_metadata(tmp_path):
     meta = sbom.get("metadata", {})
     assert "timestamp" in meta
     comp = meta.get("component", {})
-    assert comp.get("name") == "hallptz-adaptive-control"
+    assert comp.get("name") == "khptz-adaptive-control"
     assert comp.get("version") != ""
 
 

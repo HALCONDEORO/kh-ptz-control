@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hall PTZ Control - Raspberry Pi deployment validation (read-only)
+# KH PTZ Control - Raspberry Pi deployment validation (read-only)
 #
 # Captures the evidence required to close #890 and #892 on the physical
 # appliance. It NEVER changes the system: it only reads unit files, autostart
@@ -10,17 +10,17 @@
 # Run it twice, once per reboot, so the "after two reboots" criterion in #892
 # can be checked from the saved reports:
 #
-#   sudo bash scripts/validate_rpi_deployment.sh --wizard-user isl
+#   sudo bash scripts/validate_rpi_deployment.sh --wizard-user khptz
 #
 # Output goes to the terminal and to a timestamped report under
-# /var/log/hallptz/validation/ (falls back to the invoking user's home when that
+# /var/log/khptz/validation/ (falls back to the invoking user's home when that
 # directory is not writable, so read-only diagnostics never abort — see #884).
 
 set -Eeuo pipefail
 IFS=$'\n\t'
 
 readonly SCRIPT_VERSION="1"
-readonly SERVICE="hallptz-control.service"
+readonly SERVICE="khptz-control.service"
 readonly CLEANUP="scripts/cleanup_legacy_rpi_autostart.sh"
 
 DESKTOP_USER="${SUDO_USER:-}"
@@ -74,10 +74,10 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-LOG_DIR="/var/log/hallptz/validation"
+LOG_DIR="/var/log/khptz/validation"
 if ! ( install -d -m 0755 "${LOG_DIR}" >/dev/null 2>&1 && [[ -w "${LOG_DIR}" ]] ); then
     HOME_DIR="$(getent passwd "${DESKTOP_USER}" | cut -d: -f6)"
-    LOG_DIR="${HOME_DIR:-/tmp}/hallptz-validation"
+    LOG_DIR="${HOME_DIR:-/tmp}/khptz-validation"
     install -d -m 0755 "${LOG_DIR}" >/dev/null 2>&1 || LOG_DIR="/tmp"
 fi
 REPORT="${LOG_DIR}/validation-${TIMESTAMP}.txt"
@@ -85,54 +85,54 @@ REPORT="${LOG_DIR}/validation-${TIMESTAMP}.txt"
 # Mirror everything to the report file as well as the terminal.
 exec > >(tee -a "${REPORT}") 2>&1
 
-# ── Which hallptz entry point to use (installed wrapper, else module) ────────────
-if command -v hallptz >/dev/null 2>&1; then
-    HALLPTZ=(hallptz)
+# ── Which khptz entry point to use (installed wrapper, else module) ────────────
+if command -v khptz >/dev/null 2>&1; then
+    KHPTZ=(khptz)
 elif [[ -f "${REPO_ROOT}/runtime/cli.py" ]]; then
-    HALLPTZ=(python3 -m runtime.cli)
+    KHPTZ=(python3 -m runtime.cli)
 else
-    HALLPTZ=()
+    KHPTZ=()
 fi
 
-run_hallptz() {
-    # Run a hallptz subcommand read-only; never let its exit status abort us.
-    if [[ ${#HALLPTZ[@]} -eq 0 ]]; then
-        warn "hallptz CLI not found; skipped: $*"
+run_khptz() {
+    # Run a khptz subcommand read-only; never let its exit status abort us.
+    if [[ ${#KHPTZ[@]} -eq 0 ]]; then
+        warn "khptz CLI not found; skipped: $*"
         return 0
     fi
-    ( cd "${REPO_ROOT}" && "${HALLPTZ[@]}" "$@" ) || warn "hallptz $* exited non-zero (see output above)"
+    ( cd "${REPO_ROOT}" && "${KHPTZ[@]}" "$@" ) || warn "khptz $* exited non-zero (see output above)"
 }
 
-capture_hallptz() {
-    # Like run_hallptz but echoes the combined output so a caller can both display
+capture_khptz() {
+    # Like run_khptz but echoes the combined output so a caller can both display
     # and inspect it. Never aborts on a non-zero exit.
-    if [[ ${#HALLPTZ[@]} -eq 0 ]]; then
-        warn "hallptz CLI not found; skipped: $*" >&2
+    if [[ ${#KHPTZ[@]} -eq 0 ]]; then
+        warn "khptz CLI not found; skipped: $*" >&2
         return 0
     fi
-    ( cd "${REPO_ROOT}" && "${HALLPTZ[@]}" "$@" 2>&1 ) || true
+    ( cd "${REPO_ROOT}" && "${KHPTZ[@]}" "$@" 2>&1 ) || true
 }
 
 section() { printf '\n===== %s =====\n' "$*"; }
 
-info "HALLPTZ deployment validation v${SCRIPT_VERSION} for ${DESKTOP_USER} on ${TARGET_DISPLAY}"
+info "KHPTZ deployment validation v${SCRIPT_VERSION} for ${DESKTOP_USER} on ${TARGET_DISPLAY}"
 info "Report: ${REPORT}"
-run_hallptz version
+run_khptz version
 
 # ── 1. Startup mechanisms — the exact commands #892 asks to record ────────────
-section "System service unit files (hallptz|dublin|isl|ptz)"
-systemctl list-unit-files 2>/dev/null | grep -Ei 'hallptz|dublin|isl|ptz' || info "none"
+section "System service unit files (khptz|hallptz|ptz)"
+systemctl list-unit-files 2>/dev/null | grep -Ei 'khptz|hallptz|ptz' || info "none"
 
-section "User service unit files (hallptz|dublin|isl|ptz)"
+section "User service unit files (khptz|hallptz|ptz)"
 runuser -u "${DESKTOP_USER}" -- systemctl --user list-unit-files 2>/dev/null \
-    | grep -Ei 'hallptz|dublin|isl|ptz' || info "none"
+    | grep -Ei 'khptz|hallptz|ptz' || info "none"
 
 section "Autostart .desktop entries"
 find "$(getent passwd "${DESKTOP_USER}" | cut -d: -f6)/.config/autostart" /etc/xdg/autostart \
     -maxdepth 2 -type f -print 2>/dev/null || info "none"
 
 section "Running controller processes"
-pgrep -af 'python|HallPTZ|HALLPTZ|PTZ' 2>/dev/null || info "none"
+pgrep -af 'python|KHPTZ|KHPTZ|PTZ' 2>/dev/null || info "none"
 
 # ── 2. Remaining legacy conflicts (dry-run: reports, changes nothing) ─────────
 section "Legacy startup conflicts still present (cleanup --dry-run)"
@@ -147,28 +147,28 @@ else
 fi
 
 # ── 3. Diagnostics ────────────────────────────────────────────────────────────
-section "hallptz verify-install"
-run_hallptz verify-install
-section "hallptz doctor"
-DOCTOR_OUT="$(capture_hallptz doctor)"
+section "khptz verify-install"
+run_khptz verify-install
+section "khptz doctor"
+DOCTOR_OUT="$(capture_khptz doctor)"
 printf '%s\n' "${DOCTOR_OUT}"
 
 # ── 4. Automated pass/fail against #892's closure checks ──────────────────────
 section "Acceptance checks (#890 / #892)"
 
-# Exactly one HALLPTZ GUI Python process.
-HALLPTZ_PROCS="$(pgrep -fa '/opt/hallptz/main.py' 2>/dev/null || true)"
-HALLPTZ_COUNT="$(printf '%s' "${HALLPTZ_PROCS}" | grep -c . || true)"
-if [[ "${HALLPTZ_COUNT}" -eq 1 ]]; then
-    ok "Exactly one HALLPTZ GUI process is running."
-elif [[ "${HALLPTZ_COUNT}" -eq 0 ]]; then
-    bad "No HALLPTZ GUI process is running (expected exactly one)."
+# Exactly one KHPTZ GUI Python process.
+KHPTZ_PROCS="$(pgrep -fa '/opt/khptz/main.py' 2>/dev/null || true)"
+KHPTZ_COUNT="$(printf '%s' "${KHPTZ_PROCS}" | grep -c . || true)"
+if [[ "${KHPTZ_COUNT}" -eq 1 ]]; then
+    ok "Exactly one KHPTZ GUI process is running."
+elif [[ "${KHPTZ_COUNT}" -eq 0 ]]; then
+    bad "No KHPTZ GUI process is running (expected exactly one)."
 else
-    bad "${HALLPTZ_COUNT} HALLPTZ GUI processes are running (expected exactly one)."
-    printf '%s\n' "${HALLPTZ_PROCS}"
+    bad "${KHPTZ_COUNT} KHPTZ GUI processes are running (expected exactly one)."
+    printf '%s\n' "${KHPTZ_PROCS}"
 fi
 
-# hallptz-control.service active.
+# khptz-control.service active.
 if systemctl is-active --quiet "${SERVICE}"; then
     ok "${SERVICE} is active."
 else
@@ -176,9 +176,9 @@ else
 fi
 
 # No second/legacy controller running.
-LEGACY_PROCS="$(pgrep -fa 'HallPTZ|hallptz|PTZ.?[Cc]ontrol|camera.?controller' 2>/dev/null || true)"
+LEGACY_PROCS="$(pgrep -fa 'KHPTZ|khptz|PTZ.?[Cc]ontrol|camera.?controller' 2>/dev/null || true)"
 if [[ -z "${LEGACY_PROCS}" ]]; then
-    ok "No legacy HallPTZ/PTZ controller process is running."
+    ok "No legacy KHPTZ/PTZ controller process is running."
 else
     bad "A legacy controller process is still running:"
     printf '%s\n' "${LEGACY_PROCS}"
@@ -250,18 +250,18 @@ else
     warn "journalctl unavailable; cannot check for X11/display session errors."
 fi
 
-# The GUI must run under the service identity (hallptz), never as root (#885: "does
+# The GUI must run under the service identity (khptz), never as root (#885: "does
 # not require broad root privileges").
-GUI_USERS="$(pgrep -f '/opt/hallptz/main.py' 2>/dev/null \
+GUI_USERS="$(pgrep -f '/opt/khptz/main.py' 2>/dev/null \
     | xargs -r -I{} ps -o user= -p {} 2>/dev/null | sort -u || true)"
 if [[ -z "${GUI_USERS}" ]]; then
-    warn "No HALLPTZ GUI process found to check its runtime user."
+    warn "No KHPTZ GUI process found to check its runtime user."
 elif [[ "${GUI_USERS}" == "root" ]]; then
-    bad "HALLPTZ GUI is running as root (#885: must run as the service user)."
+    bad "KHPTZ GUI is running as root (#885: must run as the service user)."
 elif printf '%s\n' "${GUI_USERS}" | grep -qx 'root'; then
-    bad "A HALLPTZ GUI process is running as root (#885)."
+    bad "A KHPTZ GUI process is running as root (#885)."
 else
-    ok "HALLPTZ GUI runs as non-root: $(printf '%s' "${GUI_USERS}" | tr '\n' ' ')"
+    ok "KHPTZ GUI runs as non-root: $(printf '%s' "${GUI_USERS}" | tr '\n' ' ')"
 fi
 
 # Controlled restart, not an infinite rapid loop (#885). The unit caps restarts

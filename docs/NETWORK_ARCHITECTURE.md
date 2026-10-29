@@ -1,6 +1,6 @@
-# HALLPTZ AV VLAN — Reference Network Architecture
+# KHPTZ AV VLAN — Reference Network Architecture
 
-**Document scope:** recommended network architecture for Hall PTZ Control
+**Document scope:** recommended network architecture for KH PTZ Control
 customer installations. This document is referenced by network diagnostics,
 installer checklists, and support handover.
 
@@ -8,13 +8,13 @@ installer checklists, and support handover.
 
 ## Summary
 
-Hall PTZ Control must reliably reach three device classes over IP:
+KH PTZ Control must reliably reach three device classes over IP:
 
 | Device class         | Typical address range  | Protocol       |
 |----------------------|------------------------|----------------|
 | PTZ cameras (VISCA)  | 192.168.30.x–40.x      | TCP/IP, VISCA  |
 | ATEM switcher        | 192.168.30.x–40.x      | TCP/IP         |
-| Raspberry Pi (HALLPTZ)  | 192.168.30.x–40.x      | Operator UI    |
+| Raspberry Pi (KHPTZ)  | 192.168.30.x–40.x      | Operator UI    |
 
 All three must be on the same subnet and must not be reachable by guest or
 client devices.
@@ -28,7 +28,7 @@ client devices.
      |
   WAN router / firewall
      |
-  VLAN 30 — AV Control (192.168.30.0/24) ← HALLPTZ subnet
+  VLAN 30 — AV Control (192.168.30.0/24) ← KHPTZ subnet
      |                               |
   Raspberry Pi            PTZ cameras / ATEM
   192.168.30.10           192.168.30.20–30
@@ -40,7 +40,7 @@ client devices.
 
 | Device                | Recommended IP       |
 |-----------------------|----------------------|
-| Raspberry Pi (HALLPTZ)   | 192.168.30.10        |
+| Raspberry Pi (KHPTZ)   | 192.168.30.10        |
 | PTZ Camera 1          | 192.168.30.20        |
 | PTZ Camera 2          | 192.168.30.21        |
 | ATEM switcher         | 192.168.30.30        |
@@ -49,7 +49,7 @@ client devices.
 - Subnet mask: 255.255.255.0 (/24)
 - DHCP: off on AV VLAN (static only) — see below
 - DNS: not required (all communication is by IP)
-- Internet: not required (HALLPTZ is offline-first)
+- Internet: not required (KHPTZ is offline-first)
 
 ### Why static IPs
 
@@ -61,7 +61,7 @@ DHCP reservations by MAC address.
 
 ## Flat-network risk
 
-Running HALLPTZ on a flat or shared customer LAN increases risk:
+Running KHPTZ on a flat or shared customer LAN increases risk:
 
 - Guest or client devices may reach the Raspberry Pi.
 - Users may access cameras directly over the LAN.
@@ -87,7 +87,7 @@ The diagnostics system will warn the operator (WARNING, not FAIL by default).
 
 ## Offline-first assumption
 
-Hall PTZ Control is designed for offline-first customer sites. The
+KH PTZ Control is designed for offline-first customer sites. The
 application does not require internet access during normal operation. Cloud
 connectivity (if ever added) will be opt-in and gated by
 `runtime.connectivity_mode: online`.
@@ -118,8 +118,8 @@ Before sign-off:
 - [ ] Raspberry Pi can ping all cameras and ATEM switcher
 - [ ] Guest WiFi cannot reach 192.168.30.x devices
 - [ ] config.yaml has correct camera and ATEM IPs
-- [ ] `hallptz doctor` passes with no FAIL checks
-- [ ] `hallptz known-good mark` recorded after successful test
+- [ ] `khptz doctor` passes with no FAIL checks
+- [ ] `khptz known-good mark` recorded after successful test
 - [ ] Network profile recorded in config.yaml as `isolated_av_vlan`
 
 ---

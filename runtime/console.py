@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# runtime/console.py — Locale-independent console output for the hallptz CLI (#884)
+# runtime/console.py — Locale-independent console output for the khptz CLI (#884)
 #
 # The Raspberry Pi OS Bullseye desktop terminal may run under a non-UTF-8 locale
 # (LANG=C / ANSI_X3.4-1968), and Windows consoles default to cp1252. CLI output
@@ -9,7 +9,7 @@
 #
 #   UnicodeEncodeError: 'charmap' codec can't encode character '—'
 #
-# That aborted `hallptz setup` and truncated `hallptz doctor` mid-run on a real
+# That aborted `khptz setup` and truncated `khptz doctor` mid-run on a real
 # install. Console encoding is a presentation concern and must never determine
 # whether a command succeeds.
 #
@@ -122,14 +122,14 @@ def safe_print(*args, **kwargs) -> None:
 def user_state_dir() -> Path:
     """Per-user writable state directory, for CLI runs that are not the service.
 
-    Interactive commands (`hallptz setup`, `hallptz demo`) and any command run by the
+    Interactive commands (`khptz setup`, `khptz demo`) and any command run by the
     desktop user must not need write access to service-owned production paths
-    such as /var/log/hallptz (#884).
+    such as /var/log/khptz (#884).
     """
     base = os.environ.get("XDG_STATE_HOME")
     if base:
-        return Path(base) / "hallptz"
-    return Path.home() / ".local" / "state" / "hallptz"
+        return Path(base) / "khptz"
+    return Path.home() / ".local" / "state" / "khptz"
 
 
 def writable_log_dir(preferred: Path | None) -> Path | None:
@@ -143,7 +143,7 @@ def writable_log_dir(preferred: Path | None) -> Path | None:
             continue
         try:
             candidate.mkdir(parents=True, exist_ok=True)
-            probe = candidate / ".hallptz-write-test"
+            probe = candidate / ".khptz-write-test"
             probe.touch()
             probe.unlink()
             return candidate

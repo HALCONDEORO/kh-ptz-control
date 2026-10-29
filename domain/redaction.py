@@ -184,7 +184,7 @@ class RedactionError(Exception):
 @dataclass(frozen=True)
 class SupportBundleManifest:
     """
-    Manifest for a Hall PTZ Control support bundle ZIP.
+    Manifest for a KH PTZ Control support bundle ZIP.
 
     All fields default to 'unknown' rather than None — safe to log without
     None-checks. restore_capable is always False for support bundles.

@@ -104,8 +104,8 @@ class TestIsBlockedName:
     def test_backup_zip_blocked(self, tmp_path):
         assert self._blocked(tmp_path, "backup_20260508.zip") is not None
 
-    def test_hallptz_backup_zip_blocked(self, tmp_path):
-        assert self._blocked(tmp_path, "hallptz_backup_20260508_120000.zip") is not None
+    def test_khptz_backup_zip_blocked(self, tmp_path):
+        assert self._blocked(tmp_path, "khptz_backup_20260508_120000.zip") is not None
 
     def test_safe_python_file_not_blocked(self, tmp_path):
         assert self._blocked(tmp_path, "my_module.py") is None
@@ -199,8 +199,8 @@ class TestCheckRepoHygieneExtended:
         p = self._path(tmp_path, "backup_20260508.zip")
         assert _is_blocked(p, tmp_path)
 
-    def test_hallptz_backup_zip_glob_blocked(self, tmp_path):
-        p = self._path(tmp_path, "hallptz_backup_20260508_120000.zip")
+    def test_khptz_backup_zip_glob_blocked(self, tmp_path):
+        p = self._path(tmp_path, "khptz_backup_20260508_120000.zip")
         assert _is_blocked(p, tmp_path)
 
     def test_support_bundle_zip_glob_blocked(self, tmp_path):

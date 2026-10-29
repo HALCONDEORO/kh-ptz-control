@@ -24,8 +24,8 @@ def _configure_logging(state_dir: Path) -> Path:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="hallptz-windows-wizard",
-        description="HALLPTZ technician provisioning wizard skeleton",
+        prog="khptz-windows-wizard",
+        description="KHPTZ technician provisioning wizard skeleton",
     )
     parser.add_argument("--state-dir", type=Path, default=None, help="Override local wizard state directory")
     parser.add_argument("--version", action="store_true", help="Print wizard version")

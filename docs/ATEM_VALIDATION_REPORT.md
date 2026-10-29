@@ -10,7 +10,7 @@
 |---|---|
 | Date | |
 | Validator | |
-| HALLPTZ version | |
+| KHPTZ version | |
 | Raspberry Pi model | |
 | Raspberry Pi OS version | |
 | ATEM model | |
@@ -27,8 +27,8 @@
 | Test | Result | Notes |
 |---|---|---|
 | Pi can ping ATEM IP | PASS / FAIL / SKIP | |
-| ATEM connects on startup (`hallptz doctor`) | PASS / FAIL / SKIP | |
-| `hallptz doctor` ATEM row: OK | PASS / FAIL / SKIP | |
+| ATEM connects on startup (`khptz doctor`) | PASS / FAIL / SKIP | |
+| `khptz doctor` ATEM row: OK | PASS / FAIL / SKIP | |
 | ATEM reconnects after disconnect/reconnect | PASS / FAIL / SKIP | |
 
 ### Program / Preview display
@@ -57,7 +57,7 @@
 | Startup with ATEM disconnected (no hang) | PASS / FAIL / SKIP | |
 | Startup with wrong ATEM IP (no hang) | PASS / FAIL / SKIP | |
 | Camera PTZ works while ATEM offline | PASS / FAIL | |
-| `hallptz doctor` warns (not blocks) on ATEM offline | PASS / FAIL / SKIP | |
+| `khptz doctor` warns (not blocks) on ATEM offline | PASS / FAIL / SKIP | |
 | Reconnect after power-cycle | PASS / FAIL / SKIP | |
 | ATEM Software Control coexistence | PASS / FAIL / N/A | |
 

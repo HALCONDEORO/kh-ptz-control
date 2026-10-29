@@ -34,10 +34,10 @@ ATEM: enabled / disabled / not used
 Paste sanitised summaries only:
 
 ```bash
-hallptz version
-hallptz status
-hallptz doctor
-sudo systemctl status hallptz-control --no-pager
+khptz version
+khptz status
+khptz doctor
+sudo systemctl status khptz-control --no-pager
 ```
 
 ```text

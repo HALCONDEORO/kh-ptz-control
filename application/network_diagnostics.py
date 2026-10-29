@@ -203,7 +203,7 @@ class NetworkDiagnosticsService:
                 Status.WARNING,
                 "ATEM enabled but IP not configured",
                 suggested_action=(
-                    "Set the ATEM IP with `hallptz setup --force`, or disable ATEM"
+                    "Set the ATEM IP with `khptz setup --force`, or disable ATEM"
                 ),
                 category=CheckCategory.CONFIGURATION,
             )

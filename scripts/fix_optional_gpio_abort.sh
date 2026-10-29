@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install the fail-safe GPIO monitor from this checkout into an existing
-# Hall PTZ Control product installation, then restart and verify the service.
+# KH PTZ Control product installation, then restart and verify the service.
 #
 # Usage:
 #   sudo bash scripts/fix_optional_gpio_abort.sh
@@ -8,12 +8,12 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-readonly INSTALL_DIR="/opt/hallptz"
+readonly INSTALL_DIR="/opt/khptz"
 # Assigned separately from `readonly` so a failing cd/pwd is not masked (SC2155).
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly SOURCE_FILE="${REPO_ROOT}/adapters/gpio_monitor.py"
 readonly TARGET_FILE="${INSTALL_DIR}/adapters/gpio_monitor.py"
-readonly SERVICE="hallptz-control.service"
+readonly SERVICE="khptz-control.service"
 
 info() { printf '[INFO]  %s\n' "$*"; }
 fail() { printf '[ERROR] %s\n' "$*" >&2; exit 1; }
@@ -34,7 +34,7 @@ info "Backing up installed GPIO monitor to ${BACKUP}"
 cp -a "${TARGET_FILE}" "${BACKUP}"
 
 info "Installing fail-safe GPIO monitor..."
-install -m 0640 -o root -g hallptz "${SOURCE_FILE}" "${TARGET_FILE}"
+install -m 0640 -o root -g khptz "${SOURCE_FILE}" "${TARGET_FILE}"
 
 info "Checking Python syntax..."
 python3 -m py_compile "${TARGET_FILE}"

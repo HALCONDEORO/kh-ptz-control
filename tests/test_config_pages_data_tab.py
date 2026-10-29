@@ -225,12 +225,12 @@ class TestImport:
 
         class _Service:
             def restore(self, src):
-                return _RestoreResult(["config.yaml"], "/var/backups/hallptz/pre-restore.zip")
+                return _RestoreResult(["config.yaml"], "/var/backups/khptz/pre-restore.zip")
 
         monkeypatch.setattr(restore_service, "RestoreService", lambda *a, **k: _Service())
         dialog, mw, layout = build()
         button_named(layout, "Import").click()
-        assert "/var/backups/hallptz/pre-restore.zip" in messages["information"][0][1]
+        assert "/var/backups/khptz/pre-restore.zip" in messages["information"][0][1]
 
     def test_success_tells_the_operator_to_restart(self, monkeypatch, file_dialog, messages):
         """Restored data is only live after a restart — an operator who does not

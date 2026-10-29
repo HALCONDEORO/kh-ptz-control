@@ -1,8 +1,8 @@
-# Hall PTZ Control — Example: Flat LAN (not recommended — produces WARNING)
+# KH PTZ Control — Example: Flat LAN (not recommended — produces WARNING)
 #
 # SAFE SAMPLE — fake site name, RFC1918 example IP, fake installation ID.
 # Use this example only if a dedicated AV VLAN is not available.
-# The system will produce a WARNING in 'hallptz doctor' for flat LAN installations.
+# The system will produce a WARNING in 'khptz doctor' for flat LAN installations.
 #
 # See docs/NETWORK_ARCHITECTURE.md for remediation steps.
 
@@ -10,7 +10,7 @@ site:
   name: "Example Venue C (Flat LAN)"
   contact: "AV Support Team"
   installation_profile: "starter_1_camera"
-  installation_id: "hallptz-2026-EXAMPLE"
+  installation_id: "khptz-2026-EXAMPLE"
 
 cameras:
   - id: platform

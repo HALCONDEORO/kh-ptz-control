@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
-# rollback.sh — Revert a Hall PTZ Control update to the previous release
+# rollback.sh — Revert a KH PTZ Control update to the previous release
 #
 # Usage:
 #   sudo bash rollback.sh [--dev] [--user <user>] [--dir <install-dir>]
 #                         [--source <checkout>] [--to <git-ref>] [--dry-run]
 #
 # Modes (mirrors install.sh):
-#   (default)  Product install: hallptz user, /opt/hallptz + /etc/hallptz + /var/lib/hallptz
-#              + /var/log/hallptz + /var/backups/hallptz.
-#   --dev      Developer install: current user, /home/<user>/hallptz +
-#              /home/<user>/.config/hallptz (matches install.sh --dev).
+#   (default)  Product install: khptz user, /opt/khptz + /etc/khptz + /var/lib/khptz
+#              + /var/log/khptz + /var/backups/khptz.
+#   --dev      Developer install: current user, /home/<user>/khptz +
+#              /home/<user>/.config/khptz (matches install.sh --dev).
 #
 # How a product rollback works:
-#   /opt/hallptz is a deployed artifact, not a git checkout — install.sh rsyncs the
-#   tree with --exclude='.git', and it is root:hallptz 0750 so the service user
+#   /opt/khptz is a deployed artifact, not a git checkout — install.sh rsyncs the
+#   tree with --exclude='.git', and it is root:khptz 0750 so the service user
 #   cannot write it. Rolling back is therefore a *re-deploy*: check the source
 #   checkout out at the previous ref and run install.sh again from there.
 #   install.sh is idempotent and never touches an existing config.yaml, so the
-#   setup wizard's provisioning (/etc/hallptz/.provisioned, both password secrets,
+#   setup wizard's provisioning (/etc/khptz/.provisioned, both password secrets,
 #   camera settings) survives a rollback untouched — the wizard does not re-run.
 #
 #   The source checkout, the live ref and the previous ref are recorded by
-#   install.sh in /etc/hallptz/install-state.env.
+#   install.sh in /etc/khptz/install-state.env.
 #
 # Safety rules:
 #   - Config and runtime data live outside the install directory (see
 #     docs/RUNTIME_PATH_CONTRACT.md), so re-deploying code never touches them.
-#   - A safety snapshot is still taken before reverting, via `hallptz backup`
+#   - A safety snapshot is still taken before reverting, via `khptz backup`
 #     (BackupService) — the same manifest-based backup used everywhere else,
 #     not a hand-rolled file list.
 #   - Stops the service cleanly before changing code.
@@ -45,7 +45,7 @@ APP_USER_OVERRIDE=""
 INSTALL_DIR_OVERRIDE=""
 SOURCE_DIR_OVERRIDE=""
 
-SERVICE_NAME="hallptz-control"
+SERVICE_NAME="khptz-control"
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: sudo bash rollback.sh [--dev] [--user <user>] [--dir <install-dir>] [--source <checkout>] [--to <git-ref>] [--dry-run]"
             echo ""
             echo "Options:"
-            echo "  --dev     Developer layout (current user, /home/<user>/hallptz) — matches install.sh --dev"
+            echo "  --dev     Developer layout (current user, /home/<user>/khptz) — matches install.sh --dev"
             echo "  --user    Override the app/service user"
             echo "  --dir     Override the install directory"
             echo "  --source  Override the source checkout to re-deploy from (product mode)"
@@ -80,18 +80,18 @@ done
 
 if [[ "${DEV_MODE}" == "true" ]]; then
     APP_USER="${APP_USER_OVERRIDE:-${SUDO_USER:-${USER}}}"
-    INSTALL_DIR="${INSTALL_DIR_OVERRIDE:-/home/${APP_USER}/hallptz}"
+    INSTALL_DIR="${INSTALL_DIR_OVERRIDE:-/home/${APP_USER}/khptz}"
     CONFIG_DIR="${INSTALL_DIR}"
-    DATA_DIR="/home/${APP_USER}/.config/hallptz"
-    LOG_DIR="/var/log/hallptz"
-    BACKUP_DIR="/var/backups/hallptz"
+    DATA_DIR="/home/${APP_USER}/.config/khptz"
+    LOG_DIR="/var/log/khptz"
+    BACKUP_DIR="/var/backups/khptz"
 else
-    APP_USER="${APP_USER_OVERRIDE:-hallptz}"
-    INSTALL_DIR="${INSTALL_DIR_OVERRIDE:-/opt/hallptz}"
-    CONFIG_DIR="/etc/hallptz"
-    DATA_DIR="/var/lib/hallptz"
-    LOG_DIR="/var/log/hallptz"
-    BACKUP_DIR="/var/backups/hallptz"
+    APP_USER="${APP_USER_OVERRIDE:-khptz}"
+    INSTALL_DIR="${INSTALL_DIR_OVERRIDE:-/opt/khptz}"
+    CONFIG_DIR="/etc/khptz"
+    DATA_DIR="/var/lib/khptz"
+    LOG_DIR="/var/log/khptz"
+    BACKUP_DIR="/var/backups/khptz"
 fi
 
 STATE_FILE="${CONFIG_DIR}/install-state.env"
@@ -124,7 +124,7 @@ state_value() {
 
 sanitize_ref() {
     # Git refs may contain '/' (e.g. `--to release/v3.2.0`). Interpolated raw
-    # into the backup filename that becomes a path separator, so `hallptz backup
+    # into the backup filename that becomes a path separator, so `khptz backup
     # --dest` would write into a directory that does not exist and step 1 would
     # abort the rollback before it started.
     printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '_'
@@ -151,13 +151,13 @@ else
     if [[ -z "$SOURCE_DIR" ]]; then
         [[ -f "$STATE_FILE" ]] || fail \
             "No install state at $STATE_FILE — this install predates rollback support. Re-run install.sh from the source checkout first, or pass --source <checkout> --to <ref>."
-        SOURCE_DIR="$(state_value HALLPTZ_SOURCE_DIR)"
-        WIZARD_USER="$(state_value HALLPTZ_WIZARD_USER)"
-        GUI_MODE="$(state_value HALLPTZ_GUI_MODE)"
+        SOURCE_DIR="$(state_value KHPTZ_SOURCE_DIR)"
+        WIZARD_USER="$(state_value KHPTZ_WIZARD_USER)"
+        GUI_MODE="$(state_value KHPTZ_GUI_MODE)"
     fi
     [[ -n "$SOURCE_DIR" ]] || fail "Source checkout unknown — pass --source <checkout>."
     [[ -d "$SOURCE_DIR/.git" ]] || fail \
-        "Source checkout is not a git repository: $SOURCE_DIR (pass --source <checkout>). /opt/hallptz is a deployed copy with no .git — a rollback re-deploys from the checkout it was installed from."
+        "Source checkout is not a git repository: $SOURCE_DIR (pass --source <checkout>). /opt/khptz is a deployed copy with no .git — a rollback re-deploys from the checkout it was installed from."
     [[ -f "$SOURCE_DIR/runtime/installer/install.sh" ]] || fail \
         "install.sh not found in source checkout: $SOURCE_DIR"
 fi
@@ -174,7 +174,7 @@ log "Backup dir      : $BACKUP_DIR"
 
 if [[ -z "$TARGET_REF" ]]; then
     if [[ "${DEV_MODE}" == "false" && -f "$STATE_FILE" ]]; then
-        TARGET_REF="$(state_value HALLPTZ_PREVIOUS_REF)"
+        TARGET_REF="$(state_value KHPTZ_PREVIOUS_REF)"
         [[ -n "$TARGET_REF" ]] && log "Rolling back to: $TARGET_REF (from install-state.env)"
     fi
     if [[ -z "$TARGET_REF" ]]; then
@@ -192,7 +192,7 @@ if [[ -z "$TARGET_REF" ]]; then
 fi
 
 if [[ "${DEV_MODE}" == "false" && -f "$STATE_FILE" ]]; then
-    CURRENT_REF="$(state_value HALLPTZ_INSTALLED_REF)"
+    CURRENT_REF="$(state_value KHPTZ_INSTALLED_REF)"
 fi
 CURRENT_REF="${CURRENT_REF:-$(git_src describe --tags --always HEAD 2>/dev/null || echo unknown)}"
 
@@ -217,8 +217,8 @@ BACKUP_NAME="pre_rollback_$(sanitize_ref "${CURRENT_REF}")_$(date +%Y%m%d_%H%M%S
 BACKUP_DEST="${BACKUP_DIR}/${BACKUP_NAME}"
 
 log "Step 1: Creating pre-rollback backup → $BACKUP_DEST"
-run env HALLPTZ_CONFIG_DIR="$CONFIG_DIR" HALLPTZ_DATA_DIR="$DATA_DIR" \
-    HALLPTZ_LOG_DIR="$LOG_DIR" HALLPTZ_BACKUP_DIR="$BACKUP_DIR" \
+run env KHPTZ_CONFIG_DIR="$CONFIG_DIR" KHPTZ_DATA_DIR="$DATA_DIR" \
+    KHPTZ_LOG_DIR="$LOG_DIR" KHPTZ_BACKUP_DIR="$BACKUP_DIR" \
     sudo -u "$APP_USER" python3 -m runtime.cli backup --dest "$BACKUP_DEST"
 
 log "Backup complete: $BACKUP_DEST"
@@ -241,14 +241,14 @@ run git_src checkout "$TARGET_REF"
 
 if [[ "${DEV_MODE}" == "false" ]]; then
     # Re-deploy from the reverted checkout. install.sh mirrors the tree into
-    # /opt/hallptz (rsync --delete), re-applies ownership/modes and re-registers
-    # the systemd units, and leaves /etc/hallptz + /var/lib/hallptz — including the
+    # /opt/khptz (rsync --delete), re-applies ownership/modes and re-registers
+    # the systemd units, and leaves /etc/khptz + /var/lib/khptz — including the
     # wizard's .provisioned marker and both password secrets — untouched.
     # It also rewrites install-state.env, so the ref we are leaving becomes the
     # rollback target for a future run.
     log "Step 3b: Re-deploying $TARGET_REF to $INSTALL_DIR via install.sh"
     # Preserve the recorded GUI mode across the re-deploy. Older state files
-    # predate HALLPTZ_GUI_MODE; install.sh's own default (system) then applies,
+    # predate KHPTZ_GUI_MODE; install.sh's own default (system) then applies,
     # which matches how those installs were made.
     # Normalise the recorded mode rather than forwarding it blindly. install.sh
     # rejects an unknown --gui-mode with exit 1, so a single corrupt byte in
@@ -261,7 +261,7 @@ if [[ "${DEV_MODE}" == "false" ]]; then
         user|system) ;;
         "")          ;;   # predates the flag; install.sh defaults to system
         *)
-            log "WARNING: unrecognised HALLPTZ_GUI_MODE '$GUI_MODE' in $STATE_FILE — using 'system'"
+            log "WARNING: unrecognised KHPTZ_GUI_MODE '$GUI_MODE' in $STATE_FILE — using 'system'"
             GUI_MODE="system"
             ;;
     esac
@@ -285,8 +285,8 @@ NEW_CURRENT="$(git_src describe --tags --always HEAD 2>/dev/null || echo "$TARGE
 
 # ── Step 4: Restart service ───────────────────────────────────────────────────
 #
-# install.sh only enables the unit, it never starts it; and hallptz-control.service
-# gates on ConditionPathExists=/etc/hallptz/.provisioned. On a provisioned install
+# install.sh only enables the unit, it never starts it; and khptz-control.service
+# gates on ConditionPathExists=/etc/khptz/.provisioned. On a provisioned install
 # that marker still exists (rollback never removes it), so this start succeeds.
 # On an install that was never provisioned, systemd skips the unit — expected,
 # and the setup wizard is still the way to finish setup.
@@ -300,7 +300,7 @@ if [[ "$DRY_RUN" != "1" ]]; then
         log "Service started successfully."
     elif [[ ! -f "${CONFIG_DIR}/.provisioned" && "${DEV_MODE}" == "false" ]]; then
         log "Service not running: this install has not been provisioned yet."
-        log "Run the setup wizard (HALLPTZ Setup in the applications menu) to finish setup."
+        log "Run the setup wizard (KHPTZ Setup in the applications menu) to finish setup."
     else
         log "WARNING: Service did not start. Check: journalctl -u $SERVICE_NAME -n 50"
     fi
@@ -319,8 +319,8 @@ echo "  1. Check service status:"
 echo "     systemctl status $SERVICE_NAME"
 echo ""
 echo "  2. Post-install self-check:"
-echo "     hallptz verify-install"
-echo "     hallptz doctor"
+echo "     khptz verify-install"
+echo "     khptz doctor"
 echo ""
 echo "  3. View recent logs:"
 echo "     journalctl -u $SERVICE_NAME -n 50"

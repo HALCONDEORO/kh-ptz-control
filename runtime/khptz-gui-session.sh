@@ -2,10 +2,10 @@
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
 #
-# hallptz-gui-session — start the HALLPTZ GUI inside the desktop session (#885)
+# khptz-gui-session — start the KHPTZ GUI inside the desktop session (#885)
 #
-# Installed to /usr/local/libexec/hallptz-gui-session by install.sh --gui-mode user
-# and invoked by the XDG autostart entry (hallptz-gui.desktop).
+# Installed to /usr/local/libexec/khptz-gui-session by install.sh --gui-mode user
+# and invoked by the XDG autostart entry (khptz-gui.desktop).
 #
 # XDG autostart is the dependable "a graphical session just began" signal on
 # Raspberry Pi OS Bullseye/LXDE, which does not reliably activate
@@ -19,11 +19,11 @@
 
 set -euo pipefail
 
-readonly UNIT="hallptz-gui.service"
+readonly UNIT="khptz-gui.service"
 
 log() {
-    command -v logger >/dev/null 2>&1 && logger -t hallptz-gui-session "$*"
-    echo "[hallptz-gui-session] $*"
+    command -v logger >/dev/null 2>&1 && logger -t khptz-gui-session "$*"
+    echo "[khptz-gui-session] $*"
 }
 
 if [[ -z "${DISPLAY:-}" ]]; then

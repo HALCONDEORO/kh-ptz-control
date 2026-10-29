@@ -31,7 +31,7 @@ class InstallVerdict:
         return "Setup finished but verification failed: " + ", ".join(failed)
 
 
-def _read_advisories(path: Path = Path("/run/hallptz/rpi-advisories.json")) -> List[str]:
+def _read_advisories(path: Path = Path("/run/khptz/rpi-advisories.json")) -> List[str]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
         values = raw.get("advisories", [])
@@ -50,10 +50,10 @@ def _launcher_checks() -> List[Tuple[str, bool]]:
 
     Under ``--gui-mode user`` scripts/repair_rpi_runtime.sh deliberately skips
     the whole display-ready chain ("the session owns its own display"), so
-    /run/hallptz/display-ready is never written. Demanding it there made the Done
+    /run/khptz/display-ready is never written. Demanding it there made the Done
     page report failure on *every* session-owned install. Verify that mode's
     real launcher instead: the user unit, its session helper, and the autostart
-    entry that actually starts it at login. hallptz-control.service is deliberately
+    entry that actually starts it at login. khptz-control.service is deliberately
     absent from that list — it is disabled in this mode by design.
     """
     from runtime.install_state import gui_is_session_owned
@@ -67,16 +67,16 @@ def _launcher_checks() -> List[Tuple[str, bool]]:
         # The autostart entry is what actually starts the unit at login, and
         # this process is the desktop user, so its own home is exactly the
         # right place to look.
-        autostart = Path.home() / ".config" / "autostart" / "hallptz-gui.desktop"
+        autostart = Path.home() / ".config" / "autostart" / "khptz-gui.desktop"
         return [
-            ("Session GUI unit", Path("/etc/systemd/user/hallptz-gui.service").exists()),
-            ("Session GUI launcher", Path("/usr/local/libexec/hallptz-gui-session").exists()),
+            ("Session GUI unit", Path("/etc/systemd/user/khptz-gui.service").exists()),
+            ("Session GUI launcher", Path("/usr/local/libexec/khptz-gui-session").exists()),
             ("Session GUI autostart", autostart.exists()),
         ]
     return [
-        ("Desktop display handoff", Path("/run/hallptz/display-ready").exists()),
-        ("HALLPTZ service unit", Path("/etc/systemd/system/hallptz-control.service").exists()),
-        ("Display-ready path unit", Path("/etc/systemd/system/hallptz-display-ready.path").exists()),
+        ("Desktop display handoff", Path("/run/khptz/display-ready").exists()),
+        ("KHPTZ service unit", Path("/etc/systemd/system/khptz-control.service").exists()),
+        ("Display-ready path unit", Path("/etc/systemd/system/khptz-display-ready.path").exists()),
     ]
 
 
@@ -93,7 +93,7 @@ def verify_provisioned(
     # Unit tests and source/dev environments use overridden temporary paths. The
     # extra checks are product-only because their canonical files live in /etc and
     # /run and are created by the integrated Raspberry Pi provisioning wrapper.
-    if r.config_dir == Path("/etc/hallptz"):
+    if r.config_dir == Path("/etc/khptz"):
         checks.append(
             ("Raspberry Pi integration marker", (r.config_dir / ".rpi-integrated").exists())
         )

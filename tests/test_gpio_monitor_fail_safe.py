@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for issue #882: optional GPIO must never abort HALLPTZ."""
+"""Regression tests for issue #882: optional GPIO must never abort KHPTZ."""
 
 from __future__ import annotations
 

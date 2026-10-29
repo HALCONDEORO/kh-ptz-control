@@ -54,7 +54,7 @@ class BackupService:
         Defaults to the project root derived from this file's location.
     data_dir:
         User data directory (seat names, presets, etc.).
-        Defaults to HALLPTZ_DATA_DIR or ~/.config/hallptz.
+        Defaults to KHPTZ_DATA_DIR or ~/.config/khptz.
     config_path:
         Ruta a config.yaml. Por defecto usa el directorio runtime de configuración.
     backup_dir:
@@ -113,7 +113,7 @@ class BackupService:
         if dest is None:
             self._backup_dir.mkdir(parents=True, exist_ok=True)
             stamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
-            dest = self._backup_dir / f"hallptz_backup_{stamp}.zip"
+            dest = self._backup_dir / f"khptz_backup_{stamp}.zip"
 
         candidates = self._collect_candidates()
         included: list[str] = []

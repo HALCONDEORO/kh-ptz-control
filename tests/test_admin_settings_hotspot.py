@@ -46,7 +46,7 @@ def _open_settings_stub(mode):
 class TestBuildHotspotGuard:
     def test_skipped_outside_production(self, monkeypatch):
         MainWindow = _load_main_window()
-        monkeypatch.setenv("HALLPTZ_PROFILE", "demo")
+        monkeypatch.setenv("KHPTZ_PROFILE", "demo")
         stub = MagicMock()
         with patch("ui.main_window.QPushButton") as mock_btn:
             MainWindow._build_admin_hotspot(stub)
@@ -54,7 +54,7 @@ class TestBuildHotspotGuard:
 
     def test_built_in_production(self, monkeypatch):
         MainWindow = _load_main_window()
-        monkeypatch.setenv("HALLPTZ_PROFILE", "production")
+        monkeypatch.setenv("KHPTZ_PROFILE", "production")
         stub = MagicMock()
         with patch("ui.main_window.QPushButton") as mock_btn:
             MainWindow._build_admin_hotspot(stub)
@@ -68,7 +68,7 @@ class TestBuildHotspotGuard:
 
     def test_default_profile_is_production(self, monkeypatch):
         MainWindow = _load_main_window()
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
         stub = MagicMock()
         with patch("ui.main_window.QPushButton") as mock_btn:
             MainWindow._build_admin_hotspot(stub)

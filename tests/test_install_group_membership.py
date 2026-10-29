@@ -3,12 +3,12 @@
 # Licensed under the MIT License. See LICENSE in the repository root.
 # tests/test_install_group_membership.py — group membership is a precondition (#885)
 #
-# App code is installed root:hallptz 0750, so the desktop user needs membership of
-# the hallptz group to traverse /opt/hallptz at all. Without it:
+# App code is installed root:khptz 0750, so the desktop user needs membership of
+# the khptz group to traverse /opt/khptz at all. Without it:
 #
-#   - `hallptz setup` cannot read runtime/cli.py, so the wizard never opens;
-#   - under --gui-mode user, hallptz-gui.service cannot start — its
-#     WorkingDirectory and ExecStart both live in /opt/hallptz — leaving an
+#   - `khptz setup` cannot read runtime/cli.py, so the wizard never opens;
+#   - under --gui-mode user, khptz-gui.service cannot start — its
+#     WorkingDirectory and ExecStart both live in /opt/khptz — leaving an
 #     appliance with no GUI whatsoever.
 #
 # The usermod call used to be nested inside the wizard launcher's "both .desktop

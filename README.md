@@ -1,4 +1,4 @@
-# Hall PTZ Control
+# KH PTZ Control
 
 **English** | [Español](#español)
 
@@ -60,12 +60,12 @@ wins:
 On a fresh Raspberry Pi OS Bookworm (X11) system:
 
 ```bash
-git clone https://github.com/HALCONDEORO/hall-ptz-control.git hallptz
-cd hallptz
-sudo bash install_hallptz_rpi.sh --wizard-user hallptz
+git clone https://github.com/HALCONDEORO/kh-ptz-control.git khptz
+cd khptz
+sudo bash install_khptz_rpi.sh --wizard-user khptz
 ```
 
-The installer creates the `hallptz` service user, installs dependencies, sets up the
+The installer creates the `khptz` service user, installs dependencies, sets up the
 systemd service and the autostart session, and finishes with the first-run setup
 wizard (camera IPs, seat layout, operator password).
 
@@ -87,7 +87,7 @@ so you can rehearse an installation or a meeting end to end. Turn it off with
 ## Status
 
 Working application, installable MVP candidate. Validate it on your own hardware
-before relying on it in a live meeting: run `hallptz doctor`, rehearse a session in
+before relying on it in a live meeting: run `khptz doctor`, rehearse a session in
 simulation mode, and record results in `docs/MVP_VALIDATION_REPORT.md`. See
 [docs/ROADMAP.md](docs/ROADMAP.md) for what comes next.
 
@@ -105,7 +105,7 @@ MIT — see [LICENSE](LICENSE).
 
 <a id="español"></a>
 
-# Hall PTZ Control (ES)
+# KH PTZ Control (ES)
 
 Control por pantalla táctil de cámaras PTZ VISCA-over-IP para Salones del Reino, sobre
 una Raspberry Pi. El operador toca un asiento en un plano visual del auditorio y las
@@ -158,12 +158,12 @@ para que STOP siempre gane:
 En un sistema Raspberry Pi OS Bookworm (X11) recién instalado:
 
 ```bash
-git clone https://github.com/HALCONDEORO/hall-ptz-control.git hallptz
-cd hallptz
-sudo bash install_hallptz_rpi.sh --wizard-user hallptz
+git clone https://github.com/HALCONDEORO/kh-ptz-control.git khptz
+cd khptz
+sudo bash install_khptz_rpi.sh --wizard-user khptz
 ```
 
-El instalador crea el usuario de servicio `hallptz`, instala dependencias, configura el
+El instalador crea el usuario de servicio `khptz`, instala dependencias, configura el
 servicio systemd y el arranque automático, y termina con el asistente de primera
 configuración (IPs de cámaras, plano de asientos, contraseña de operador).
 
@@ -183,7 +183,7 @@ ensayar una instalación o una reunión de principio a fin. Se desactiva con
 ## Estado
 
 Aplicación funcional, candidata a MVP instalable. Valídala en tu propio hardware antes
-de depender de ella en una reunión en directo: ejecuta `hallptz doctor`, ensaya una
+de depender de ella en una reunión en directo: ejecuta `khptz doctor`, ensaya una
 sesión en modo simulación y registra los resultados en
 `docs/MVP_VALIDATION_REPORT.md`.
 

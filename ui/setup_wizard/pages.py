@@ -56,14 +56,14 @@ class _BasePage(QWizardPage):
 class AdminAuthPage(_BasePage):
     """Collect the current admin password before Repair proceeds.
 
-    Shown ONLY when re-opening an already-provisioned install (``hallptz setup
+    Shown ONLY when re-opening an already-provisioned install (``khptz setup
     --force``): without it, anyone with access to the wizard user's desktop
     session could open the menu icon and reconfigure cameras/network, or reset
-    both passwords, via the password-free /run/hallptz provisioning channel —
+    both passwords, via the password-free /run/khptz provisioning channel —
     with no proof they know the current admin password.
 
     The password is NOT verified here. This page's process (the wizard
-    user's desktop session) has no reliable way to read the hallptz:hallptz-owned
+    user's desktop session) has no reliable way to read the khptz:khptz-owned
     encrypted admin secret to check it itself — verifying client-side would
     either always reject a correct password on a real install, or give false
     confidence. It is collected into ``answers.current_admin_password`` and
@@ -157,7 +157,7 @@ class CamerasPage(_BasePage):
     ever configure the cameras that were already in config.yaml — and the
     installer seeds the one-camera starter template, so a two-camera room (the
     product's normal shape: `platform` for the first seats, `comments` for the
-    rest) was unreachable through setup or repair, and /etc/hallptz is not
+    rest) was unreachable through setup or repair, and /etc/khptz is not
     editable from the desktop session either.
     """
 
@@ -464,8 +464,8 @@ class ReviewPage(_BasePage):
 class InstallingPage(_BasePage):
     """Hands the answers to the privileged provisioner and waits for the result.
 
-    The wizard runs unprivileged; the OS work (write /etc/hallptz, enable the
-    service) happens in the hallptz-provision oneshot. This page drops the request
+    The wizard runs unprivileged; the OS work (write /etc/khptz, enable the
+    service) happens in the khptz-provision oneshot. This page drops the request
     via ProvisionHandoff and polls for the result with a QTimer so the
     touchscreen stays responsive — it never blocks the UI thread. Next stays
     disabled until provisioning actually succeeds; on failure the operator goes
@@ -494,9 +494,9 @@ class InstallingPage(_BasePage):
         self.completeChanged.emit()
         handoff = self._wiz.handoff
 
-        # begin() writes the request into /run/hallptz, which the desktop user
+        # begin() writes the request into /run/khptz, which the desktop user
         # cannot create itself. install.sh deliberately tolerates
-        # `systemd-tmpfiles --create` failing ("/run/hallptz will be created on
+        # `systemd-tmpfiles --create` failing ("/run/khptz will be created on
         # next boot"), so an operator who opens the wizard before rebooting hits
         # an OSError here. Unhandled, that propagates out of a Qt slot and takes
         # the whole wizard down instead of explaining what to do.
@@ -551,7 +551,7 @@ class DonePage(_BasePage):
         lay.addWidget(self._verdict)
         msg = QLabel(
             "The room is ready. All local files are created and the service "
-            "starts on every reboot. Reconfigure later via the HALLPTZ Setup icon."
+            "starts on every reboot. Reconfigure later via the KHPTZ Setup icon."
         )
         msg.setWordWrap(True)
         lay.addWidget(msg)
@@ -566,7 +566,7 @@ class DonePage(_BasePage):
         if not verdict.ok:
             self._verdict.setStyleSheet(error_label_qss(font_px=13))
             self._verdict.setText(
-                verdict.summary() + "\nRun 'hallptz doctor' to diagnose."
+                verdict.summary() + "\nRun 'khptz doctor' to diagnose."
             )
         else:
             self._verdict.setStyleSheet(f"color: {SUCCESS}; font: 600 13px 'Inter Tight', 'Segoe UI';")

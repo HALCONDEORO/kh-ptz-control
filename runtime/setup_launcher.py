@@ -31,7 +31,7 @@ def setup_wizard_needed(
     # Existing tests/dev installs use an overridden config directory and do not
     # install systemd/display integration. Restrict this migration gate to the
     # canonical product path so their historical provisioned guard stays intact.
-    if resolver.config_dir == Path("/etc/hallptz"):
+    if resolver.config_dir == Path("/etc/khptz"):
         marker = getattr(
             resolver,
             "rpi_integration_marker_file",

@@ -113,34 +113,34 @@ class TestAccessModeServiceEnvOverride:
     def test_env_camera_operator_overrides_file(self, tmp_path, monkeypatch):
         p = tmp_path / "access_mode.json"
         p.write_text(json.dumps({"access_mode": "technician"}), encoding="utf-8")
-        monkeypatch.setenv("HALLPTZ_ACCESS_ROLE", "camera_operator")
+        monkeypatch.setenv("KHPTZ_ACCESS_ROLE", "camera_operator")
         svc = AccessModeService(path=p)
         assert svc.mode == OperatingMode.CAMERA_OPERATOR
 
     def test_env_technician_overrides_file(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_ACCESS_ROLE", "technician")
+        monkeypatch.setenv("KHPTZ_ACCESS_ROLE", "technician")
         svc = AccessModeService(path=tmp_path / "access_mode.json")
         assert svc.mode == OperatingMode.TECHNICIAN
 
-    def test_legacy_env_hallptz_access_mode_accepted(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_ACCESS_MODE", "basic_operator")
+    def test_legacy_env_khptz_access_mode_accepted(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("KHPTZ_ACCESS_MODE", "basic_operator")
         svc = AccessModeService(path=tmp_path / "access_mode.json")
         assert svc.mode == OperatingMode.BASIC_OPERATOR
 
     def test_legacy_env_operator_migrates(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_ACCESS_ROLE", "operator")
+        monkeypatch.setenv("KHPTZ_ACCESS_ROLE", "operator")
         svc = AccessModeService(path=tmp_path / "access_mode.json")
         assert svc.mode == OperatingMode.BASIC_OPERATOR
 
     def test_legacy_env_admin_installer_migrates(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_ACCESS_ROLE", "admin_installer")
+        monkeypatch.setenv("KHPTZ_ACCESS_ROLE", "admin_installer")
         svc = AccessModeService(path=tmp_path / "access_mode.json")
         assert svc.mode == OperatingMode.TECHNICIAN
 
     def test_invalid_env_falls_back_to_file(self, tmp_path, monkeypatch):
         p = tmp_path / "access_mode.json"
         p.write_text(json.dumps({"access_mode": "technician"}), encoding="utf-8")
-        monkeypatch.setenv("HALLPTZ_ACCESS_ROLE", "superuser")
+        monkeypatch.setenv("KHPTZ_ACCESS_ROLE", "superuser")
         svc = AccessModeService(path=p)
         assert svc.mode == OperatingMode.TECHNICIAN
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# runtime/install_state.py — single Python reader for /etc/hallptz/install-state.env
+# runtime/install_state.py — single Python reader for /etc/khptz/install-state.env
 #
 # Python mirror of scripts/lib/install_state.sh. Both exist because the install
 # path crosses languages: the installer and the wizard's integration step are
@@ -9,7 +9,7 @@
 # one of them has to agree on which process owns the GUI (#885).
 #
 # Getting that wrong is not cosmetic. A component that assumes the system
-# service will enable (or worse, start) hallptz-control on a session-owned install,
+# service will enable (or worse, start) khptz-control on a session-owned install,
 # and the appliance ends up running two full-screen GUIs driving the same
 # cameras. Keep this file and the shell library behaving identically; their
 # shared fallback rule is asserted by tests/test_gui_mode_consistency.py.
@@ -77,7 +77,7 @@ def gui_mode(resolver=None) -> str:
     predating the flag were all system mode, and treating an unknown value as
     ``"user"`` would disable the only launcher such a machine has.
     """
-    value = state_value("HALLPTZ_GUI_MODE", resolver)
+    value = state_value("KHPTZ_GUI_MODE", resolver)
     return value if value in _VALID_GUI_MODES else GUI_MODE_SYSTEM
 
 

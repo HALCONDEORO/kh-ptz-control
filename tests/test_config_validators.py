@@ -356,27 +356,27 @@ class TestConfigDialogCurrentRuntimeMode:
         return ConfigDialog._current_runtime_mode(sim_active)
 
     def test_production_when_no_env_and_sim_inactive(self, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
         assert self._mode(sim_active=False) == "production"
 
     def test_simulation_when_no_env_and_sim_active(self, monkeypatch):
-        monkeypatch.delenv("HALLPTZ_PROFILE", raising=False)
+        monkeypatch.delenv("KHPTZ_PROFILE", raising=False)
         assert self._mode(sim_active=True) == "simulation"
 
     def test_env_demo_overrides_sim_inactive(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "demo")
+        monkeypatch.setenv("KHPTZ_PROFILE", "demo")
         assert self._mode(sim_active=False) == "demo"
 
     def test_env_simulation_overrides_sim_inactive(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "simulation")
+        monkeypatch.setenv("KHPTZ_PROFILE", "simulation")
         assert self._mode(sim_active=False) == "simulation"
 
     def test_env_production_returns_production(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "production")
+        monkeypatch.setenv("KHPTZ_PROFILE", "production")
         assert self._mode(sim_active=False) == "production"
 
     def test_env_demo_takes_precedence_over_sim_active(self, monkeypatch):
-        monkeypatch.setenv("HALLPTZ_PROFILE", "demo")
+        monkeypatch.setenv("KHPTZ_PROFILE", "demo")
         assert self._mode(sim_active=True) == "demo"
 
 

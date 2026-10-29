@@ -15,7 +15,7 @@
 # Design:
 #   - In-memory ring buffer (configurable max entries, default 200).
 #   - Thread-safe via threading.Lock.
-#   - Serialisable to plain dict list for export (support bundle, hallptz doctor).
+#   - Serialisable to plain dict list for export (support bundle, khptz doctor).
 #   - PII-free: chairman names not stored; session IDs are OK (non-sensitive).
 #   - Subscribes to RuntimeStateStore changes and records diffs automatically.
 #

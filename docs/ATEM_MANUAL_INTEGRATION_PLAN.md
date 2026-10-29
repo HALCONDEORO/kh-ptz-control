@@ -48,7 +48,7 @@ Rules:
 
 - Do not use an unpinned latest dependency for customer installs.
 - Do not make the app crash when the ATEM dependency is missing.
-- `hallptz doctor` must report missing or incompatible ATEM dependency state.
+- `khptz doctor` must report missing or incompatible ATEM dependency state.
 - Runtime must stay LAN-local and offline-first.
 - App, dependency or ATEM firmware/software updates require revalidation before customer-ready ATEM support resumes.
 - Avoid PyATEMMax as the default commercial dependency unless licence review approves it.
@@ -126,11 +126,11 @@ Verification rules:
 - CUT verifies Program equals previous Preview where possible.
 - AUTO verifies final Program after a bounded transition window where possible.
 
-Events should distinguish HALLPTZ commands from external ATEM changes:
+Events should distinguish KHPTZ commands from external ATEM changes:
 
 ```text
-HALLPTZ_ATEM_COMMAND_REQUESTED
-HALLPTZ_ATEM_COMMAND_RESULT
+KHPTZ_ATEM_COMMAND_REQUESTED
+KHPTZ_ATEM_COMMAND_RESULT
 EXTERNAL_ATEM_PROGRAM_CHANGED
 EXTERNAL_ATEM_PREVIEW_CHANGED
 ```
@@ -174,7 +174,7 @@ atem:
 Meaning:
 
 - `installed`: the site physically has ATEM hardware or ATEM is part of the package.
-- `enabled`: HALLPTZ actively connects to or controls the ATEM.
+- `enabled`: KHPTZ actively connects to or controls the ATEM.
 - `disabled_reason`: maintenance, customer disabled, support disabled, not in package or other.
 
 Rules:
@@ -445,7 +445,7 @@ Rules:
 Candidate wording for legal/commercial review:
 
 ```text
-Blackmagic Design and ATEM are third-party products. Hall PTZ Control integrates with supported/tested ATEM devices but is not an official Blackmagic product unless separately agreed.
+Blackmagic Design and ATEM are third-party products. KH PTZ Control integrates with supported/tested ATEM devices but is not an official Blackmagic product unless separately agreed.
 ```
 
 ---

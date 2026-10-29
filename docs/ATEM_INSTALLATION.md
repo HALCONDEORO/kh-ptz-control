@@ -2,7 +2,7 @@
 
 ## Overview
 
-Phase 1 Hall PTZ Control ATEM support is **read-only monitoring + manual admin switching only**.
+Phase 1 KH PTZ Control ATEM support is **read-only monitoring + manual admin switching only**.
 Automatic ATEM switching is **disabled by default** and must not be enabled without validated safety testing.
 
 Camera PTZ control works whether ATEM is online or offline.
@@ -17,7 +17,7 @@ Camera PTZ control works whether ATEM is online or offline.
 | Network | ATEM and Raspberry Pi on the same AV subnet (e.g. 192.168.30.0/24). Static IPs required. |
 | PyATEMMax | Optional Python dependency — required for production real-hardware monitoring. Not needed for demo/simulation. |
 | Firmware | See `docs/ATEM_VALIDATION_REPORT.md` for tested firmware version |
-| HALLPTZ version | ≥ 3.38.2 |
+| KHPTZ version | ≥ 3.38.2 |
 
 ---
 
@@ -60,10 +60,10 @@ atem:
 ## Installation Steps
 
 1. Connect ATEM to AV network. Assign a static IP.
-2. Set `atem.ip` in `/etc/hallptz/config.yaml`.
+2. Set `atem.ip` in `/etc/khptz/config.yaml`.
 3. Set `atem.installed: true` and `atem.enabled: true`.
 4. Set `atem.input_labels` to match physical input wiring.
-5. Run `hallptz doctor` — check ATEM row shows OK.
+5. Run `khptz doctor` — check ATEM row shows OK.
 6. Record results in `docs/ATEM_VALIDATION_REPORT.md`.
 
 ---
@@ -93,7 +93,7 @@ Record at install handover:
 
 | Symptom | Likely cause | Action |
 |---|---|---|
-| `hallptz doctor` ATEM row: WARNING | ATEM IP unreachable | Check network, ping ATEM, check config.yaml |
+| `khptz doctor` ATEM row: WARNING | ATEM IP unreachable | Check network, ping ATEM, check config.yaml |
 | "ATEM disconnected" in UI | ATEM off or wrong IP | Power-cycle ATEM, verify `atem.ip` |
 | `atem.enabled=true requires atem.installed=true` | Config mismatch | Set `installed: true` or `enabled: false` |
 | CUT/AUTO greyed out in admin panel | Not TECHNICIAN role | Switch to admin/technician mode |
@@ -105,8 +105,8 @@ Record at install handover:
 
 - Camera PTZ control is **unaffected** by ATEM state.
 - Degraded wording: **"ATEM unavailable — camera controls unaffected"**.
-- `hallptz doctor` ATEM row: `WARNING` (not `ERROR`) when disconnected.
-- `hallptz status` omits ATEM section when `installed: false`.
+- `khptz doctor` ATEM row: `WARNING` (not `ERROR`) when disconnected.
+- `khptz status` omits ATEM section when `installed: false`.
 
 ---
 
@@ -123,4 +123,4 @@ Any change to ATEM firmware or PyATEMMax version requires:
 ## Brand / Legal Wording
 
 *ATEM is a registered trademark of Blackmagic Design Pty. Ltd.*
-*Hall PTZ Control is not affiliated with or endorsed by Blackmagic Design.*
+*KH PTZ Control is not affiliated with or endorsed by Blackmagic Design.*

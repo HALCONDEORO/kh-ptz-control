@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
-# runtime/build_info.py — Runtime identity metadata for Hall PTZ Control.
+# runtime/build_info.py — Runtime identity metadata for KH PTZ Control.
 #
 # BuildInfo provides consistent version/profile/installation identity
-# for use in hallptz status, hallptz version, support bundles and doctor output.
+# for use in khptz status, khptz version, support bundles and doctor output.
 #
 # No I/O at module import — build_info() reads files lazily.
 
@@ -92,7 +92,7 @@ class BuildInfo:
             if self.runtime_profile != "production"
             else ""
         )
-        return f"Hall PTZ Control {self.app_version}{commit}{profile}"
+        return f"KH PTZ Control {self.app_version}{commit}{profile}"
 
 
 def build_info(
@@ -109,7 +109,7 @@ def build_info(
     source_root = Path(__file__).resolve().parent.parent
 
     # Runtime profile from env or default
-    raw_profile = os.environ.get("HALLPTZ_PROFILE", "production")
+    raw_profile = os.environ.get("KHPTZ_PROFILE", "production")
     try:
         mode = parse_mode(raw_profile)
         profile_str = mode.value
@@ -128,7 +128,7 @@ def build_info(
             from runtime.path_resolver import RuntimePathResolver
             data_dir = RuntimePathResolver().data_dir
         except Exception:
-            data_dir = Path.home() / ".config" / "hallptz"
+            data_dir = Path.home() / ".config" / "khptz"
     installation_id = _read_installation_id(data_dir)
 
     # Running from source detection

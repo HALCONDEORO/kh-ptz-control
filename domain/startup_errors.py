@@ -2,7 +2,7 @@
 # Copyright (c) 2026 MACD Adaptive Limited.
 # Licensed under the MIT License. See LICENSE in the repository root.
 """
-domain/startup_errors.py — Startup error classification for Hall PTZ Control (#103).
+domain/startup_errors.py — Startup error classification for KH PTZ Control (#103).
 
 All startup failures fall into one of two categories:
 

@@ -63,12 +63,12 @@ class TestSubmit:
         req, res = tmp_path / "request.json", tmp_path / "result.json"
 
         def fake_sleep(_):  # privileged side reacts between polls
-            res.write_text(json.dumps({"ok": True, "written": ["/etc/hallptz/config.yaml"]}),
+            res.write_text(json.dumps({"ok": True, "written": ["/etc/khptz/config.yaml"]}),
                            encoding="utf-8")
 
         result = ProvisionHandoff(req, res, sleep=fake_sleep).submit(_answers())
         assert result.ok is True
-        assert result.written == ["/etc/hallptz/config.yaml"]
+        assert result.written == ["/etc/khptz/config.yaml"]
         assert "complete" in result.summary().lower()
 
     def test_failure_with_issues(self, tmp_path):
@@ -136,8 +136,8 @@ class TestEndToEndWithPrivilegedSide:
     @pytest.fixture
     def isolated(self, tmp_path, monkeypatch):
         data_dir = tmp_path / "data"
-        monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(tmp_path / "etc"))
-        monkeypatch.setenv("HALLPTZ_DATA_DIR", str(data_dir))
+        monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(tmp_path / "etc"))
+        monkeypatch.setenv("KHPTZ_DATA_DIR", str(data_dir))
         monkeypatch.setattr(secret_manager, "_CONFIG_DIR", data_dir)
         monkeypatch.setattr(secret_manager, "_ENC_FILE", data_dir / "password.enc")
         return RuntimePathResolver(), tmp_path

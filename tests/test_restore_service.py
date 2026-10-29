@@ -142,7 +142,7 @@ def test_default_config_path_uses_runtime_config_dir(tmp_path, monkeypatch):
     data_dir.mkdir()
     config_dir.mkdir()
     (install_dir / "VERSION").write_text("1.0.0", encoding="utf-8")
-    monkeypatch.setenv("HALLPTZ_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(config_dir))
 
     restore_svc = RestoreService(
         install_dir=install_dir,
@@ -258,7 +258,7 @@ def _make_zip_with_hashes(tmp_path: Path, files: dict[str, str]) -> Path:
         "schema_version": 2,
         "app_version": "1.0.0",
         "created_at": "2026-01-01T00:00:00+00:00",
-        "installation_id": "hallptz-2026-TEST",
+        "installation_id": "khptz-2026-TEST",
         "hash_algorithm": "sha256",
         "files": file_records,
         "included": included,

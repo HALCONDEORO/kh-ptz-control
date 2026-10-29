@@ -52,9 +52,9 @@ Runtime mode:
 ## Sanitised Diagnostics
 
 ```text
-hallptz version:
-hallptz status:
-hallptz doctor:
+khptz version:
+khptz status:
+khptz doctor:
 Relevant safe log summary:
 ```
 
