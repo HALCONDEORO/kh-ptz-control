@@ -110,9 +110,22 @@ run()  {
 }
 fail() { echo "[rollback] ERROR: $*" >&2; exit 1; }
 
-# git under sudo refuses to read a repo owned by another user ("dubious
-# ownership"); the source checkout normally belongs to the installing operator.
-git_src() { git -c safe.directory='*' -C "$SOURCE_DIR" "$@"; }
+# git bajo root tiene dos problemas: se niega a leer un repo de otro usuario
+# ("dubious ownership") y, peor, fetch/checkout escriben .git/objects e index
+# como root — el operador dueño del checkout ya no puede usar git después.
+# Como root, git corre como el PROPIETARIO del checkout; el fallback con
+# safe.directory solo aplica cuando el propietario es root o no se resuelve.
+git_src() {
+    if [[ "$(id -u)" -eq 0 ]]; then
+        local owner
+        owner="$(stat -c %U "$SOURCE_DIR" 2>/dev/null || echo root)"
+        if [[ -n "$owner" && "$owner" != "root" ]]; then
+            sudo -u "$owner" git -C "$SOURCE_DIR" "$@"
+            return
+        fi
+    fi
+    git -c safe.directory='*' -C "$SOURCE_DIR" "$@"
+}
 
 state_value() {
     # Read one KEY=value from install-state.env without sourcing it as shell.
@@ -217,21 +230,41 @@ BACKUP_NAME="pre_rollback_$(sanitize_ref "${CURRENT_REF}")_$(date +%Y%m%d_%H%M%S
 BACKUP_DEST="${BACKUP_DIR}/${BACKUP_NAME}"
 
 log "Step 1: Creating pre-rollback backup → $BACKUP_DEST"
-run env KHPTZ_CONFIG_DIR="$CONFIG_DIR" KHPTZ_DATA_DIR="$DATA_DIR" \
+# Los KHPTZ_* van DESPUÉS de sudo: con env_reset, `env VAR=... sudo` entrega
+# las variables a sudo, no al proceso privilegiado. PYTHONPATH fija el árbol
+# desplegado: sin él, `python3 -m runtime.cli` depende del cwd del operador.
+run sudo -u "$APP_USER" \
+    KHPTZ_CONFIG_DIR="$CONFIG_DIR" KHPTZ_DATA_DIR="$DATA_DIR" \
     KHPTZ_LOG_DIR="$LOG_DIR" KHPTZ_BACKUP_DIR="$BACKUP_DIR" \
-    sudo -u "$APP_USER" python3 -m runtime.cli backup --dest "$BACKUP_DEST"
+    PYTHONPATH="$INSTALL_DIR" \
+    python3 -m runtime.cli backup --dest "$BACKUP_DEST"
 
 log "Backup complete: $BACKUP_DEST"
 
 # ── Step 2: Stop service ──────────────────────────────────────────────────────
 
 log "Step 2: Stopping $SERVICE_NAME service"
+SERVICE_STOPPED=0
 if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
     run systemctl stop "$SERVICE_NAME"
+    SERVICE_STOPPED=1
     log "Service stopped."
 else
     log "Service was not running — skipping stop."
 fi
+
+# Si el rollback falla DESPUÉS de parar el servicio, la sala no se queda sin
+# aplicación: cualquier salida anómala rearranca el servicio con la versión
+# que sigue desplegada. Un rollback completado desarma el trap al final.
+_restart_service_on_abort() {
+    local rc=$?
+    [[ "$SERVICE_STOPPED" == "1" ]] || return "$rc"
+    [[ "${DRY_RUN}" == "1" ]] && return "$rc"
+    echo "[rollback] ERROR (exit $rc) — restarting $SERVICE_NAME with the version still deployed" >&2
+    systemctl start "$SERVICE_NAME" 2>/dev/null || true
+    return "$rc"
+}
+trap _restart_service_on_abort EXIT
 
 # ── Step 3: Revert code ───────────────────────────────────────────────────────
 
@@ -268,7 +301,15 @@ if [[ "${DEV_MODE}" == "false" ]]; then
 
     REDEPLOY_ARGS=()
     [[ -n "$WIZARD_USER" ]] && REDEPLOY_ARGS+=(--wizard-user "$WIZARD_USER")
-    [[ -n "$GUI_MODE" ]]    && REDEPLOY_ARGS+=(--gui-mode "$GUI_MODE")
+    # El install.sh del TARGET es el que corre aquí: un target anterior al
+    # flag --gui-mode rechazaría el argumento y abortaría la recuperación.
+    if [[ -n "$GUI_MODE" ]]; then
+        if grep -q -- '--gui-mode' "$SOURCE_DIR/runtime/installer/install.sh" 2>/dev/null; then
+            REDEPLOY_ARGS+=(--gui-mode "$GUI_MODE")
+        else
+            log "WARNING: target install.sh does not support --gui-mode — deploying with its own default"
+        fi
+    fi
     run bash "$SOURCE_DIR/runtime/installer/install.sh" ${REDEPLOY_ARGS[@]+"${REDEPLOY_ARGS[@]}"}
 else
     # Dev installs run from the checkout itself — nothing to re-deploy. Keep
@@ -291,11 +332,18 @@ NEW_CURRENT="$(git_src describe --tags --always HEAD 2>/dev/null || echo "$TARGE
 # On an install that was never provisioned, systemd skips the unit — expected,
 # and the setup wizard is still the way to finish setup.
 
-log "Step 4: Starting $SERVICE_NAME service"
-run systemctl start "$SERVICE_NAME"
-run sleep 3
+if [[ "$GUI_MODE" == "user" ]]; then
+    # La GUI corre como aplicación del usuario de escritorio: no hay servicio
+    # de sistema que arrancar y forzarlo fallaría o duplicaría la instancia.
+    log "Step 4: GUI runs as the desktop user — skipping system service start"
+    SERVICE_STOPPED=0   # nada que rearrancar si algo falla después
+else
+    log "Step 4: Starting $SERVICE_NAME service"
+    run systemctl start "$SERVICE_NAME"
+    run sleep 3
+fi
 
-if [[ "$DRY_RUN" != "1" ]]; then
+if [[ "$DRY_RUN" != "1" && "$GUI_MODE" != "user" ]]; then
     if systemctl is-active --quiet "$SERVICE_NAME"; then
         log "Service started successfully."
     elif [[ ! -f "${CONFIG_DIR}/.provisioned" && "${DEV_MODE}" == "false" ]]; then
@@ -305,6 +353,9 @@ if [[ "$DRY_RUN" != "1" ]]; then
         log "WARNING: Service did not start. Check: journalctl -u $SERVICE_NAME -n 50"
     fi
 fi
+
+# Rollback completado: el trap de aborto no debe rearrancar nada en la salida.
+SERVICE_STOPPED=0
 
 # ── Step 5: Self-test instructions ────────────────────────────────────────────
 

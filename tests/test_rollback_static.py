@@ -277,3 +277,81 @@ class TestProductModePipGuard:
             if line.strip() and not line.strip().startswith("#")
         ]
         assert real == [], f"requirements-rpi.txt now lists packages: {real}"
+
+
+# ── Rollback reliability fixes (#11-#15) ─────────────────────────────────────
+
+class TestAbortTrapRestartsService:
+    """#11: a failure after the service stop must not leave the hall without
+    the application — an EXIT trap restarts the service with the version
+    still deployed, and a completed rollback disarms it."""
+
+    def test_exit_trap_installed_after_stop(self):
+        sh = _sh()
+        stop = sh.find("systemctl stop")
+        trap = sh.find("trap _restart_service_on_abort EXIT")
+        assert stop != -1 and trap != -1 and stop < trap
+
+    def test_trap_only_fires_when_service_was_stopped(self):
+        assert '_restart_service_on_abort' in _sh()
+        assert '[[ "$SERVICE_STOPPED" == "1" ]] || return' in _sh()
+
+    def test_trap_skips_dry_run(self):
+        body = _product_branch(_sh(), "_restart_service_on_abort()", "trap _restart_service_on_abort")
+        assert '"${DRY_RUN}" == "1"' in body
+
+    def test_completed_rollback_disarms_trap(self):
+        sh = _sh()
+        assert "SERVICE_STOPPED=0" in sh
+        assert sh.rfind("SERVICE_STOPPED=0") > sh.find("Step 4")
+
+
+class TestGuiModeCapabilityCheck:
+    """#12: the TARGET install.sh is what runs during re-deploy — the
+    --gui-mode flag is only forwarded when that script supports it."""
+
+    def test_gui_mode_flag_gated_on_target_support(self):
+        body = _product_branch(_sh(), "REDEPLOY_ARGS=()", 'install.sh" ${REDEPLOY_ARGS')
+        assert "grep -q -- '--gui-mode'" in body
+        assert "does not support --gui-mode" in body
+
+
+class TestBackupEnvPlacement:
+    """#13: env_reset strips variables set before sudo — the KHPTZ_* paths go
+    AFTER sudo, and PYTHONPATH pins the deployed tree (no cwd dependency)."""
+
+    def test_env_assignments_after_sudo(self):
+        body = _product_branch(_sh(), "Step 1: Creating pre-rollback backup", "Backup complete")
+        assert 'run sudo -u "$APP_USER"' in body
+        assert "run env KHPTZ_CONFIG_DIR" not in body
+
+    def test_pythonpath_pins_install_dir(self):
+        body = _product_branch(_sh(), "Step 1: Creating pre-rollback backup", "Backup complete")
+        assert 'PYTHONPATH="$INSTALL_DIR"' in body
+
+
+class TestGitRunsAsCheckoutOwner:
+    """#14: as root, git fetch/checkout run as the checkout owner so .git
+    objects and the index stay writable by the installing operator."""
+
+    def test_git_src_uses_stat_owner_under_root(self):
+        body = _product_branch(_sh(), "git_src()", "state_value()")
+        assert 'stat -c %U "$SOURCE_DIR"' in body
+        assert 'sudo -u "$owner" git -C "$SOURCE_DIR"' in body
+
+    def test_safe_directory_kept_as_fallback(self):
+        body = _product_branch(_sh(), "git_src()", "state_value()")
+        assert "safe.directory='*'" in body
+
+
+class TestUserModeSkipsSystemStart:
+    """#15: GUI_MODE=user means the app runs as the desktop user — there is
+    no system service to (re)start and forcing one could duplicate it."""
+
+    def test_user_mode_skips_systemctl_start(self):
+        body = _product_branch(_sh(), "Step 4", "Rollback completado")
+        assert '[[ "$GUI_MODE" == "user" ]]' in body
+        assert "skipping system service start" in body
+
+    def test_is_active_check_skipped_in_user_mode(self):
+        assert '[[ "$DRY_RUN" != "1" && "$GUI_MODE" != "user" ]]' in _sh()
