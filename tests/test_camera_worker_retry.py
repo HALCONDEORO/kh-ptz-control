@@ -97,6 +97,8 @@ class _ControlledWorker(CameraWorker):
         self._last_heartbeat = time.monotonic()
         self._last_progress  = self._last_heartbeat
         self._consecutive_no_response = 0
+        self._lifecycle_lock = threading.Lock()
+        self._restart_join_timeout_s = 0.5  # espera acotada corta en tests
         self.signals         = MagicMock()
         self._responses      = list(responses)
         self._read_calls     = 0
@@ -259,6 +261,122 @@ class TestProgressLiveness(unittest.TestCase):
         del w._last_progress
         w._last_heartbeat = time.monotonic() - 7.0
         self.assertGreater(w.progress_age(), 6.0)
+
+
+class TestSupervisorRestartRoute(unittest.TestCase):
+    """P1: el Supervisor reinicia DE VERDAD un worker vivo pero bloqueado.
+
+    Antes del fix, CameraWorker.restart() devolvía sin hacer nada si el hilo
+    seguía vivo, justo el caso que el Supervisor detecta (progress_age viejo).
+    """
+
+    def test_supervisor_replaces_live_stuck_thread(self):
+        from core.supervisor import Supervisor
+        w = _ControlledWorker([COMPLETION])
+        _start(w, self)
+        old = w._thread
+        w._last_progress = time.monotonic() - 999.0  # sin señales de vida
+        sup = Supervisor(intervalo=0.05)
+        sup.registrar(
+            "cam",
+            lambda: w._thread.is_alive() and w.progress_age() < 30.0,
+            w.restart,
+        )
+        sup.start()
+        deadline = time.monotonic() + 4.0
+        while time.monotonic() < deadline and w._thread is old:
+            time.sleep(0.02)
+        sup.stop()
+        self.assertIsNot(w._thread, old,
+                         "restart() no hizo nada con el hilo vivo")
+        old.join(timeout=3.0)
+        self.assertFalse(old.is_alive(),
+                         "el hilo viejo debe morir ANTES de crear el nuevo")
+        # El worker nuevo procesa comandos: no quedó zombie.
+        w.send(ViscaCommand(camera=1, payload=MOVE))
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline and MOVE not in w.sent_payloads:
+            time.sleep(0.02)
+        self.assertIn(MOVE, w.sent_payloads)
+
+    def test_unkillable_thread_marks_error_without_second_consumer(self):
+        w = _ControlledWorker([COMPLETION])
+        entered = threading.Event()
+        gate = threading.Event()
+        original_read = w._read_visca_response
+        def blocking_read(sock):
+            entered.set()
+            gate.wait(5.0)  # hilo colgado: ignora _shutdown hasta abrir la puerta
+            return original_read(sock)
+        w._read_visca_response = blocking_read
+        _start(w, self)
+        zombie = w._thread
+        w.send(ViscaCommand(camera=1, payload=MOVE))
+        self.assertTrue(entered.wait(timeout=2.0))
+        self.assertFalse(w.restart(),
+                         "con el hilo colgado restart() debe informar de fallo")
+        self.assertIs(w._thread, zombie,
+                      "nunca se crea un segundo consumidor con el viejo vivo")
+        self.assertEqual(w._connection_state, CameraConnectionState.ERROR)
+        gate.set()
+        zombie.join(timeout=3.0)
+        self.assertFalse(zombie.is_alive(),
+                         "el hilo colgado debe terminar al despertar, sin enviar")
+        # Muerto el viejo, el siguiente pase del supervisor sí recupera.
+        self.assertTrue(w.restart())
+        w.send(ViscaCommand(camera=1, payload=MOVE))
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline and w.sent_payloads.count(MOVE) < 2:
+            time.sleep(0.02)
+        self.assertEqual(w.sent_payloads.count(MOVE), 2,
+                         "el zombie no reenvió nada; el worker nuevo sí envía")
+
+
+class TestSingleFailureNotification(unittest.TestCase):
+    """P2: on_failure se llama exactamente una vez por comando fallido."""
+
+    def _wait_for_read(self, w, timeout=3.0):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline and w._read_calls < 1:
+            time.sleep(0.01)
+
+    def test_once_when_command_expires_during_backoff(self):
+        w = _ControlledWorker([b""])  # sin trama final: falla y entra en backoff
+        _start(w, self)
+        calls = []
+        cmd = ViscaCommand(camera=1, payload=MOVE,
+                           expires_at=time.monotonic() + 0.7,
+                           on_failure=lambda: calls.append(1))
+        w.send(cmd)
+        deadline = time.monotonic() + 4.0
+        while time.monotonic() < deadline and not calls:
+            time.sleep(0.02)
+        time.sleep(0.4)  # margen para una hipotética segunda llamada (epílogo)
+        self.assertEqual(len(calls), 1,
+                         "vencer durante el backoff notificaba dos veces")
+
+    def test_once_when_cancelled_during_backoff(self):
+        w = _ControlledWorker([b""])
+        _start(w, self)
+        calls = []
+        cmd = ViscaCommand(camera=1, payload=MOVE,
+                           on_failure=lambda: calls.append(1))
+        w.send(cmd)
+        self._wait_for_read(w)  # primer intento hecho; entra en backoff
+        cmd.cancelled.set()
+        time.sleep(1.6)  # sale del backoff (1 s) + epílogo
+        self.assertEqual(len(calls), 1)
+
+    def test_once_when_stop_interrupts_backoff(self):
+        w = _ControlledWorker([b""])
+        _start(w, self)
+        calls = []
+        w.send(ViscaCommand(camera=1, payload=MOVE,
+                            on_failure=lambda: calls.append(1)))
+        self._wait_for_read(w)
+        w.send_priority(ViscaCommand(camera=1, payload=PT_STOP))
+        time.sleep(0.6)
+        self.assertEqual(len(calls), 1)
 
 
 if __name__ == "__main__":
