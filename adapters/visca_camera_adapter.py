@@ -23,11 +23,17 @@ from typing import TYPE_CHECKING, Callable
 
 from config import (
     PRESET_MAP, PAN_SPEED_MAX, TILT_SPEED_MAX, ZOOM_DRIVE_MAX,
-    VISCA_PORT, SOCKET_TIMEOUT, VISCA_READ_TIMEOUT,
+    VISCA_PORT, SOCKET_TIMEOUT, VISCA_READ_TIMEOUT, CAMERA_CONNECT_TIMEOUT,
 )
+
+# Espera máxima de un comando confirmado: reconexión inmediata (3 intentos)
+# + lectura de la respuesta + margen de cola.
+CONFIRMED_CMD_TIMEOUT = CAMERA_CONNECT_TIMEOUT * 3 + VISCA_READ_TIMEOUT + 5.0
+
+
 from domain.ports import CameraStatus
 from domain.supportability import CommandResult
-from ptz.visca.parser import contains_final_response, validate_visca_response
+from ptz.visca.parser import contains_final_response
 
 if TYPE_CHECKING:
     from ptz.visca import CameraManager
@@ -375,23 +381,26 @@ class ViscaCameraAdapter:
         return buf
 
     def _send_confirmed(self, ip: str, cam_id_hex: str, cmd_hex: str) -> bool:
-        """Send a VISCA command over a new TCP connection and validate the response."""
+        """Send a VISCA command THROUGH the camera worker and return its confirmation.
+
+        Una sola sesión TCP por cámara: los comandos confirmados (preset
+        recall/save, power, focus, brillo, zoom absoluto) ya no abren una
+        segunda conexión — hay cámaras de una sola sesión que tirarían la del
+        worker — y la confirmación se lee en la sesión que envió el comando.
+        """
+        from ptz.visca import ViscaCommand  # noqa: PLC0415
+
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(SOCKET_TIMEOUT)
-                s.connect((ip, VISCA_PORT))
-                s.sendall(binascii.unhexlify(cam_id_hex + cmd_hex))
-                response = self._recv_visca_response(s)
-            ok, reason = validate_visca_response(response)
-            if not ok:
-                logger.error(
-                    "ViscaCameraAdapter._send_confirmed %s: %s (response: %s)",
-                    ip, reason, response.hex() if response else "<empty>",
-                )
-            return ok
-        except (socket.timeout, socket.error, OSError, binascii.Error) as exc:
-            logger.exception("ViscaCameraAdapter._send_confirmed %s: %s", ip, exc)
+            payload = binascii.unhexlify(cam_id_hex + cmd_hex)
+        except (binascii.Error, ValueError) as exc:
+            logger.error("ViscaCameraAdapter._send_confirmed %s: hex inválido: %s", ip, exc)
             return False
+        idx = 2 if cam_id_hex.lower() == "82" else 1
+        worker = self._mgr.worker(ip)
+        return worker.send_confirmed(
+            ViscaCommand(camera=idx, payload=payload),
+            timeout=CONFIRMED_CMD_TIMEOUT,
+        )
 
     def _send_queued(
         self,

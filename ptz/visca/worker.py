@@ -63,6 +63,10 @@ from config import (
 )
 from domain.camera_state import CameraConnectionState
 from domain.retry_policy import RetryPolicy, CAMERA_RETRY_POLICY
+
+# STOP y comandos confirmados no gastan el presupuesto largo de reconexión
+# (backoffs 5/15/30 s): tres intentos inmediatos sin esperas entre ellos.
+_PRIORITY_RETRY_POLICY = RetryPolicy(backoffs=(0, 0))
 from .parser import contains_completion, contains_final_response
 
 
@@ -87,6 +91,7 @@ class ViscaCommand:
     payload:    bytes
     priority:   bool                          = False
     coalesce:   bool                          = False
+    fast_connect: bool                        = False  # conexión inmediata sin backoffs largos
     queued_at:  float                         = 0.0    # asignado por send() / send_priority()
     cmd_id:     str                           = field(default_factory=_next_cmd_id)
     on_success: Optional[Callable[[], None]] = None
@@ -248,6 +253,43 @@ class CameraWorker:
     def heartbeat_age(self) -> float:
         """Segundos transcurridos desde la última iteración del bucle; útil para diagnóstico."""
         return time.monotonic() - self._last_heartbeat
+
+    def _requeue(self, cmd: ViscaCommand) -> None:
+        """
+        Devuelve un STOP interrumpido a la cola, detrás del STOP más nuevo que
+        lo interrumpió. Solo para comandos priority: ambas mitades del STOP
+        (pan/tilt y zoom) deben salir aunque se interrumpan entre sí.
+        """
+        try:
+            self._queue.put_nowait(cmd)
+            logger.info("%s cam=%s STOP reencolado tras interrupción", cmd.cmd_id, self.ip)
+        except queue.Full:
+            # Tras el drain de send_priority la cola solo puede llevar el
+            # sentinel y las dos mitades de STOP: lleno aquí es inesperado.
+            logger.error("%s cam=%s STOP perdido: cola llena al reencolar", cmd.cmd_id, self.ip)
+
+    def send_confirmed(self, cmd: ViscaCommand, timeout: float) -> bool:
+        """
+        Encola `cmd` y bloquea al llamante hasta Completion, Error o timeout.
+
+        Los comandos confirmados (preset recall/save, power, focus, zoom
+        absoluto...) pasan por la MISMA sesión TCP del worker: no se abre una
+        segunda conexión a la cámara (hay modelos de una sola sesión que
+        tirarían la del worker) y la confirmación se lee donde se envió.
+        Un STOP que lo interrumpa lo completa con fallo inmediato.
+        """
+        done = threading.Event()
+        box: dict = {}
+        cmd.on_success = lambda: (box.__setitem__("ok", True), done.set())
+        cmd.on_failure = lambda: (box.__setitem__("ok", False), done.set())
+        cmd.fast_connect = True
+        if not self.send(cmd):
+            logger.warning("%s cam=%s send_confirmed: cola llena", cmd.cmd_id, self.ip)
+            return False
+        if not done.wait(timeout):
+            logger.warning("%s cam=%s send_confirmed: timeout %.1fs", cmd.cmd_id, self.ip, timeout)
+            return False
+        return box.get("ok", False)
 
     def stop(self) -> None:
         """
@@ -556,12 +598,35 @@ class CameraWorker:
                     sock_ref = self._sock
 
                 if sock_ref is None:
-                    sock_ref = self._connect_with_retry()
+                    # Un STOP (priority) o un confirmado no gastan el
+                    # presupuesto largo de reconexión: intentos inmediatos.
+                    policy = _PRIORITY_RETRY_POLICY if (cmd.priority or cmd.fast_connect) else CAMERA_RETRY_POLICY
+                    sock_ref = self._connect_with_retry(policy=policy)
                     with self._lock:
                         self._sock = sock_ref
 
                 if sock_ref is None:
+                    # Sin conexión. Un STOP interrumpido por otro STOP más
+                    # nuevo NO se pierde: vuelve a la cola y sale después de él.
+                    if cmd.priority and self._interrupt.is_set():
+                        _interrupted = True
+                        self._requeue(cmd)
                     break  # Sin conexión: descartar comando
+
+                # Recheck justo antes de enviar: si llegó un comando priority
+                # más nuevo durante la (re)conexión, este comando está obsoleto
+                # (un MOVE jamás se envía cuando ya hay STOP pedido) o, si es
+                # un STOP, sale DESPUÉS del más nuevo (reencolado, no perdido).
+                if self._interrupt.is_set():
+                    _interrupted = True
+                    if cmd.priority:
+                        self._requeue(cmd)
+                    elif cmd.on_failure is not None:
+                        try:
+                            cmd.on_failure()
+                        except Exception as exc:
+                            logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                    break
 
                 # --- Fase 2: enviar y leer respuesta SIN el lock ---
                 try:
@@ -570,10 +635,18 @@ class CameraWorker:
                     sock_ref.sendall(cmd.payload)
                     response = self._read_visca_response(sock_ref)
 
-                    # Si send_priority() interrumpió la lectura, abandonar este
-                    # comando sin invocar callbacks: el STOP viene a continuación.
+                    # Si send_priority() interrumpió la lectura: un STOP no se
+                    # pierde — se reencola tras el más nuevo; un comando normal
+                    # queda obsoleto y un confirmado falla hacia su llamante.
                     if self._interrupt.is_set():
                         _interrupted = True
+                        if cmd.priority:
+                            self._requeue(cmd)
+                        elif cmd.on_failure is not None:
+                            try:
+                                cmd.on_failure()
+                            except Exception as exc:
+                                logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
                         self._close_socket()
                         break
 

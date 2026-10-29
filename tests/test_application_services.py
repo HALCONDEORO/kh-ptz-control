@@ -244,56 +244,32 @@ class TestViscaCameraAdapterCommands:
 
         assert mgr.invalidated == ["10.0.0.12"]
 
-    def test_send_confirmed_sends_full_frame_and_reads_until_completion(self, monkeypatch):
-        import adapters.visca_camera_adapter as mod
+    def test_send_confirmed_routes_full_frame_through_worker(self, monkeypatch):
+        """Los confirmados van por el worker (una sola sesión TCP), no por socket propio."""
+        adapter, mgr = self._adapter(monkeypatch)
+        seen = []
 
-        adapter, _mgr = self._adapter(monkeypatch)
-        socket_calls = []
+        class FakeWorker:
+            def send_confirmed(self, cmd, timeout):
+                seen.append((cmd.camera, cmd.payload.hex().upper(), timeout))
+                return True
 
-        class FakeSocket:
-            # ACK and Completion arrive in separate TCP segments; the adapter
-            # must keep reading past the ACK until the terminal Completion frame.
-            def __init__(self):
-                self._chunks = [b"\x90\x41\xff", b"\x90\x51\xff"]
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                socket_calls.append(("close",))
-                return False
-
-            def settimeout(self, timeout):
-                socket_calls.append(("settimeout", timeout))
-
-            def connect(self, address):
-                socket_calls.append(("connect", address))
-
-            def sendall(self, payload):
-                socket_calls.append(("send", payload.hex().upper()))
-
-            def recv(self, size):
-                socket_calls.append(("recv", size))
-                return self._chunks.pop(0) if self._chunks else b""
-
-        monkeypatch.setattr(mod.socket, "socket", lambda *_args, **_kwargs: FakeSocket())
-        monkeypatch.setattr(mod, "VISCA_PORT", 5678)
-        monkeypatch.setattr(mod, "SOCKET_TIMEOUT", 0.5)
+        monkeypatch.setattr(mgr, "worker", lambda ip: FakeWorker())
 
         assert adapter._send_confirmed("10.0.0.11", "81", "01040002FF") is True
-        assert socket_calls == [
-            ("settimeout", 0.5),
-            ("connect", ("10.0.0.11", 5678)),
-            ("send", "8101040002FF"),
-            ("recv", 64),
-            ("recv", 64),
-            ("close",),
-        ]
+        assert len(seen) == 1
+        cam, payload_hex, timeout = seen[0]
+        assert cam == 1
+        assert payload_hex == "8101040002FF"
+        assert timeout > 0
 
     def test_send_confirmed_returns_false_on_invalid_hex(self, monkeypatch):
-        adapter, _mgr = self._adapter(monkeypatch)
+        adapter, mgr = self._adapter(monkeypatch)
+        called = []
+        monkeypatch.setattr(mgr, "worker", lambda ip: called.append(ip))
 
         assert adapter._send_confirmed("127.0.0.1", "not-hex", "01040002FF") is False
+        assert called == []  # hex inválido: ni siquiera toca el worker
 
 
 class _Port:
