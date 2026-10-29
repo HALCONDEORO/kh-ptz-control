@@ -60,7 +60,7 @@ def _next_cmd_id() -> str:
 from config import (
     VISCA_PORT, CAMERA_QUEUE_MAXSIZE, HEARTBEAT_TIMEOUT,
     CAMERA_CONNECT_TIMEOUT, VISCA_READ_TIMEOUT, VISCA_SLOW_CMD_MS,
-    VISCA_NO_RESPONSE_LIMIT,
+    VISCA_NO_RESPONSE_LIMIT, WORKER_RESTART_JOIN_TIMEOUT_S,
 )
 from domain.camera_state import CameraConnectionState
 from domain.retry_policy import RetryPolicy, CAMERA_RETRY_POLICY, CAMERA_COMMAND_RETRY_POLICY
@@ -148,6 +148,11 @@ class CameraWorker:
         # concurrente con un comando de prioridad dejaba el hilo vivo hasta
         # 54s tras un join(timeout=3.0) fallido, filtrando threads en tests).
         self._shutdown = threading.Event()
+
+        # Ciclo de vida del hilo: restart() lo serializa para nunca crear un
+        # segundo consumidor de la cola mientras el hilo viejo siga vivo.
+        self._lifecycle_lock = threading.Lock()
+        self._restart_join_timeout_s = WORKER_RESTART_JOIN_TIMEOUT_S
 
         self._last_heartbeat: float = time.monotonic()
         self._last_progress:  float = self._last_heartbeat
@@ -337,27 +342,60 @@ class CameraWorker:
             pass
         self._thread.join(timeout=3.0)
 
-    def restart(self) -> None:
+    def restart(self) -> bool:
         """
-        Relanza el thread del worker si ha muerto inesperadamente.
-        El objeto CameraWorker reutiliza la misma instancia, por lo que
-        las conexiones de señales Qt permanecen intactas.
+        Relanza el thread del worker: detiene el hilo actual (vivo o no) y
+        crea uno nuevo SOLO cuando el viejo ha terminado, así nunca hay dos
+        workers consumiendo la cola ni enviando a la cámara (exclusión de
+        sesión VISCA). El objeto CameraWorker reutiliza la misma instancia,
+        por lo que las conexiones de señales Qt permanecen intactas.
+
+        Devuelve True si el worker quedó relanzado. Si el hilo viejo está
+        colgado y no termina en la espera acotada, NO se crea ningún hilo
+        nuevo: la cámara queda en estado ERROR y devuelve False (el
+        Supervisor lo reintenta en su próxima pasada; en cuanto el hilo
+        viejo muera, el reinicio procede).
         """
-        if self._thread.is_alive():
-            return
-        # Relanzar implica seguir operando, no honrar un stop() previo: ambas
-        # señales deben limpiarse, o el hilo nuevo descartaría todo comando
-        # no prioritario (_interrupt) y toda reconexión (_shutdown) de inmediato.
-        self._shutdown.clear()
-        self._interrupt.clear()
-        self._close_socket()
-        self._last_heartbeat = time.monotonic()
-        self._last_progress  = self._last_heartbeat
-        self._consecutive_no_response = 0
-        self._thread = threading.Thread(
-            target=self._run, daemon=True, name=f"CamWorker-{self.ip}")
-        self._thread.start()
-        logger.info("CameraWorker %s: thread relanzado por el supervisor", self.ip)
+        lock = getattr(self, "_lifecycle_lock", None)
+        if lock is None:
+            lock = self._lifecycle_lock = threading.Lock()
+        with lock:
+            old = self._thread
+            if old.is_alive():
+                # Hilo vivo: el Supervisor solo llama aquí cuando no hay
+                # progreso (progress_age), así que toca parada señalada y
+                # espera acotada.
+                self._shutdown.set()
+                self._interrupt.set()
+                self._close_socket()
+                try:
+                    self._queue.put_nowait(None)  # sentinel: desbloquea _queue.get()
+                except queue.Full:
+                    pass
+                old.join(timeout=getattr(self, "_restart_join_timeout_s",
+                                         WORKER_RESTART_JOIN_TIMEOUT_S))
+                if old.is_alive():
+                    # No murió: crear otro hilo serían dos workers enviando a
+                    # la cámara. ERROR no recuperable hasta que el viejo muera.
+                    self._set_state(CameraConnectionState.ERROR)
+                    logger.error(
+                        "CameraWorker %s: hilo colgado no terminó; "
+                        "no se crea otro worker (cámara en ERROR)", self.ip)
+                    return False
+            # Relanzar implica seguir operando, no honrar un stop() previo: ambas
+            # señales deben limpiarse, o el hilo nuevo descartaría todo comando
+            # no prioritario (_interrupt) y toda reconexión (_shutdown) de inmediato.
+            self._shutdown.clear()
+            self._interrupt.clear()
+            self._close_socket()
+            self._last_heartbeat = time.monotonic()
+            self._last_progress  = self._last_heartbeat
+            self._consecutive_no_response = 0
+            self._thread = threading.Thread(
+                target=self._run, daemon=True, name=f"CamWorker-{self.ip}")
+            self._thread.start()
+            logger.info("CameraWorker %s: thread relanzado por el supervisor", self.ip)
+            return True
 
     def _set_state(self, state: CameraConnectionState) -> None:
         """Actualiza el estado de conexión y emite señales si cambian."""
@@ -606,15 +644,27 @@ class CameraWorker:
             if cmd is None:  # sentinel puesto por stop()
                 break
 
+            # Finalización única de fallos: cada comando notifica on_failure
+            # como mucho una vez por procesado (antes, vencer durante el
+            # backoff de un reintento notificaba ahí y OTRA vez en el epílogo).
+            _failure_notified = False
+
+            def _notify_failure() -> None:
+                nonlocal _failure_notified
+                if _failure_notified or cmd.on_failure is None:
+                    return
+                _failure_notified = True
+                try:
+                    cmd.on_failure()
+                except Exception as exc:
+                    logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+
             # Un comando cancelado (timeout de send_confirmed) o vencido en
             # cola nunca llega a la cámara. El vencido sin cancelar aún tiene
             # llamante esperando: recibe fallo inmediato.
             if cmd.cancelled.is_set() or (cmd.expires_at and time.monotonic() > cmd.expires_at):
                 if not cmd.cancelled.is_set() and cmd.on_failure is not None:
-                    try:
-                        cmd.on_failure()
-                    except Exception as exc:
-                        logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                    _notify_failure()
                 continue
 
             # Intentos de envío:
@@ -640,10 +690,7 @@ class CameraWorker:
                 # cuando el STOP activó _interrupt — el drain de la cola ya no
                 # lo ve. Un confirmado descartado aquí completa YA con fallo.
                 if cmd.on_failure is not None:
-                    try:
-                        cmd.on_failure()
-                    except Exception as exc:
-                        logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                    _notify_failure()
                 continue
 
             if cmd.priority and not self._shutdown.is_set():
@@ -668,18 +715,12 @@ class CameraWorker:
                     if self._wait_interruptible(backoff):
                         _interrupted = True
                         if cmd.on_failure is not None:
-                            try:
-                                cmd.on_failure()
-                            except Exception as exc:
-                                logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                            _notify_failure()
                         break
                     # Vencido o cancelado durante el backoff: no se reenvía.
                     if cmd.cancelled.is_set() or (cmd.expires_at and time.monotonic() > cmd.expires_at):
                         if not cmd.cancelled.is_set() and cmd.on_failure is not None:
-                            try:
-                                cmd.on_failure()
-                            except Exception as exc:
-                                logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                            _notify_failure()
                         break
 
                 # --- Fase 1: obtener referencia del socket (con lock breve) ---
@@ -711,19 +752,13 @@ class CameraWorker:
                     if cmd.priority:
                         self._requeue(cmd)
                     elif cmd.on_failure is not None:
-                        try:
-                            cmd.on_failure()
-                        except Exception as exc:
-                            logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                        _notify_failure()
                     break
 
                 # Vencido o cancelado durante la (re)conexión: no se envía.
                 if cmd.cancelled.is_set() or (cmd.expires_at and time.monotonic() > cmd.expires_at):
                     if not cmd.cancelled.is_set() and cmd.on_failure is not None:
-                        try:
-                            cmd.on_failure()
-                        except Exception as exc:
-                            logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                        _notify_failure()
                     break
 
                 # --- Fase 2: enviar y leer respuesta SIN el lock ---
@@ -741,10 +776,7 @@ class CameraWorker:
                         if cmd.priority:
                             self._requeue(cmd)
                         elif cmd.on_failure is not None:
-                            try:
-                                cmd.on_failure()
-                            except Exception as exc:
-                                logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                            _notify_failure()
                         self._close_socket()
                         break
 
@@ -830,7 +862,4 @@ class CameraWorker:
                         logger.exception("CameraWorker %s: on_success raised: %s", self.ip, exc)
             elif not _interrupted:
                 if cmd.on_failure:
-                    try:
-                        cmd.on_failure()
-                    except Exception as exc:
-                        logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
+                    _notify_failure()
