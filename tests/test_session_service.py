@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import threading
 from unittest.mock import MagicMock, patch
 
 
@@ -178,6 +179,7 @@ def test_end_without_recorder_does_not_raise():
 def test_camera_commands_still_sent_without_recorder():
     svc, port = _svc(recorder=None)
     svc.start()
+    svc._power_thread.join(timeout=5)
     assert ("power_on", "cam1") in port.calls
     assert ("power_on", "cam2") in port.calls
 
@@ -190,6 +192,7 @@ def test_recorder_error_does_not_block_session_start():
     svc, port = _svc(recorder=rec)
     svc.start()  # must not raise
     assert svc.active is True
+    svc._power_thread.join(timeout=5)
     assert ("power_on", "cam1") in port.calls
 
 
@@ -409,6 +412,7 @@ def test_marker_error_does_not_block_session_start():
     with patch(f"{_MARKER_MOD}.mark_session_active", side_effect=OSError("disk full")):
         svc.start()
     assert svc.active is True
+    svc._power_thread.join(timeout=5)
     assert ("power_on", "cam1") in port.calls
 
 
@@ -419,3 +423,30 @@ def test_marker_error_does_not_block_session_end():
     with patch(f"{_MARKER_MOD}.clear_session_marker", side_effect=OSError("disk full")):
         svc.end()
     assert svc.active is False
+
+
+# ── v7: start() no bloquea el hilo llamante (Qt) ─────────────────────────────
+
+def test_start_does_not_block_on_slow_power_on():
+    """Cada power_on confirmado puede tardar segundos; start() se llama desde
+    callbacks Qt y debe volver de inmediato, con el encendido en segundo plano."""
+    import time as _time
+
+    svc, port = _svc()
+    release = threading.Event()
+    orig = port.power_on
+
+    def slow_power_on(camera_id):
+        release.wait(5)
+        return orig(camera_id)
+
+    port.power_on = slow_power_on
+    t0 = _time.monotonic()
+    svc.start()
+    elapsed = _time.monotonic() - t0
+    release.set()
+    svc._power_thread.join(timeout=5)
+    assert elapsed < 1.0
+    assert svc.active is True
+    assert ("power_on", "cam1") in port.calls
+    assert ("power_on", "cam2") in port.calls

@@ -234,6 +234,25 @@ class TestConfirmedViaWorker(unittest.TestCase):
             w.stop()
 
 
+class TestInterruptedPickupFailsConfirmed(unittest.TestCase):
+    def test_interrupted_pickup_fails_confirmed_caller(self):
+        """Fixture de Auditoría: confirmado ya extraído de la cola cuando el
+        STOP activa _interrupt — el drain ya no lo ve; recibe fallo inmediato."""
+        w = _OKWorker()
+        done = threading.Event()
+        box = {}
+        cmd = ViscaCommand(1, bytes.fromhex("81043f0201ff"))
+        cmd.on_failure = lambda: (box.__setitem__("ok", False), done.set())
+        w._queue.put(cmd)
+        w._interrupt.set()  # STOP llega antes de que el worker despache
+        w._queue.put(None)
+        t = threading.Thread(target=w._run, daemon=True)
+        t.start()
+        self.assertTrue(done.wait(1), "el confirmado descartado en pickup falla YA")
+        self.assertEqual(box.get("ok"), False)
+        t.join(2)
+
+
 if __name__ == "__main__":
     unittest.main()
 

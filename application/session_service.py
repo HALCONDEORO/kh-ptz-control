@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import uuid
 from typing import Optional, TYPE_CHECKING
 
@@ -114,13 +115,7 @@ class SessionService:
     def start(self) -> None:
         """Envía Power ON a todas las cámaras. QTimer para Home lo gestiona SessionController."""
         self._session_id = f"session-{uuid.uuid4().hex[:12]}"
-        for cam_id in self._camera_ids:
-            result = self._port.power_on(cam_id)
-            if result is not None and hasattr(result, "ok") and not result.ok:
-                logger.warning(
-                    "SessionService: power_on falló en %s: %s",
-                    cam_id, getattr(result, "message", "unknown"),
-                )
+        self._power_thread = self._power_on_all_async()
         self._active = True
         self._sync_active(True)
         self._store_session_started()
@@ -130,6 +125,33 @@ class SessionService:
             logger.warning("SessionService: no se pudo escribir marcador de sesión")
         logger.info("SessionService: sesión iniciada session_id=%s", self._session_id)
         self._record_event("SessionStarted", result="succeeded")
+
+    def _power_on_all(self) -> None:
+        """Power ON secuencial de todas las cámaras (logging por fallo)."""
+        for cam_id in self._camera_ids:
+            result = self._port.power_on(cam_id)
+            if result is not None and hasattr(result, "ok") and not result.ok:
+                logger.warning(
+                    "SessionService: power_on falló en %s: %s",
+                    cam_id, getattr(result, "message", "unknown"),
+                )
+
+    def _power_on_all_async(self) -> threading.Thread:
+        """Lanza _power_on_all en un hilo daemon y lo devuelve.
+
+        start() se llama desde callbacks Qt (ToggleSession): cada power_on es
+        un comando confirmado que puede bloquear varios segundos por cámara
+        esperando la respuesta VISCA. En el hilo UI eso congela la aplicación
+        y, peor, impide que salga un STOP del operador. El arranque de sesión
+        no depende de que las cámaras hayan confirmado: la sesión queda activa
+        y los encendidos se completan en segundo plano (un STOP los interrumpe
+        con fallo inmediato). El thread se devuelve para que los tests puedan
+        esperarlo con join().
+        """
+        t = threading.Thread(
+            target=self._power_on_all, daemon=True, name="SessionPowerOn")
+        t.start()
+        return t
 
     def home_both(self) -> None:
         """Envía Home a todas las cámaras. Llamar desde QTimer callback en SessionController."""

@@ -609,6 +609,14 @@ class CameraWorker:
             send_started_at = 0.0
 
             if _interrupted:
+                # Ventana cubierta: el worker ya hizo get() de este comando
+                # cuando el STOP activó _interrupt — el drain de la cola ya no
+                # lo ve. Un confirmado descartado aquí completa YA con fallo.
+                if cmd.on_failure is not None:
+                    try:
+                        cmd.on_failure()
+                    except Exception as exc:
+                        logger.exception("CameraWorker %s: on_failure raised: %s", self.ip, exc)
                 continue
 
             if cmd.priority and not self._shutdown.is_set():
