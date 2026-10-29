@@ -336,10 +336,15 @@ class CameraWorker:
         self._shutdown.set()
         self._interrupt.set()
         self._close_socket()
-        try:
-            self._queue.put_nowait(None)  # sentinel: desbloquea _queue.get()
-        except queue.Full:
-            pass
+        if not getattr(self, "_sentinel_pending", False):
+            # Un solo sentinel por episodio de parada: si el hilo no llega a
+            # consumirlo (join fallido), un restart posterior lo drena antes
+            # de crear el hilo nuevo (ver restart()).
+            try:
+                self._queue.put_nowait(None)  # sentinel: desbloquea _queue.get()
+                self._sentinel_pending = True
+            except queue.Full:
+                pass
         self._thread.join(timeout=3.0)
 
     def restart(self) -> bool:
@@ -368,10 +373,15 @@ class CameraWorker:
                 self._shutdown.set()
                 self._interrupt.set()
                 self._close_socket()
-                try:
-                    self._queue.put_nowait(None)  # sentinel: desbloquea _queue.get()
-                except queue.Full:
-                    pass
+                if not getattr(self, "_sentinel_pending", False):
+                    # Un solo sentinel por episodio de parada: sin el flag,
+                    # cada intento fallido de restart añadiría otro None a la
+                    # cola y los sobrantes matarían al hilo relevo al nacer.
+                    try:
+                        self._queue.put_nowait(None)  # sentinel: desbloquea _queue.get()
+                        self._sentinel_pending = True
+                    except queue.Full:
+                        pass
                 old.join(timeout=getattr(self, "_restart_join_timeout_s",
                                          WORKER_RESTART_JOIN_TIMEOUT_S))
                 if old.is_alive():
@@ -382,6 +392,25 @@ class CameraWorker:
                         "CameraWorker %s: hilo colgado no terminó; "
                         "no se crea otro worker (cámara en ERROR)", self.ip)
                     return False
+            # El hilo viejo ya no consume: drenar sentinels sobrantes de
+            # paradas previas (stop() con join fallido o reinicios fallidos),
+            # que si no matarían al hilo nuevo al instante. Se conservan STOPs
+            # y comandos válidos en su orden original.
+            _kept: list = []
+            while True:
+                try:
+                    _item = self._queue.get_nowait()
+                except queue.Empty:
+                    break
+                if _item is None:
+                    self._sentinel_pending = False
+                else:
+                    _kept.append(_item)
+            for _item in _kept:
+                try:
+                    self._queue.put_nowait(_item)
+                except queue.Full:
+                    logger.error("CameraWorker %s: comando perdido al drenar la cola en restart", self.ip)
             # Relanzar implica seguir operando, no honrar un stop() previo: ambas
             # señales deben limpiarse, o el hilo nuevo descartaría todo comando
             # no prioritario (_interrupt) y toda reconexión (_shutdown) de inmediato.
@@ -642,6 +671,7 @@ class CameraWorker:
                 continue
 
             if cmd is None:  # sentinel puesto por stop()
+                self._sentinel_pending = False
                 break
 
             # Finalización única de fallos: cada comando notifica on_failure
