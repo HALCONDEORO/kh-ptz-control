@@ -392,25 +392,22 @@ class CameraWorker:
                         "CameraWorker %s: hilo colgado no terminó; "
                         "no se crea otro worker (cámara en ERROR)", self.ip)
                     return False
-            # El hilo viejo ya no consume: drenar sentinels sobrantes de
+            # El hilo viejo ya no consume: eliminar los sentinels sobrantes de
             # paradas previas (stop() con join fallido o reinicios fallidos),
-            # que si no matarían al hilo nuevo al instante. Se conservan STOPs
-            # y comandos válidos en su orden original.
-            _kept: list = []
-            while True:
-                try:
-                    _item = self._queue.get_nowait()
-                except queue.Empty:
-                    break
-                if _item is None:
+            # que si no matarían al hilo nuevo al instante. Filtrar IN SITU
+            # bajo el mutex de la cola (mismo patrón que send_priority): una
+            # operación atómica — un productor UI concurrente no puede
+            # intercalarse entre extraer y reinsertar y colarse delante de un
+            # STOP retenido, y al no reinsertar nada no hay queue.Full que
+            # pueda descartar un STOP.
+            with self._queue.not_full:
+                _q = self._queue.queue
+                _kept = [c for c in _q if c is not None]
+                if len(_kept) != len(_q):
                     self._sentinel_pending = False
-                else:
-                    _kept.append(_item)
-            for _item in _kept:
-                try:
-                    self._queue.put_nowait(_item)
-                except queue.Full:
-                    logger.error("CameraWorker %s: comando perdido al drenar la cola en restart", self.ip)
+                _q.clear()
+                _q.extend(_kept)
+                self._queue.not_full.notify_all()
             # Relanzar implica seguir operando, no honrar un stop() previo: ambas
             # señales deben limpiarse, o el hilo nuevo descartaría todo comando
             # no prioritario (_interrupt) y toda reconexión (_shutdown) de inmediato.
