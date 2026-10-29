@@ -7,10 +7,10 @@ Raspberry Pi. The operator taps a seat on a visual layout of the auditorium and 
 cameras frame that person, so friends commenting from the audience can be seen on the
 hall's displays and on the video stream during the meeting.
 
-Free and open-source (MIT). Built for a real hall and used in live meetings; any hall
-may use it freely.
+Free and open-source (MIT). Built for a real hall and tested in live meetings; the
+Raspberry Pi installation is still pending. Any hall may use it freely.
 
-![Splash screen](docs/screenshots/01-splash.png)
+![KH PTZ Control banner](docs/screenshots/banner.png)
 
 ## What it does
 
@@ -34,8 +34,8 @@ may use it freely.
 Cameras move; safety is not negotiable. The control path is built so that STOP always
 wins:
 
-- A STOP command sends a **pan/tilt stop and a zoom stop together, atomically**, so the
-  head can never be left turning or zooming.
+- A STOP command **queues a pan/tilt stop and a zoom stop together with priority**;
+  physical stopping then depends on the camera and the network.
 - STOP commands travel in a **priority queue** that bypasses every pending movement.
 - If the command queue is full, **new movement commands are dropped — never a STOP**.
 - Closing the app or ending a session stops every configured camera.
@@ -46,13 +46,17 @@ wins:
 |---|---|
 | ![Operator login](docs/screenshots/02-login.png) | ![Configuration](docs/screenshots/05-config.png) |
 | ![First-run setup wizard](docs/screenshots/06-wizard.png) | ![Cameras, VISCA and network discovery](docs/screenshots/08-cameras-atem.png) |
+| ![Camera moving: pan/tilt speeds live](docs/screenshots/09-moving.png) | ![STOP: both axes halted, speeds at zero](docs/screenshots/10-stop.png) |
+| ![Splash screen](docs/screenshots/01-splash.png) | |
 
 ## Requirements
 
 - Raspberry Pi 4 or 5 with Raspberry Pi OS **Bookworm (X11 session)** — see
-  [docs/INSTALL_RPI.md](docs/INSTALL_RPI.md) for the exact, tested baseline.
+  [docs/INSTALL_RPI.md](docs/INSTALL_RPI.md) for the reference baseline (not yet validated
+  on real hardware).
 - A touchscreen (the UI is designed for touch) and network access to the cameras.
-- One or two VISCA-over-IP PTZ cameras (tested with common AV/PTZ heads).
+- One or two VISCA-over-IP PTZ cameras (designed for common AV/PTZ heads; not yet
+  validated on real cameras).
 - Python 3.11+ with PyQt5 (installed from `apt` on Raspberry Pi OS).
 
 ## Install
@@ -114,8 +118,9 @@ una Raspberry Pi. El operador toca un asiento en un plano visual del auditorio y
 cámaras encuadran a esa persona, para que los hermanos que comentan desde el público se
 vean en las pantallas del salón y en la transmisión durante la reunión.
 
-Libre y de código abierto (MIT). Construido para un salón real y usado en reuniones en
-directo; cualquier salón puede usarlo gratis.
+Libre y de código abierto (MIT). Construido para un salón real y probado en reuniones
+en directo; la instalación en la Raspberry Pi aún está pendiente. Cualquier salón puede
+usarlo gratis.
 
 ## Qué hace
 
@@ -138,8 +143,8 @@ directo; cualquier salón puede usarlo gratis.
 Las cámaras se mueven; la seguridad no es negociable. El camino de control está hecho
 para que STOP siempre gane:
 
-- Un comando STOP envía **parada de pan/tilt y parada de zoom juntas, de forma
-  atómica**, para que la cámara nunca se quede girando ni haciendo zoom.
+- Un comando STOP **encola la parada de pan/tilt y la de zoom juntas, con prioridad**;
+  la parada física depende después de la cámara y de la red.
 - Los STOP viajan en una **cola prioritaria** que adelanta cualquier movimiento
   pendiente.
 - Si la cola está llena, **se descartan los nuevos comandos de movimiento — nunca un
@@ -149,8 +154,9 @@ para que STOP siempre gane:
 
 ## Requisitos
 
-- Raspberry Pi 4 o 5 con Raspberry Pi OS **Bookworm (sesión X11)** — la base exacta
-  probada está en [docs/INSTALL_RPI.md](docs/INSTALL_RPI.md).
+- Raspberry Pi 4 o 5 con Raspberry Pi OS **Bookworm (sesión X11)** — la base de
+  referencia (aún no validada en hardware real) está en
+  [docs/INSTALL_RPI.md](docs/INSTALL_RPI.md).
 - Pantalla táctil (la interfaz está pensada para tacto) y red hacia las cámaras.
 - Una o dos cámaras PTZ VISCA-over-IP.
 - Python 3.11+ con PyQt5 (instalado desde `apt` en Raspberry Pi OS).
