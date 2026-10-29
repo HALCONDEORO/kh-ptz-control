@@ -375,7 +375,7 @@ elif [[ "${DEV_MODE}" == "false" ]]; then
         # set -e aborta el script y el servicio quedaría parado: el trap lo
         # rearranca con la versión anterior y conserva el exit de fallo.
         # Se desarma tras el rearranque planificado del final del install.
-        trap '_rc=$?; trap - EXIT; if [[ "${SERVICE_WAS_ACTIVE:-0}" == "1" ]]; then echo "[ERROR] install failed (exit $_rc) — restarting ${SERVICE_NAME} (was running before the install)" >&2; systemctl start "${SERVICE_NAME}" 2>/dev/null || true; fi' EXIT
+        trap '_rc=$?; trap - EXIT; if [[ "${SERVICE_WAS_ACTIVE:-0}" == "1" && "${GUI_MODE}" != "user" ]]; then echo "[ERROR] install failed (exit $_rc) — restarting ${SERVICE_NAME} (was running before the install)" >&2; systemctl start "${SERVICE_NAME}" 2>/dev/null || echo "[ERROR] restart FAILED — ${SERVICE_NAME} is DOWN; start it by hand: systemctl start ${SERVICE_NAME}" >&2; fi' EXIT
     fi
     # --delete makes /opt/khptz an exact mirror of the release being installed.
     # Without it a downgrade (rollback.sh re-deploys an older ref) would leave
@@ -864,9 +864,17 @@ else
     info "  4. Run: khptz doctor"
 fi
 if [[ "${DEV_MODE}" == "false" && "${SERVICE_WAS_ACTIVE:-0}" == "1" ]]; then
-    info "Restarting ${SERVICE_NAME} (was running before the update)..."
-    systemctl start "${SERVICE_NAME}" || warn "Service did not restart — check: journalctl -u ${SERVICE_NAME} -n 50"
-    trap - EXIT   # install completado: el trap de aborto queda desarmado
+    trap - EXIT   # el rearranque planificado sustituye al trap de aborto
+    if [[ "${GUI_MODE}" == "user" ]]; then
+        # En modo usuario la GUI corre en la sesión de escritorio: el servicio
+        # de sistema NO se reactiva aunque estuviera corriendo antes.
+        info "GUI runs as the desktop user — not restarting the system service."
+    else
+        info "Restarting ${SERVICE_NAME} (was running before the update)..."
+        if ! systemctl start "${SERVICE_NAME}"; then
+            warn "Service did NOT restart — it is DOWN. Start it by hand: systemctl start ${SERVICE_NAME}"
+        fi
+    fi
 fi
 info ""
 warn "VALIDATION REQUIRED: test this installation on a real Raspberry Pi."

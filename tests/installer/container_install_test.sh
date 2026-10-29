@@ -314,10 +314,16 @@ PATH="${STUB_BIN}:$PATH" bash "${INSTALLER}" > /tmp/trap-install.out 2>&1
 trap_rc=$?
 set -e
 
-if [[ ${trap_rc} -ne 0 ]]; then
-    ok "failed update exits non-zero (rc=${trap_rc})"
+if [[ ${trap_rc} -eq 1 ]]; then
+    ok "failed update preserves the original exit code (rc=1)"
 else
-    bad "failed update exited 0 — the rsync failure was swallowed"
+    bad "failed update exit code was ${trap_rc}, expected 1 (rsync's own code)"
+fi
+
+if grep -q "Installation complete" /tmp/trap-install.out; then
+    bad "failed update printed a success message"
+else
+    ok "failed update does not claim success"
 fi
 
 stop_line=$(grep -n "^stop ${SERVICE_NAME:-khptz-control}$" "${SYSCTL_LOG}" | head -1 | cut -d: -f1)
@@ -327,6 +333,19 @@ if [[ -n "${stop_line}" ]] && tail -n +$((stop_line + 1)) "${SYSCTL_LOG}" | grep
 else
     bad "no service start after the stop — abort trap missing or disarmed early"
     cat "${SYSCTL_LOG}" >&2
+fi
+
+# GUI_MODE=user: a failed update must NOT reactivate the system service.
+: > "${SYSCTL_LOG}"
+set +e
+PATH="${STUB_BIN}:$PATH" bash "${INSTALLER}" --gui-mode user > /tmp/trap-user.out 2>&1
+user_rc=$?
+set -e
+stop_line=$(grep -n "^stop ${SERVICE_NAME:-khptz-control}$" "${SYSCTL_LOG}" | head -1 | cut -d: -f1)
+if [[ -n "${stop_line}" ]] && tail -n +$((stop_line + 1)) "${SYSCTL_LOG}" | grep -q "^start "; then
+    bad "user-mode failed update reactivated the system service"
+else
+    ok "user-mode failed update leaves the system service stopped (rc=${user_rc})"
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
