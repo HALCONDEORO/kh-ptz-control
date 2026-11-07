@@ -15,16 +15,16 @@ into the crypto layer or comparing plaintext itself.
 Comparisons are constant-time (hmac.compare_digest) so a wrong password cannot be
 narrowed by timing.
 
-Migration: installs created before the entry/admin split have only password.enc.
-When no admin secret is configured yet, verify_admin() falls back to the entry
-password so Technician mode stays reachable until an admin password is set (via
-the wizard or a future change-password flow). Once admin.enc exists the entry
-password no longer elevates — the two logins are then fully independent.
+Migration: legacy administrator credentials require an explicit privileged reset.
+A missing administrator secret never accepts the operator password.
+Session-owned GUI administrator access is disabled until a privileged
+verification broker exists.
 """
 
 from __future__ import annotations
 
 import hmac
+import os
 
 from runtime import secret_manager
 
@@ -52,26 +52,11 @@ def admin_secret_configured() -> bool:
 
 
 def verify_admin(candidate: str) -> bool:
-    """Return True iff *candidate* may elevate to Technician (administrator).
-
-    If a dedicated admin password is configured, only that password is accepted.
-    Otherwise (pre-split installs) the entry password is accepted as a migration
-    fallback so existing single-password sites are not locked out of Technician
-    mode."""
-    # Gate on the file EXISTING, not on it decrypting.
-    #
-    # decrypt_secret() turns any failure — including an unreadable file — into
-    # PasswordNotConfiguredError, so admin_secret_configured() answers False for
-    # a secret that is merely inaccessible. Using that here meant an admin.enc
-    # the process could not read silently re-enabled the pre-split migration
-    # fallback, and the OPERATOR password then passed an administrator gate:
-    # Repair provisioning, the password-change dialog, admin login and role
-    # elevation all route through this function. An unreadable secret must deny
-    # access; only a genuinely absent one may fall back.
-    if secret_manager.secret_file_exists(secret_manager.SECRET_ADMIN):
-        try:
-            actual = secret_manager.decrypt_secret(secret_manager.SECRET_ADMIN)
-        except secret_manager.PasswordNotConfiguredError:
-            return False
-        return _matches(candidate, actual)
-    return verify_entry(candidate)
+    """Verify a dedicated administrator credential, failing closed on absence."""
+    if os.environ.get("KHPTZ_GUI_MODE") == "user":
+        return False
+    try:
+        actual = secret_manager.decrypt_secret(secret_manager.SECRET_ADMIN)
+    except (secret_manager.PasswordNotConfiguredError, OSError):
+        return False
+    return _matches(candidate, actual)

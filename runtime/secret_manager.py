@@ -44,12 +44,18 @@ def _secret_file(name: str) -> Path:
 
     ``SECRET_ENTRY`` resolves to the dedicated ``_ENC_FILE`` constant so the
     legacy filename and existing test isolation (which monkeypatches it) keep
-    working; every other name lands at ``_CONFIG_DIR / "<name>.enc"``.
+    working. Production administrator secrets use /etc/khptz/secrets, never the
+    shared runtime data directory. Explicit test/development data overrides keep
+    their isolated layout.
     """
     if not _SECRET_NAME_RE.match(name):
         raise ValueError(f"Invalid secret name: {name!r}")
     if name == SECRET_ENTRY:
         return _ENC_FILE
+    if name == SECRET_ADMIN and _CONFIG_DIR == Path("/var/lib/khptz"):
+        # Root-owned, non-group-writable parent: the GUI cannot unlink or replace
+        # this credential even though ordinary runtime data is shared.
+        return Path("/etc/khptz/secrets/admin.enc")
     return _CONFIG_DIR / f"{name}.enc"
 
 
@@ -131,6 +137,11 @@ def _migrate_enc_file(legacy_paths: list[Path] | None = None) -> None:
 # ─────────────────────────────────────────────────────────────────
 #  SECRETOS CON NOMBRE  (entrada + admin, mismo cifrado)
 # ─────────────────────────────────────────────────────────────────
+
+def admin_password_change_available() -> bool:
+    """The protected production store needs a privileged reset, not GUI writes."""
+    return _secret_file(SECRET_ADMIN) != Path("/etc/khptz/secrets/admin.enc")
+
 
 def encrypt_secret(name: str, plaintext: str) -> None:
     """Cifrar *plaintext* y guardarlo en ``<name>.enc`` (atómico, modo 0600)."""

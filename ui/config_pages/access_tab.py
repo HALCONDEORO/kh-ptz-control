@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidg
 
 from application.access_mode_service import AccessModeService
 from domain.call_set_policy import OperatingMode
+from runtime.secret_manager import admin_password_change_available
 from ui.schedule_dialog import ScheduleDialog
 from ui.styles import (
     BRAND_DARK as _C_BRAND_DARK,
@@ -196,15 +197,31 @@ def build_access_tab(dialog, access_layout, mw, panel_layout):
     )
     layout.addWidget(auth_desc)
 
-    btn_pwd = dialog._btn('Change Operator Password →', variant='ghost', icon='lock')
+    btn_pwd = dialog._btn('Change Operator Password →', variant='ghost', icon='lock', width='row')
+    btn_pwd.ensurePolished()
+    btn_pwd.setMinimumWidth(btn_pwd.sizeHint().width())
     btn_pwd.setToolTip('Change the operator (entry) login password')
     btn_pwd.clicked.connect(lambda: (mw._dialogs.ChangePassword(), dialog._try_close()))
     layout.addWidget(btn_pwd, 0, Qt.AlignRight)
 
-    btn_admin_pwd = dialog._btn('Change Admin Password →', variant='ghost', icon='lock')
+    btn_admin_pwd = dialog._btn('Change Admin Password →', variant='ghost', icon='lock', width='row')
+    btn_admin_pwd.ensurePolished()
+    btn_admin_pwd.setMinimumWidth(btn_admin_pwd.sizeHint().width())
     btn_admin_pwd.setToolTip('Change the administrator password (required for Technician mode)')
     btn_admin_pwd.clicked.connect(lambda: (mw._dialogs.ChangeAdminPassword(), dialog._try_close()))
     layout.addWidget(btn_admin_pwd, 0, Qt.AlignRight)
+    if not admin_password_change_available():
+        btn_admin_pwd.setEnabled(False)
+        btn_admin_pwd.setToolTip('Protected administrator password: privileged offline reset required')
+        admin_notice = QLabel(
+            'Administrator password changes are unavailable in this GUI. '
+            'Use the privileged offline reset procedure in docs/HARDENING2.md '
+            'during approved maintenance.'
+        )
+        admin_notice.setWordWrap(True)
+        admin_notice.setStyleSheet(auth_desc.styleSheet())
+        layout.addWidget(admin_notice)
+
 
     # Initial render of the role segmented control + note.
     _refresh_mode_ui()

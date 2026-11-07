@@ -163,3 +163,15 @@ class TestRequireCurrentPolicy:
         with patch.object(_dm, "ChangePasswordDialog", _FakeDlg):
             ctrl._change_password(target)
         assert captured["require_current"] is expected
+
+
+def test_protected_admin_change_warns_without_dialog_or_write():
+    ctrl = _dm.DialogsController(MagicMock())
+    with patch.object(_dm, "admin_password_change_available", return_value=False), \
+         patch.object(_dm, "ChangePasswordDialog") as dialog, \
+         patch.object(_dm, "encrypt_secret") as write, \
+         patch.object(_dm.QMessageBox, "information") as notice:
+        ctrl.ChangeAdminPassword()
+    dialog.assert_not_called()
+    write.assert_not_called()
+    notice.assert_called_once()

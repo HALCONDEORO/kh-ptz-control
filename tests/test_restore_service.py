@@ -227,6 +227,12 @@ def test_cli_restore_command(tmp_path, monkeypatch):
     backup_svc, _ = _make_services(tmp_path)
     (backup_svc._data_dir / "seat_names.json").write_text("{}", encoding="utf-8")
     bk = backup_svc.create_backup()
+    # CLI resolves live defaults independently of the fixture service. Isolate
+    # every runtime path: the preventive backup must not target /var/backups.
+    monkeypatch.setenv("KHPTZ_DATA_DIR", str(backup_svc._data_dir))
+    monkeypatch.setenv("KHPTZ_CONFIG_DIR", str(backup_svc._config_path.parent))
+    monkeypatch.setenv("KHPTZ_BACKUP_DIR", str(backup_svc._backup_dir))
+    monkeypatch.setenv("KHPTZ_LOG_DIR", str(tmp_path / "logs"))
 
     from runtime.cli import main
     rc = main(["restore", str(bk.path)])

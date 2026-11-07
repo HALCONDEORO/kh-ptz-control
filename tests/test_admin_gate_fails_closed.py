@@ -20,9 +20,9 @@
 # secrets live in /var/lib/khptz owned khptz:khptz, and under --gui-mode user the
 # GUI runs as the desktop user.
 #
-# The distinction that matters: a genuinely ABSENT admin.enc may still fall back
-# (that is the documented migration path for single-password sites); one that
-# EXISTS but cannot be read must deny.
+# Missing, unreadable and corrupt credentials all deny administrator access.
+# A single-password legacy site needs the explicit privileged reset; deleting
+# admin.enc must never turn the operator credential into an administrator.
 
 from __future__ import annotations
 
@@ -112,10 +112,10 @@ class TestUnreadableAdminSecretDeniesAccess:
         assert authentication.verify_admin(ADMIN_PASSWORD) is False
 
 
-class TestMigrationFallbackStillWorks:
-    """A single-password site with no admin.enc must not be locked out."""
+class TestExplicitMigrationRequired:
+    """Missing identity denies until a separate privileged reset supplies it."""
 
-    def test_entry_password_elevates_when_no_admin_secret_exists(
+    def test_entry_password_never_elevates_when_no_admin_secret_exists(
         self, tmp_path, monkeypatch
     ):
         monkeypatch.setattr(secret_manager, "_CONFIG_DIR", tmp_path)
@@ -123,14 +123,39 @@ class TestMigrationFallbackStillWorks:
         secret_manager.encrypt_secret(secret_manager.SECRET_ENTRY, ENTRY_PASSWORD)
         assert not (tmp_path / "admin.enc").exists()
 
-        assert authentication.verify_admin(ENTRY_PASSWORD) is True
+        assert authentication.verify_admin(ENTRY_PASSWORD) is False
 
-    def test_wrong_password_still_rejected_in_fallback(self, tmp_path, monkeypatch):
+    def test_wrong_password_rejected_when_admin_missing(self, tmp_path, monkeypatch):
         monkeypatch.setattr(secret_manager, "_CONFIG_DIR", tmp_path)
         monkeypatch.setattr(secret_manager, "_ENC_FILE", tmp_path / "password.enc")
         secret_manager.encrypt_secret(secret_manager.SECRET_ENTRY, ENTRY_PASSWORD)
 
         assert authentication.verify_admin("nope") is False
+
+
+    def test_explicit_reset_enables_only_new_admin_and_preserves_operator(
+        self, tmp_path, monkeypatch
+    ):
+        import os
+        from runtime.migrate_admin_secret import reset_admin
+
+        data = tmp_path / "data"
+        protected = tmp_path / "protected"
+        data.mkdir()
+        protected.mkdir(mode=0o750)
+        monkeypatch.setattr(secret_manager, "_CONFIG_DIR", protected)
+        monkeypatch.setattr(secret_manager, "_ENC_FILE", data / "password.enc")
+        secret_manager.encrypt_secret(secret_manager.SECRET_ENTRY, ENTRY_PASSWORD)
+        before = (data / "password.enc").read_bytes()
+        assert not authentication.verify_admin(ENTRY_PASSWORD)
+        reset_admin(
+            ADMIN_PASSWORD, ADMIN_PASSWORD, data_dir=data, secret_dir=protected,
+            uid=os.getuid(), gid=os.getgid(),
+        )
+        assert authentication.verify_admin(ADMIN_PASSWORD)
+        assert not authentication.verify_admin(ENTRY_PASSWORD)
+        assert authentication.verify_entry(ENTRY_PASSWORD)
+        assert (data / "password.enc").read_bytes() == before
 
 
 class TestExistenceCheckIsSafe:

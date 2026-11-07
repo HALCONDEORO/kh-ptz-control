@@ -75,13 +75,13 @@ class TestHardening:
                 write_bytes_atomic(dest, b"data")
         assert list(tmp_path.glob("*.tmp")) == []
 
-    def test_stale_tmp_is_overwritten(self, tmp_path):
+    def test_legacy_tmp_is_not_owned_by_new_writer(self, tmp_path):
         dest = tmp_path / "out.bin"
         stale = dest.with_suffix(dest.suffix + ".tmp")
         stale.write_bytes(b"leftover from a crash")
         write_bytes_atomic(dest, b"fresh")
         assert dest.read_bytes() == b"fresh"
-        assert not stale.exists()
+        assert stale.read_bytes() == b"leftover from a crash"
 
     @pytest.mark.skipif(os.name != "posix", reason="POSIX permission bits")
     def test_mode_applied_to_destination(self, tmp_path):

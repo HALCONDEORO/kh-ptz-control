@@ -12,7 +12,7 @@ Policy implemented:
   1. Parent directory is created if it does not exist.
   2. Content is written to a temporary file in the same directory (same FS,
      guaranteeing that os.replace is atomic at the filesystem level).
-  3. The temp file is created privately (0600) via os.open, so secrets never
+  3. A unique temp file is created privately (0600) via mkstemp/O_EXCL, so secrets never
      have a world-readable window before the final mode is applied.
   4. The temp file is fsync'd before the rename, and the parent directory is
      fsync'd after, so a completed write survives power loss (best-effort:
@@ -33,8 +33,8 @@ it, restoring a backup or importing a layout wrote files only their creator
 could read, which is how a session-owned GUI ends up with no presets after a
 recovery (#885).
 
-Thread safety: callers that share a dest path across threads should use their
-own lock (or core.json_io.save_json which is lock-per-path).
+Concurrent writers use separate temporary files; the last rename wins.
+Read-modify-write callers still need a lock (or core.json_io.save_json).
 
 Raises OSError on failure — callers decide how to handle/log it.
 """
@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import os
 import stat
+import tempfile
 from pathlib import Path
 
 
@@ -102,14 +103,13 @@ def write_bytes_atomic(dest: Path, data: bytes, *, mode: "int | None" = None) ->
     # specific mode (secrets pass 0o600) are honoured exactly as before.
     if mode is None:
         mode = group_shared_mode(dest.parent)
-    tmp = dest.with_suffix(dest.suffix + ".tmp")
-    tmp.unlink(missing_ok=True)
-    # O_BINARY (Windows) keeps os.write byte-exact; without it Windows opens in
-    # text mode and translates \n → \r\n, corrupting JSON/YAML/secret payloads.
-    # getattr → 0 on POSIX, where the flag does not exist.
-    _flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_BINARY", 0)
+    # mkstemp uses exclusive creation (O_EXCL) and private mode, so no
+    # pre-planted symlink is followed and concurrent writers never unlink or
+    # overwrite one another's temporary file. Keep it on the destination FS.
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{dest.name}.", suffix=".tmp",
+                                   dir=str(dest.parent))
+    tmp = Path(tmp_name)
     try:
-        fd = os.open(str(tmp), _flags, 0o600)
         try:
             mv = memoryview(data)
             written = 0

@@ -101,6 +101,9 @@ else
     BACKUP_DIR="/var/backups/khptz"
 fi
 
+# Administrator credentials never share the GUI-writable runtime directory.
+ADMIN_SECRET_DIR="${CONFIG_DIR}/secrets"
+
 SERVICE_NAME="khptz-control"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -173,6 +176,11 @@ require_command systemctl
 
 if [[ "${DEV_MODE}" == "true" ]]; then
     require_command pip3 python3-pip
+fi
+
+if [[ "${DEV_MODE}" == "false" && "${CHECK_MODE}" == "false" ]] \
+    && [[ -e "${DATA_DIR}/admin.enc" || -L "${DATA_DIR}/admin.enc" ]]; then
+    error "Legacy admin secret requires an offline privileged reset; see docs/HARDENING2.md. Installation aborted before changes."
 fi
 
 require_pyqt5
@@ -569,6 +577,11 @@ else
     info "Service ${SERVICE_NAME} enabled."
     info "Start with: systemctl start ${SERVICE_NAME}"
     info "Logs with:  journalctl -u ${SERVICE_NAME} -f"
+fi
+
+# Credential parent must exist before privileged provisioning writes admin.enc.
+if [[ "${DEV_MODE}" == "false" ]]; then
+    install -d -m 0750 -o root -g "${APP_USER}" "${ADMIN_SECRET_DIR}"
 fi
 
 # ── Setup-wizard provisioning channel (product mode only) ─────────────────────

@@ -50,18 +50,34 @@ publish_pending() {
 secure_remove_request() {
     python3 - "${REQUEST}" <<'PY'
 import os
+import stat
 import sys
 from pathlib import Path
 
 path = Path(sys.argv[1])
+# The wizard can replace this path. Open once, without following symlinks
+# or blocking on special files, and inspect/write only that same descriptor.
+flags = (os.O_WRONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
 try:
-    size = path.stat().st_size
-    with path.open("r+b", buffering=0) as handle:
-        handle.write(b"\0" * max(size, 1))
-        handle.flush()
-        os.fsync(handle.fileno())
+    fd = os.open(str(path), flags)
 except OSError:
-    pass
+    fd = -1
+if fd >= 0:
+    try:
+        st = os.fstat(fd)
+        if stat.S_ISREG(st.st_mode):
+            remaining = max(st.st_size, 1)
+            zeros = b"\0" * 65536
+            while remaining:
+                written = os.write(fd, zeros[:min(remaining, len(zeros))])
+                if written <= 0:
+                    raise OSError("request overwrite made no progress")
+                remaining -= written
+            os.fsync(fd)
+    except OSError:
+        pass
+    finally:
+        os.close(fd)
 try:
     path.unlink()
 except OSError:

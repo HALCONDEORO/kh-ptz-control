@@ -209,6 +209,8 @@ class RestoreService:
             ]
 
             pre_backup = self._create_pre_restore_backup()
+            if pre_backup is None or not pre_backup.is_file():
+                raise RestoreError("Pre-restore safety backup is missing; no data was restored.")
 
             restored: list[str] = []
             skipped:  list[str] = []
@@ -297,7 +299,7 @@ class RestoreService:
             return self._config_path
         return self._data_dir / arc_name
 
-    def _create_pre_restore_backup(self) -> Path | None:
+    def _create_pre_restore_backup(self) -> Path:
         try:
             from application.backup_service import BackupService
             svc = BackupService(
@@ -310,8 +312,8 @@ class RestoreService:
             result = svc.create_backup()
             return result.path
         except Exception:  # noqa: BLE001
-            logger.exception("Pre-restore backup failed — proceeding without safety backup")
-            return None
+            logger.exception("Pre-restore safety backup failed; restore aborted")
+            raise RestoreError("Pre-restore safety backup failed; no data was restored.") from None
 
     @staticmethod
     def _atomic_write(data: bytes, dest: Path) -> None:

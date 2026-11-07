@@ -63,12 +63,12 @@ class TestVerifyAdmin:
         secret_manager.encrypt_secret(secret_manager.SECRET_ADMIN, "admin-pass")
         assert auth.verify_admin("op-pass") is False
 
-    def test_migration_fallback_accepts_entry_when_no_admin(self, isolated_secrets):
-        # Pre-split install: only the entry password exists. It must still
-        # elevate so the site is not locked out of Technician mode.
+    def test_no_implicit_migration_from_entry_when_no_admin(self, isolated_secrets):
+        # Pre-split install: only operator exists. Administrator access stays
+        # closed until an explicit privileged reset supplies a separate secret.
         secret_manager.encrypt_secret(secret_manager.SECRET_ENTRY, "op-pass")
         assert auth.admin_secret_configured() is False
-        assert auth.verify_admin("op-pass") is True
+        assert auth.verify_admin("op-pass") is False
 
     def test_rejects_wrong_password_in_fallback(self, isolated_secrets):
         secret_manager.encrypt_secret(secret_manager.SECRET_ENTRY, "op-pass")
