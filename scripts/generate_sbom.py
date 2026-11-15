@@ -12,8 +12,13 @@
 #
 # Regeneration:
 #   Run this script in the release environment (or from the pinned venv) to get
-#   accurate installed package versions. The output is a release artifact, not
-#   committed for every dev run.
+#   accurate installed package versions. A Git checkout is required: the full
+#   commit comes from this script's source root, never the caller's directory.
+#   Unknown source identity fails without writing the SBOM. The output is a
+#   release artifact, not committed for every dev run.
+#   This records checkout identity, not proof that its working tree is clean.
+#   Only direct requirements are listed; transitive completeness/CVE gates
+#   remain pending. Source archives without .git cannot supply this identity.
 #
 # Safety rules:
 #   - No secrets, tokens, credentials or customer data are included.
@@ -31,17 +36,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+ROOT = Path(__file__).resolve().parent.parent
+
+
 def _git_commit() -> str:
+    """Identify this checkout, never an unrelated caller working directory."""
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
-        ).decode().strip()
-    except Exception:  # noqa: BLE001
+        top, commit = subprocess.check_output(
+            ["git", "-C", str(ROOT), "rev-parse", "--show-toplevel", "--verify", "HEAD"],
+            stderr=subprocess.DEVNULL,
+        ).decode().strip().splitlines()
+        if Path(top).resolve() != ROOT.resolve() or not re.fullmatch(r"[0-9a-f]{40}", commit):
+            return "unknown"
+        return commit
+    except (OSError, ValueError, subprocess.CalledProcessError, UnicodeError):
         return "unknown"
 
 
 def _app_version() -> str:
-    version_file = Path(__file__).resolve().parent.parent / "VERSION"
+    version_file = ROOT / "VERSION"
     try:
         return version_file.read_text(encoding="utf-8").strip()
     except OSError:
@@ -60,7 +73,7 @@ def _declared_runtime_requirements() -> list[str]:
     both makes the artifact inaccurate (dev tools and unrelated packages leak
     into a release artifact) and makes tests over it non-deterministic.
     """
-    req_file = Path(__file__).resolve().parent.parent / "requirements.txt"
+    req_file = ROOT / "requirements.txt"
     names = []
     for raw_line in req_file.read_text(encoding="utf-8").splitlines():
         line = raw_line.split("#", 1)[0].strip()
@@ -90,6 +103,7 @@ def _collect_packages() -> list[dict]:
     the gate validator rejects it, so failing here keeps the error at the
     source.
     """
+    UNKNOWN_VERSIONS.clear()  # Every collection is a new snapshot, including retries.
     installed = {
         _normalize(dist.metadata["Name"] or "unknown"): dist
         for dist in importlib.metadata.distributions()
@@ -151,6 +165,9 @@ def main() -> int:
 
     app_version = _app_version()
     git_commit = _git_commit()
+    if git_commit == "unknown":
+        print("ERROR: cannot identify this source checkout; no SBOM written", file=sys.stderr)
+        return 1
     components = _collect_packages()
     if UNKNOWN_VERSIONS:
         print(
