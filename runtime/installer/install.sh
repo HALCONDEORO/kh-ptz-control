@@ -490,57 +490,6 @@ RSYNC_EXCLUDES=(
 # manager may have no session D-Bus, and deleting the on-disk GUI unit does
 # not unload a running service. Any identifiable but unreachable manager
 # blocks the copy. Never start a user GUI from this root installer.
-_stop_session_guis() {
-    local runtime_root="$1" bus uid user state managers entry name _load active rest path
-    local -A manager_uids=()
-    managers="$(systemctl list-units --all --plain --no-legend 'user@*.service')" \
-        || error "Cannot enumerate user managers; refusing to replace GUI code."
-    while read -r name _load active rest; do
-        if [[ "${name}" =~ ^user@([0-9]+)\.service$ ]]; then
-            uid="${BASH_REMATCH[1]}"
-            case "${active}" in
-                inactive|failed) ;;
-                *) manager_uids["${uid}"]=1 ;;
-            esac
-        fi
-    done <<< "${managers}"
-    for path in "${runtime_root}"/[0-9]*/bus "${runtime_root}"/[0-9]*/systemd/private; do
-        [[ -S "${path}" ]] || continue
-        entry="${path#"${runtime_root}"/}"; uid="${entry%%/*}"
-        [[ "${uid}" =~ ^[0-9]+$ ]] && manager_uids["${uid}"]=1
-    done
-    for uid in "${!manager_uids[@]}"; do
-        bus="${runtime_root}/${uid}/bus"
-        [[ -S "${bus}" ]] || bus="${runtime_root}/${uid}/systemd/private"
-        [[ -S "${bus}" ]] \
-            || error "User manager ${uid} is identifiable but inaccessible; refusing to replace GUI code."
-        user="$(getent passwd "${uid}" | cut -d: -f1)"
-        [[ -n "${user}" ]] || error "Cannot resolve user manager ${uid}; refusing to replace GUI code."
-        _user_gui_ctl() {
-            sudo -u "${user}" env XDG_RUNTIME_DIR="${runtime_root}/${uid}" \
-                DBUS_SESSION_BUS_ADDRESS="unix:path=${bus}" \
-                systemctl --user "$@" khptz-gui.service
-        }
-        state="$(_user_gui_ctl show --property=ActiveState --value)" \
-            || error "Cannot inspect khptz-gui for ${user}; refusing to replace GUI code."
-        case "${state}" in
-            inactive|failed) continue ;;
-            active|activating|reloading|deactivating)
-                _user_gui_ctl stop \
-                    || error "Cannot stop khptz-gui for ${user}; refusing to replace GUI code."
-                state="$(_user_gui_ctl show --property=ActiveState --value)" \
-                    || error "Cannot verify khptz-gui stopped for ${user}."
-                case "${state}" in
-                    inactive|failed) ;;
-                    *) error "khptz-gui for ${user} is still ${state}; refusing to replace GUI code." ;;
-                esac
-                warn "Stopped session GUI for ${user}. It stays stopped on success or failure; after a successful user-mode install, reopen the controller or log in again."
-                ;;
-            *) error "Unknown khptz-gui state '${state}' for ${user}; refusing to replace GUI code." ;;
-        esac
-    done
-}
-
 # ── Pre-update backup (product re-deploys only) ──────────────────────────────
 #
 # Config (CONFIG_DIR) and runtime data (DATA_DIR) live outside INSTALL_DIR
@@ -591,6 +540,57 @@ if [[ "${DEV_MODE}" == "false" && "${REPO_ROOT}" != "${INSTALL_DIR}" && -f "${_s
         info "Pre-update backup complete: ${PRE_UPDATE_BACKUP}"
     fi
 fi
+
+_stop_session_guis() {
+    local runtime_root="$1" bus uid user state managers entry name _load active rest path
+    local -A manager_uids=()
+    managers="$(systemctl list-units --all --plain --no-legend 'user@*.service')" \
+        || error "Cannot enumerate user managers; refusing to replace GUI code."
+    while read -r name _load active rest; do
+        if [[ "${name}" =~ ^user@([0-9]+)\.service$ ]]; then
+            uid="${BASH_REMATCH[1]}"
+            case "${active}" in
+                inactive|failed) ;;
+                *) manager_uids["${uid}"]=1 ;;
+            esac
+        fi
+    done <<< "${managers}"
+    for path in "${runtime_root}"/[0-9]*/bus "${runtime_root}"/[0-9]*/systemd/private; do
+        [[ -S "${path}" ]] || continue
+        entry="${path#"${runtime_root}"/}"; uid="${entry%%/*}"
+        [[ "${uid}" =~ ^[0-9]+$ ]] && manager_uids["${uid}"]=1
+    done
+    for uid in "${!manager_uids[@]}"; do
+        bus="${runtime_root}/${uid}/bus"
+        [[ -S "${bus}" ]] || bus="${runtime_root}/${uid}/systemd/private"
+        [[ -S "${bus}" ]] \
+            || error "User manager ${uid} is identifiable but inaccessible; refusing to replace GUI code."
+        user="$(getent passwd "${uid}" | cut -d: -f1)"
+        [[ -n "${user}" ]] || error "Cannot resolve user manager ${uid}; refusing to replace GUI code."
+        _user_gui_ctl() {
+            sudo -u "${user}" env XDG_RUNTIME_DIR="${runtime_root}/${uid}" \
+                DBUS_SESSION_BUS_ADDRESS="unix:path=${bus}" \
+                systemctl --user "$@" khptz-gui.service
+        }
+        state="$(_user_gui_ctl show --property=ActiveState --value)" \
+            || error "Cannot inspect khptz-gui for ${user}; refusing to replace GUI code."
+        case "${state}" in
+            inactive|failed) continue ;;
+            active|activating|reloading|deactivating)
+                _user_gui_ctl stop \
+                    || error "Cannot stop khptz-gui for ${user}; refusing to replace GUI code."
+                state="$(_user_gui_ctl show --property=ActiveState --value)" \
+                    || error "Cannot verify khptz-gui stopped for ${user}."
+                case "${state}" in
+                    inactive|failed) ;;
+                    *) error "khptz-gui for ${user} is still ${state}; refusing to replace GUI code." ;;
+                esac
+                warn "Stopped session GUI for ${user}. It stays stopped on success or failure; after a successful user-mode install, reopen the controller or log in again."
+                ;;
+            *) error "Unknown khptz-gui state '${state}' for ${user}; refusing to replace GUI code." ;;
+        esac
+    done
+}
 
 if [[ "${DEV_MODE}" == "false" ]]; then
     _stop_session_guis /run/user
