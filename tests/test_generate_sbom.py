@@ -156,3 +156,24 @@ def test_unresolved_packages_do_not_poison_next_collection(monkeypatch):
     components = gen._collect_packages()
     assert gen.UNKNOWN_VERSIONS == []
     assert components[0]["version"] == "1.2.3"
+
+
+def test_unresolved_closure_does_not_overwrite_output(tmp_path, monkeypatch):
+    gen = _generator()
+    import importlib
+    sys.path.insert(0, str(Path(gen.__file__).parent))
+    try:
+        closure = importlib.import_module("sbom_closure")
+    finally:
+        sys.path.pop(0)
+
+    def unresolved(_root):
+        raise ValueError("fixture dependency is missing")
+
+    monkeypatch.setattr(closure, "collect", unresolved)
+    monkeypatch.setattr(sys, "argv", ["generate_sbom.py", "--include-transitive",
+                                   "--out", str(tmp_path / "sbom.json")])
+    out = tmp_path / "sbom.json"
+    out.write_text("existing")
+    assert gen.main() == 1
+    assert out.read_text() == "existing"
