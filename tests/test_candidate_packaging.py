@@ -124,3 +124,29 @@ def test_invalid_ref_does_not_create_output(tmp_path):
                              "--ref", "not-a-real-ref", "--out", str(output)], capture_output=True)
     assert result.returncode != 0
     assert not output.exists()
+
+
+def test_release_workflow_verifies_candidate_without_overriding_failure():
+    workflow = (ROOT / ".github/workflows/release-check.yml").read_text()
+    assert 'run: python3 scripts/package_candidate.py --out "$RUNNER_TEMP/khptz-candidate"' in workflow
+    assert 'continue-on-error' not in workflow
+    assert 'upload-artifact' not in workflow
+
+
+@pytest.mark.parametrize("text", ["{broken", "[]", "null"])
+def test_malformed_manifest_fails_closed(tmp_path, text):
+    candidate(tmp_path)
+    (tmp_path / "release_manifest.json").write_text(text)
+    assert m.validate(tmp_path, VERSION, COMMIT)
+
+
+def test_expected_identity_cannot_be_short_or_unknown(tmp_path):
+    candidate(tmp_path)
+    assert m.validate(tmp_path, VERSION, "unknown")
+    assert m.validate(tmp_path, VERSION, COMMIT[:7])
+
+
+def test_same_size_changed_bytes_fail(tmp_path):
+    candidate(tmp_path)
+    (tmp_path / NAME).write_bytes(b"CANDIDATE BYTES")
+    assert m.validate(tmp_path, VERSION, COMMIT)
