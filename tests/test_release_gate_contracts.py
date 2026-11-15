@@ -157,3 +157,27 @@ class TestNoSecretsInOutput:
         for pat in _SECRET_PATTERNS:
             assert pat not in msg, f"Pattern {pat!r} in network_profile message"
 
+
+# ── doctor warns about legacy config data (#520/#452) ─────────────────────────
+
+class TestLegacyConfigWarning:
+    def test_legacy_txt_files_warn_and_name_files_and_remedy(self, tmp_path):
+        svc = _make_svc(tmp_path)
+        (svc._install_dir / "PTZ1IP.txt").write_text("172.16.1.11\n")
+        (svc._install_dir / "ATEMIP.txt").write_text("172.16.1.30\n")
+        result = svc._check_legacy_config()
+        assert result.status == Status.WARNING
+        assert "PTZ1IP.txt" in result.message and "ATEMIP.txt" in result.message
+        assert "khptz migrate" in result.message
+
+    def test_no_legacy_files_is_ok(self, tmp_path):
+        svc = _make_svc(tmp_path)
+        result = svc._check_legacy_config()
+        assert result.status == Status.OK
+
+    def test_removed_camera_id_files_also_warn(self, tmp_path):
+        """Cam1ID.txt/Cam2ID.txt were dropped from the schema but still migrate."""
+        svc = _make_svc(tmp_path)
+        (svc._install_dir / "Cam2ID.txt").write_text("82\n")
+        assert svc._check_legacy_config().status == Status.WARNING
+
