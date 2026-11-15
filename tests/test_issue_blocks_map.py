@@ -159,3 +159,31 @@ def test_second_page_failure_is_not_partial_success(monkeypatch):
     monkeypatch.setattr(m.urllib.request, "urlopen", request)
     with pytest.raises(urllib.error.URLError):
         m.get_pages("/repos/HALCONDEORO/kh-ptz-control/issues?state=open")
+
+
+def test_release_workflow_keeps_failure_and_checks_live_map():
+    workflow = (Path(__file__).parents[1] / ".github/workflows/release-check.yml").read_text()
+    assert "issues: read" in workflow
+    assert "GITHUB_TOKEN: ${{ github.token }}" in workflow
+    assert "run: python3 scripts/check_issue_blocks_map.py" in workflow
+    assert "continue-on-error" not in workflow
+    assert "--refresh" not in workflow
+
+
+def test_snapshot_boolean_number_cannot_equal_integer(tmp_path, monkeypatch):
+    p = tmp_path / "map.md"
+    data = snapshot(p, [{"number": True}])
+    monkeypatch.setattr(m, "live_graph", lambda repo: [{"number": 1}])
+    p.write_text(m.render(data))
+    assert m.main(["--map", str(p)]) == 1
+
+
+def test_dependency_error_blocks_whole_graph(monkeypatch):
+    def request(path):
+        if "state=open" in path:
+            return [issue()]
+        raise urllib.error.HTTPError("https://api.github.com/", 403, "forbidden", {}, None)
+
+    monkeypatch.setattr(m, "get_pages", request)
+    with pytest.raises(urllib.error.HTTPError):
+        m.live_graph("HALCONDEORO/kh-ptz-control")

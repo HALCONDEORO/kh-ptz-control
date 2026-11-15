@@ -55,7 +55,6 @@ def test_backup_restore_contract(issue: str, requirement: str) -> None:
 RELEASE_GATE_CONTRACTS = [
     ("#513", "SBOM validation covers dependency completeness and the CVE gate (checklist 4.3/4.4)"),
     ("#520/#452/#514", "release gate fails when checksum manifest is missing"),
-    ("#520/#452", "release gate fails when issue blocks map is stale"),
 ]
 
 
