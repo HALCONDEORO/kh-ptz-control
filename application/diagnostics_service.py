@@ -315,6 +315,7 @@ class DiagnosticsService:
                 report.add(r)
         settings = self._load_settings()
         report.add(self._check_config(settings))
+        report.add(self._check_legacy_config())
         report.add(self._check_ip_config(settings))
         report.add(self._check_connectivity_mode(settings))
         report.add(self._check_installation_profile(settings))
@@ -549,6 +550,36 @@ class DiagnosticsService:
             except Exception as exc:  # noqa: BLE001
                 return CheckResult("config", Status.FAIL, f"config.yaml invalid: {exc}")
         return CheckResult("config", Status.OK, f"config.yaml loaded OK ({self._config_path})")
+
+    def _check_legacy_config(self) -> CheckResult:
+        """Warn while legacy .txt config files sit in the install dir (#520/#452).
+
+        Migration imports them into config.yaml but never deletes them, so
+        they stay as a silent fallback: a later edit can go to the wrong
+        file. Name what is present, but never suggest unconditional removal:
+        `khptz migrate` skips when config.yaml already exists (the normal
+        case) and refuses to run without PTZ1IP.txt, so "migrate then
+        remove" can delete values that were never imported.
+        """
+        from application.legacy_migration import LEGACY_CONFIG_FILES
+        found = [name for name in LEGACY_CONFIG_FILES
+                 if (self._install_dir / name).exists()]
+        if not found:
+            return CheckResult(
+                "legacy_config",
+                Status.OK,
+                "No legacy .txt config files in the install directory",
+            )
+        return CheckResult(
+            "legacy_config",
+            Status.WARNING,
+            "Legacy .txt config files present: "
+            f"{', '.join(found)} — they are read as fallback. Preview the "
+            "import with `khptz migrate --dry-run` (migrate skips when "
+            "config.yaml already exists and refuses to run without "
+            "PTZ1IP.txt), confirm the values are in a valid config.yaml "
+            "and keep a copy of the .txt files before removing anything",
+        )
 
     def _check_ip_config(self, settings) -> CheckResult:
         if settings is None:

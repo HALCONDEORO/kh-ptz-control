@@ -157,3 +157,60 @@ class TestNoSecretsInOutput:
         for pat in _SECRET_PATTERNS:
             assert pat not in msg, f"Pattern {pat!r} in network_profile message"
 
+
+# ── doctor warns about legacy config data (#520/#452) ─────────────────────────
+
+class TestLegacyConfigWarning:
+    def test_legacy_txt_files_warn_and_name_files_and_remedy(self, tmp_path):
+        svc = _make_svc(tmp_path)
+        (svc._install_dir / "PTZ1IP.txt").write_text("172.16.1.11\n")
+        (svc._install_dir / "ATEMIP.txt").write_text("172.16.1.30\n")
+        result = svc._check_legacy_config()
+        assert result.status == Status.WARNING
+        assert "PTZ1IP.txt" in result.message and "ATEMIP.txt" in result.message
+        # No unconditional "migrate then remove": migrate skips when
+        # config.yaml exists, so the guidance must be verify-first.
+        assert "khptz migrate --dry-run" in result.message
+        assert "skips when config.yaml already exists" in result.message
+        assert "before removing anything" in result.message
+
+
+    def test_guidance_covers_config_yaml_exists_skip_and_missing_ptz1ip(self, tmp_path):
+        """Unimported values must never be told removable: the message names
+        both migrate skip conditions whatever the install state is."""
+        svc = _make_svc(tmp_path)  # config.yaml ABSENT here (missing.yaml)
+        (svc._install_dir / "ATEMIP.txt").write_text("172.16.1.30\n")
+        msg = svc._check_legacy_config().message
+        assert "skips when config.yaml already exists" in msg
+        assert "refuses to run without" in msg and "PTZ1IP.txt" in msg
+        assert "keep a copy" in msg
+
+    def test_startup_stale_warning_is_verify_first(self, tmp_path, monkeypatch, caplog):
+        """config/__init__ warns at import time in every mode, and config.yaml
+        existing is exactly the case where migrate skips — the old
+        'migrate and remove' wording could delete unimported values."""
+        import logging
+        import config as config_pkg
+        monkeypatch.setattr(config_pkg, "_PROJECT_ROOT", tmp_path)
+        (tmp_path / "PTZ2IP.txt").write_text("172.16.1.12\n")
+        with caplog.at_level(logging.WARNING):
+            config_pkg._warn_stale_txt_files()
+        # The resolver points at a real config dir; when no config.yaml is
+        # there the function stays silent by design.
+        for record in caplog.records:
+            assert "remove this file" not in record.message
+            if "Stale legacy config file" in record.message:
+                assert "--dry-run" in record.message
+                assert "keep a copy" in record.message
+
+    def test_no_legacy_files_is_ok(self, tmp_path):
+        svc = _make_svc(tmp_path)
+        result = svc._check_legacy_config()
+        assert result.status == Status.OK
+
+    def test_removed_camera_id_files_also_warn(self, tmp_path):
+        """Cam1ID.txt/Cam2ID.txt were dropped from the schema but still migrate."""
+        svc = _make_svc(tmp_path)
+        (svc._install_dir / "Cam2ID.txt").write_text("82\n")
+        assert svc._check_legacy_config().status == Status.WARNING
+

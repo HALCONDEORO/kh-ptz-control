@@ -31,14 +31,11 @@ def _pending(issue: str, requirement: str) -> None:
 
 
 # ── Backup / restore ──────────────────────────────────────────────────────────
-# Remaining items: dry-run mode (RestoreService.restore has no dry_run param yet).
-# Other backup/restore contracts are covered in test_backup_service.py and
-# test_restore_service.py.
+# All backup/restore contracts are covered in test_backup_service.py and
+# test_restore_service.py (dry-run included: RestoreService.restore(dry_run=True)
+# plus the `khptz restore --dry-run` CLI flag — see test_dry_run_* there).
 
-BACKUP_RESTORE_CONTRACTS = [
-    ("#531", "restore dry-run writes no files"),
-    ("#531", "restore dry-run lists affected files"),
-]
+BACKUP_RESTORE_CONTRACTS = []
 
 
 @pytest.mark.parametrize(("issue", "requirement"), BACKUP_RESTORE_CONTRACTS)
@@ -52,9 +49,10 @@ def test_backup_restore_contract(issue: str, requirement: str) -> None:
 # (see tests/test_release_gate_contracts.py).  Backup destination policy is
 # covered by test_explicit_dest in test_backup_service.py.
 
+# Promoted: doctor legacy config warning (see TestLegacyConfigWarning in this
+# tests/test_release_gate_contracts.py) and the restore dry-run
+# option (test_dry_run_* in tests/test_restore_service.py).
 RELEASE_GATE_CONTRACTS = [
-    ("#520/#452", "doctor warns about legacy config data"),
-    ("#520/#452", "restore supports dry-run option"),
     ("#520/#452", "release checklist does not treat NOT_TESTED as pass"),
     ("#520/#381", "validation report requires explicit hardware status"),
     ("#520/#452/#513", "release gate fails when SBOM is missing"),

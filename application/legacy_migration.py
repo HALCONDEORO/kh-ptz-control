@@ -41,6 +41,10 @@ _CAM1_FILES = ("PTZ1IP.txt", "Cam1ID.txt")
 _CAM2_FILES = ("PTZ2IP.txt", "Cam2ID.txt")
 _OPTIONAL_FILES = ("ATEMIP.txt", "Contact.txt")
 
+# Every file the legacy .txt format can leave in the install dir; doctor
+# warns while any of them is still present (migration never deletes them).
+LEGACY_CONFIG_FILES = _CAM1_FILES + _CAM2_FILES + _OPTIONAL_FILES
+
 
 @dataclass
 class MigrationResult:
