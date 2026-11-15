@@ -51,16 +51,21 @@ It lives in `/etc/khptz` (not `/opt/khptz`) so it survives every re-deploy.
    ```
 
 2. **Back up config and runtime data.**
-   Run the backup explicitly BEFORE updating. Neither `install_khptz_rpi.sh`
-   nor `runtime/installer/install.sh` creates a pre-update backup. Only the
-   rollback script creates its own pre-rollback snapshot; that later snapshot
-   does not replace a copy of the working installation taken before an update.
+   `runtime/installer/install.sh` creates a pre-update backup automatically
+   before it replaces the deployed tree: when an existing product install is
+   found (`install-state.env` present), it runs the same manifest-based
+   `khptz backup` the rollback script uses and aborts the update if the backup
+   fails — before any GUI is stopped or the deployed tree is replaced
+   (earlier setup/dependency steps may already have run). The archive is
+   named `pre_update_<ref>_<timestamp>.zip` in `/var/backups/khptz`. The only
+   way past the guard is the explicit `--skip-pre-update-backup` flag.
 
-   ```bash
-   khptz backup
-   ```
+   Like every `khptz backup` archive, this is a **config/data manifest** —
+   not the code, not the secrets, not an atomic device snapshot. Restoring
+   means re-deploying the recorded ref (see Rollback below) and restoring the
+   archive on top; it is not a self-contained image of the previous install.
 
-   Check the reported result and included/skipped files. Copy the resulting
+   The automatic backup stays on the Pi, so still copy the resulting
    manifest-based ZIP off the Pi and verify the copy before installing. See
    `docs/BACKUP_RESTORE_CONTRACT.md` for the current archive contract. Older
    installed versions can have a different file set: verify that version's
@@ -292,7 +297,9 @@ unit, the launcher, the checkout and those three directories; there is no
 - **Never overwrite customer data** (presets, seat names, schedules, camera config).
 - **Only install from tagged releases** — not arbitrary commits unless marked as emergency hotfix.
 - **Always stop the service** before changing code.
-- **Always take a safety backup** before updating or rolling back.
+- **Backups are automatic.** The installer backs up before replacing an
+  existing install; the rollback script backs up before reverting. Still keep
+  an off-device copy of the most recent backup.
 - **Run preflight/self-test** after update/rollback — see `docs/RELEASE_CHECKLIST.md`.
 
 ---

@@ -18,7 +18,10 @@ def test_runtime_permissions_do_not_change_before_quiesce(tmp_path, guard_ok):
                 ('install -d -m 750 -o' in line and any(
                     f'"${{{name}}}"' in line for name in ('DATA_DIR', 'LOG_DIR', 'BACKUP_DIR')))
                 or line.strip() == '_stop_session_guis /run/user']
-    assert len(selected) == 4
+    # 3 unconditional post-quiesce hardenings + the quiesce call + the guarded
+    # pre-backup creation (a no-op here: the harness pre-creates the dirs, and
+    # the stub's 2770 check still catches any UNguarded tightening before it).
+    assert len(selected) == 5
     dirs = [tmp_path / name for name in ('data', 'log', 'backup')]
     for directory in dirs:
         directory.mkdir()

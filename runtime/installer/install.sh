@@ -11,6 +11,10 @@
 #   --atem     Install ATEM optional dependencies (requirements-atem.txt).
 #   --check    Dry-run: validate Pi readiness without writing any files.
 #              Outputs a PASS/WARN/FAIL report. Exits non-zero on blocking failures.
+#   --skip-pre-update-backup
+#              Skip the automatic pre-update backup taken before replacing an
+#              existing product install. The backup failing aborts the update;
+#              this flag is the only way past that guard.
 #
 # Product layout (default):
 #   /opt/khptz/          app code     (root:khptz, mode 0750 — service user reads, cannot write)
@@ -35,6 +39,7 @@ DEV_MODE=false
 INSTALL_ATEM=false
 CHECK_MODE=false
 SHOW_CHECK_NEXT_ACTION=true
+SKIP_PRE_UPDATE_BACKUP=false
 WIZARD_USER=""
 # Which process owns the GUI (#885).
 #   system — khptz-control.service runs it as the 'khptz' system user, bridged to
@@ -49,6 +54,7 @@ while [[ $# -gt 0 ]]; do
         --dev)   DEV_MODE=true; shift ;;
         --atem)  INSTALL_ATEM=true; shift ;;
         --check) CHECK_MODE=true; shift ;;
+        --skip-pre-update-backup) SKIP_PRE_UPDATE_BACKUP=true; shift ;;
         --no-check-next-action) SHOW_CHECK_NEXT_ACTION=false; shift ;;
         --wizard-user)
             [[ $# -ge 2 && -n "$2" && "$2" != -* ]] \
@@ -76,6 +82,9 @@ while [[ $# -gt 0 ]]; do
             echo "                   channel (/run/khptz). Defaults to \$SUDO_USER."
             echo "  --gui-mode M     system (default) = GUI runs as the khptz service user;"
             echo "                   user = GUI runs inside the desktop session (#885)."
+            echo "  --skip-pre-update-backup"
+            echo "                   Skip the automatic backup taken before replacing an"
+            echo "                   existing product install (not recommended)."
             exit 0
             ;;
         *)
@@ -128,6 +137,10 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 info()  { echo "[INFO]  $*"; }
+
+# Same sanitizer as runtime/installer/rollback.sh: make an installed ref safe
+# for use in a backup filename.
+sanitize_ref() { printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '_'; }
 
 # Installed as an EXIT trap while a previously-running service is stopped for
 # the update. On any failure it ATTEMPTS to restart the service — the copy may
@@ -477,6 +490,59 @@ RSYNC_EXCLUDES=(
 # manager may have no session D-Bus, and deleting the on-disk GUI unit does
 # not unload a running service. Any identifiable but unreachable manager
 # blocks the copy. Never start a user GUI from this root installer.
+# ── Pre-update backup (product re-deploys only) ──────────────────────────────
+#
+# Config (CONFIG_DIR) and runtime data (DATA_DIR) live outside INSTALL_DIR
+# (see docs/RUNTIME_PATH_CONTRACT.md), but the deploy below replaces the whole
+# installed tree. Before ANY quiescing or copying, take the same
+# manifest-based config/data archive `khptz backup` produces everywhere else
+# (same invocation as rollback.sh step 1) so an update always leaves a copy of
+# what it replaced. It is a config/data manifest archive — not the code, not
+# the secrets, not an atomic device snapshot; restoring means re-deploying the
+# recorded ref and restoring this archive on top.
+#
+# Runs only when an install-state.env already exists — i.e. this is an update,
+# not a first install (which has nothing to back up and no service user yet).
+# A failed backup aborts the installer before GUI shutdown and application-tree
+# replacement; earlier setup/dependency changes (service user, directory
+# creation, package installs) may already have occurred. The explicit
+# --skip-pre-update-backup flag is the only way past that guard.
+
+_state_file="${CONFIG_DIR}/install-state.env"
+if [[ "${DEV_MODE}" == "false" && "${REPO_ROOT}" != "${INSTALL_DIR}" && -f "${_state_file}" ]]; then
+    if [[ "${SKIP_PRE_UPDATE_BACKUP}" == "true" ]]; then
+        warn "Skipping pre-update backup (--skip-pre-update-backup). The update leaves no automatic restore point."
+    else
+        # On an update this directory already exists from the previous install;
+        # create it only when missing, and never tighten an existing one here:
+        # runtime-writable dirs keep the desktop GUI's group-write access until
+        # the quiesce below succeeds (the stage after it hardens the modes).
+        [[ -d "${BACKUP_DIR}" ]] || install -d -m 750 -o "${APP_USER}" -g "${APP_USER}" "${BACKUP_DIR}"
+        # Same reader as the install-state stage below; trailing `|| true`
+        # keeps pipefail from aborting the installer if the key is absent.
+        _prev_ref="$(
+            sed -n 's/^KHPTZ_INSTALLED_REF=//p' "${_state_file}" 2>/dev/null | tr -d '"' | tail -n1 || true
+        )"
+        PRE_UPDATE_BACKUP="${BACKUP_DIR}/pre_update_$(sanitize_ref "${_prev_ref:-unknown}")_$(date +%Y%m%d_%H%M%S).zip"
+        info "Creating pre-update backup → ${PRE_UPDATE_BACKUP}"
+        # Drop privileges with runuser, not sudo: the installer already runs as
+        # root, and minimal Debian/Pi OS images (the CI container included) have
+        # no sudo. runuser (util-linux, Essential) is always present on the
+        # supported targets. PYTHONPATH points at the tree still deployed in
+        # INSTALL_DIR — the copy the backup must describe — and the subshell
+        # cd's to / first: `python3 -m` puts the OPERATOR'S cwd ahead of
+        # PYTHONPATH, and the operator normally runs this script from the NEW
+        # checkout, which would shadow the deployed tree with candidate code.
+        ( cd / && runuser -u "${APP_USER}" -- env \
+            KHPTZ_CONFIG_DIR="${CONFIG_DIR}" KHPTZ_DATA_DIR="${DATA_DIR}" \
+            KHPTZ_LOG_DIR="${LOG_DIR}" KHPTZ_BACKUP_DIR="${BACKUP_DIR}" \
+            PYTHONPATH="${INSTALL_DIR}" \
+            "${PYTHON_BIN}" -m runtime.cli backup --dest "${PRE_UPDATE_BACKUP}" ) \
+            || error "Pre-update backup failed — update aborted before GUI shutdown and application-tree replacement (earlier setup/dependency steps may already have run). Rerun with --skip-pre-update-backup only if you have your own current copy off the Pi."
+        info "Pre-update backup complete: ${PRE_UPDATE_BACKUP}"
+    fi
+fi
+
 _stop_session_guis() {
     local runtime_root="$1" bus uid user state managers entry name _load active rest path
     local -A manager_uids=()
