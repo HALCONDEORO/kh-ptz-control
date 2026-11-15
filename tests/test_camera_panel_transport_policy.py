@@ -12,7 +12,11 @@ from tempfile import TemporaryDirectory
 from PyQt5.QtWidgets import QApplication
 from unittest.mock import patch
 import adapters.sim_mode as sim
-with TemporaryDirectory() as root:
+# This is a UI policy test, not a transport integration test. Real worker
+# callbacks can reconnect Cam2 between the offline-selection assertions.
+with TemporaryDirectory() as root, \
+        patch('ptz.visca.worker.CameraWorker._run', return_value=None), \
+        patch('simulation.sim_worker.start_simulation', return_value=(False, False)):
     sim._APP_DIR = Path(root)
     sim.BACKUP = Path(root) / 'backup.json'
     sim.activate()
@@ -20,8 +24,11 @@ with TemporaryDirectory() as root:
     from ui.main_window import MainWindow
     w = MainWindow()
     w.show()
+    # Drain initial disconnected snapshots before manually driving UI state.
+    app.processEvents()
     w._login_overlay.hide()
     w.session_active = True
+    w.Cam2.set_connected(False)
     w.Cam1.set_connected(True)
     w._update_controls_visibility()
     panel = w._right_panel
