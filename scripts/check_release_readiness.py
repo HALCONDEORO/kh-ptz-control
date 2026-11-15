@@ -76,7 +76,7 @@ def _normalise_status(status_cell: str) -> str | None:
     """Exact status after removing emoji/symbols; None when not in the enum."""
     # Strip only an optional published display icon, never arbitrary data.
     # Removing arbitrary symbols/digits turns PASS123 / !PASS into PASS.
-    token = re.sub(r"^(?:✅|⚠️?|❌|🔲)\s*", "", status_cell.strip())
+    token = re.sub(r"^(?:✅|⚠️?|❌|🔲|➖)\s*", "", status_cell.strip())
     token = re.sub(r"\s+", " ", token).strip().upper()
     return token if token in _ALLOWED_STATUSES else None
 

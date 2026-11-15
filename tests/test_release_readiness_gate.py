@@ -150,6 +150,10 @@ class TestSchemaCoverage:
     def test_status_never_discards_non_emoji_data(self, tmp_path, bad):
         assert _run(tmp_path, "DEMO ONLY", _full_coverage({1: _row(1, bad, "x")})) == 2
 
+    def test_published_na_icon_is_supported(self, tmp_path):
+        assert readiness._normalise_status("➖ N/A") == "N/A"
+        assert _run(tmp_path, "DEMO ONLY", _full_coverage({9: _row(9, "➖ N/A", "not applicable")})) == 0
+
     def test_bare_section_number_fails_closed(self, tmp_path):
         assert _run(tmp_path, "DEMO ONLY", "| 9 | x | ✅ PASS | ok |") == 2
 
@@ -241,7 +245,6 @@ class TestGeneratorFailsClosed:
     def test_undeclared_environment_leaves_no_unknown_versions(self, tmp_path):
         """A declared dependency with an unresolvable version must fail
         generation (exit 1), never emit version 'unknown'."""
-        import subprocess
         gen = _load("generate_sbom", REPO_ROOT / "scripts" / "generate_sbom.py")
         reqs = gen._declared_runtime_requirements()
         assert reqs, "requirements.txt declares nothing - test premise broken"
