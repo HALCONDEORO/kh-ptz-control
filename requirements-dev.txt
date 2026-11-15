@@ -27,3 +27,6 @@ pytest-forked>=1.6,<2
 # must stay installable there. Do not bump past the cap without dropping 3.9.
 pip-audit>=2.9,<2.10
 bandit>=1.8.6,<1.9
+
+# Requirement/marker parsing for opt-in installed-closure SBOM tooling (Python 3.9).
+packaging>=24.2,<26

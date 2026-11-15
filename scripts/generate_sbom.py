@@ -17,8 +17,10 @@
 #   Unknown source identity fails without writing the SBOM. The output is a
 #   release artifact, not committed for every dev run.
 #   This records checkout identity, not proof that its working tree is clean.
-#   Only direct requirements are listed; transitive completeness/CVE gates
-#   remain pending. Source archives without .git cannot supply this identity.
+#   Default mode lists direct requirements only. --include-transitive walks
+#   installed metadata for requirements.txt and this interpreter. Other target
+#   environments, OS libraries, optional profiles and CVE gates remain pending.
+#   Source archives without .git cannot supply this identity.
 #
 # Safety rules:
 #   - No secrets, tokens, credentials or customer data are included.
@@ -158,6 +160,8 @@ def _build_cyclonedx(app_version: str, git_commit: str, components: list[dict]) 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate SBOM for KH PTZ Control")
     parser.add_argument("--out", default="release/sbom.json", help="Output path")
+    parser.add_argument("--include-transitive", action="store_true",
+                        help="Include installed dependency closure for this interpreter/profile")
     args = parser.parse_args()
 
     out_path = Path(args.out)
@@ -168,7 +172,16 @@ def main() -> int:
     if git_commit == "unknown":
         print("ERROR: cannot identify this source checkout; no SBOM written", file=sys.stderr)
         return 1
-    components = _collect_packages()
+    if args.include_transitive:
+        from sbom_closure import collect
+        try:
+            components, graph, root_refs = collect(ROOT)
+        except (OSError, ValueError, importlib.metadata.PackageNotFoundError) as exc:
+            print(f"ERROR: dependency closure unresolved: {exc}", file=sys.stderr)
+            return 1
+        UNKNOWN_VERSIONS.clear()
+    else:
+        components = _collect_packages()
     if UNKNOWN_VERSIONS:
         print(
             "ERROR: exact versions could not be determined for: "
@@ -179,6 +192,12 @@ def main() -> int:
         return 1
     sbom = _build_cyclonedx(app_version, git_commit, components)
 
+    if args.include_transitive:
+        app = sbom["metadata"]["component"]
+        app["bom-ref"] = "khptz-application"
+        app["properties"].append({"name": "khptz:dependency-scope",
+                                  "value": "requirements.txt installed closure for current interpreter"})
+        sbom["dependencies"] = [{"ref": app["bom-ref"], "dependsOn": root_refs}, *graph]
     out_path.write_text(json.dumps(sbom, indent=2) + "\n", encoding="utf-8")
     print(f"Written: {out_path}")
     print(f"SBOM — {app_version} ({git_commit}) — {len(components)} component(s)")

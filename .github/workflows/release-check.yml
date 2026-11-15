@@ -91,7 +91,7 @@ jobs:
       - name: "[8/10] Generate and validate SBOM"
         if: ${{ !cancelled() }}
         run: |
-          python3 scripts/generate_sbom.py --out "$RUNNER_TEMP/sbom.json"
+          python3 scripts/generate_sbom.py --include-transitive --out "$RUNNER_TEMP/sbom.json"
           python3 scripts/validate_sbom.py "$RUNNER_TEMP/sbom.json"
 
       - name: "[9/10] Verify issue dependency snapshot is current"
