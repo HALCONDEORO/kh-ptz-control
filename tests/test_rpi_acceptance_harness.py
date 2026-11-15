@@ -182,3 +182,95 @@ class TestDesktopSessionTypeIsAccepted:
         sudo = text.index('_accept_desktop_user "${SUDO_USER:-}"')
         invoking = text.index('_accept_desktop_user "$(id -un)"')
         assert flag < state < sudo < invoking
+
+
+class TestExplicitHardwareStatus:
+    """#381: the report must state its hardware status explicitly, and a
+    reported device-tree model string must never be treated as proof of
+    physical Pi hardware (789: QEMU/empty/unreadable all look readable)."""
+
+    @pytest.fixture()
+    def detection(self):
+        """Run the script's own _detect_hardware_status against a fixture path."""
+        import subprocess
+        text = SCRIPT.read_text(encoding="utf-8")
+        start = text.index("_detect_hardware_status() {")
+        end = text.index("_detect_hardware_status\n", start)
+        func_src = text[start:end]
+
+        def run(fixture: Path | None, content: bytes | None = None):
+            if fixture is not None and content is not None:
+                fixture.write_bytes(content)
+            script = (
+                func_src
+                + "\n_detect_hardware_status"
+                + "\nprintf '%s\\n' \"${PI_MODEL-<unset>}|${HARDWARE_STATUS}|${HW_PROOF_NOTE}\""
+            )
+            env = {"KHPTZ_DEVICE_TREE_MODEL": str(fixture)} if fixture else {}
+            import os
+            result = subprocess.run(
+                ["bash", "-c", script],
+                env={**os.environ, **env},
+                capture_output=True, text=True, check=True,
+            )
+            line = result.stdout.strip().splitlines()[-1]
+            model, status, note = line.split("|", 2)
+            return model, status, note
+
+        return run
+
+    def test_missing_model_file_is_not_detected(self, detection, tmp_path):
+        model, status, note = detection(tmp_path / "absent")
+        assert model == "<unset>" or model == ""
+        assert "NOT DETECTED" in status
+        assert "no device-tree model file" in status
+        assert "not proof" in note
+
+    def test_empty_model_file_is_not_detected(self, detection, tmp_path):
+        model, status, _ = detection(tmp_path / "model", b"")
+        assert model == ""
+        assert "NOT DETECTED" in status and "empty" in status
+
+    def test_pi_model_is_reported_not_proven(self, detection, tmp_path):
+        model, status, note = detection(tmp_path / "model", b"Raspberry Pi 4 Model B\x00")
+        assert model == "Raspberry Pi 4 Model B"
+        assert status.startswith("MODEL REPORTED:")
+        assert "REAL HARDWARE" not in status
+        assert "not proof" in note
+
+    def test_non_pi_model_is_reported_not_proven(self, detection, tmp_path):
+        model, status, note = detection(tmp_path / "model", b"QEMU Virtual Machine\x00")
+        assert model == "QEMU Virtual Machine"
+        assert status.startswith("MODEL REPORTED:")
+        assert "not proof" in note
+
+    def test_result_block_always_prints_proof_note(self, detection, tmp_path):
+        """The final result must carry the no-proof warning in EVERY case,
+        detected or not."""
+        import os
+        import subprocess
+        text = SCRIPT.read_text(encoding="utf-8")
+        fstart = text.index("_detect_hardware_status() {")
+        fend = text.index("_detect_hardware_status\n", fstart)
+        rstart = text.index('if [[ "${FAIL_N}" -gt 0 ]]; then')
+        rend = text.index('say " Report saved to: ${REPORT}"', rstart)
+        body = text[fstart:fend] + "\n_detect_hardware_status\n" + text[rstart:rend]
+        for content in (None, b"Raspberry Pi 4 Model B\x00"):
+            fixture = tmp_path / "model"
+            if content is None:
+                try:
+                    fixture.unlink()
+                except FileNotFoundError:
+                    pass
+            else:
+                fixture.write_bytes(content)
+            script = (
+                "REPORT=/dev/null\nsay() { printf '%s\\n' \"$*\"; }\nFAIL_N=0\n"
+                + body
+            )
+            result = subprocess.run(
+                ["bash", "-c", script],
+                env={**os.environ, "KHPTZ_DEVICE_TREE_MODEL": str(fixture)},
+                capture_output=True, text=True, check=True,
+            )
+            assert "not proof of a physical Pi" in result.stdout

@@ -121,9 +121,31 @@ say "Host        : $(uname -a)"
 if [[ -r /etc/os-release ]]; then
     say "OS          : $(. /etc/os-release && printf '%s' "${PRETTY_NAME:-unknown}")"
 fi
-if [[ -r /proc/device-tree/model ]]; then
-    say "Pi model    : $(tr -d '\0' < /proc/device-tree/model)"
-fi
+# Hardware status is ALWAYS recorded explicitly (#381): a report that says
+# nothing about the machine can be misread as hardware-verified acceptance.
+# A readable device-tree model is only a REPORTED STRING - present but empty,
+# unreadable, or faked under emulation are all possible - so detection never
+# claims physical hardware, and HW_PROOF_NOTE is printed with every result.
+_detect_hardware_status() {
+    DEVICE_TREE_MODEL="${KHPTZ_DEVICE_TREE_MODEL:-/proc/device-tree/model}"
+    if [[ ! -e "${DEVICE_TREE_MODEL}" ]]; then
+        PI_MODEL=""
+        HARDWARE_STATUS="NOT DETECTED (no device-tree model file at ${DEVICE_TREE_MODEL})"
+    elif ! _model_raw="$(tr -d '\0' < "${DEVICE_TREE_MODEL}" 2>/dev/null)"; then
+        PI_MODEL=""
+        HARDWARE_STATUS="NOT DETECTED (device-tree model unreadable)"
+    elif [[ -z "${_model_raw}" ]]; then
+        PI_MODEL=""
+        HARDWARE_STATUS="NOT DETECTED (device-tree model is empty)"
+    else
+        PI_MODEL="${_model_raw}"
+        HARDWARE_STATUS="MODEL REPORTED: ${PI_MODEL}"
+    fi
+    HW_PROOF_NOTE="HARDWARE: a reported model string is not proof of a physical Pi - #890 acceptance requires the manual checks below on the real machine"
+}
+_detect_hardware_status
+say "Pi model    : ${PI_MODEL:-not detected}"
+say "Hardware    : ${HARDWARE_STATUS}"
 say "Python      : $(python3 -V 2>&1)"
 
 INSTALL_DIR="/opt/khptz"
@@ -455,7 +477,8 @@ manual "Wizard shows no QSS parse warnings and two cameras yield standard_2_came
 head2 "Result record (paste into #890)"
 say "Date:        $(date -Iseconds 2>/dev/null || date)"
 say "Tester:      $(id -un)"
-say "Pi model:    $( [[ -r /proc/device-tree/model ]] && tr -d '\0' < /proc/device-tree/model || echo 'unknown')"
+say "Pi model:    ${PI_MODEL:-unknown}"
+say "Hardware:    ${HARDWARE_STATUS}"
 say "OS:          $( [[ -r /etc/os-release ]] && (. /etc/os-release && printf '%s' "${PRETTY_NAME:-unknown}") || echo unknown)"
 say "Python:      $(python3 -V 2>&1)"
 say "KHPTZ version: $( [[ -r ${STATE} ]] && state_value KHPTZ_INSTALLED_VERSION || echo unknown)"
@@ -476,6 +499,7 @@ if [[ "${FAIL_N}" -gt 0 ]]; then
 else
     say " RESULT: no automated check failed - complete the MANUAL items above"
 fi
+say " ${HW_PROOF_NOTE}"
 say " Report saved to: ${REPORT}"
 say "======================================================================"
 
