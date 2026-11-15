@@ -556,7 +556,10 @@ class DiagnosticsService:
 
         Migration imports them into config.yaml but never deletes them, so
         they stay as a silent fallback: a later edit can go to the wrong
-        file. Name what is present and point at the migrate command.
+        file. Name what is present, but never suggest unconditional removal:
+        `khptz migrate` skips when config.yaml already exists (the normal
+        case) and refuses to run without PTZ1IP.txt, so "migrate then
+        remove" can delete values that were never imported.
         """
         from application.legacy_migration import LEGACY_CONFIG_FILES
         found = [name for name in LEGACY_CONFIG_FILES
@@ -571,9 +574,11 @@ class DiagnosticsService:
             "legacy_config",
             Status.WARNING,
             "Legacy .txt config files present: "
-            f"{', '.join(found)} — run `khptz migrate` to import them into "
-            "config.yaml, then remove them; migration never deletes them "
-            "and they are read as fallback",
+            f"{', '.join(found)} — they are read as fallback. Preview the "
+            "import with `khptz migrate --dry-run` (migrate skips when "
+            "config.yaml already exists and refuses to run without "
+            "PTZ1IP.txt), confirm the values are in a valid config.yaml "
+            "and keep a copy of the .txt files before removing anything",
         )
 
     def _check_ip_config(self, settings) -> CheckResult:

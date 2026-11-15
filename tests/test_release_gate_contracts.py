@@ -168,7 +168,11 @@ class TestLegacyConfigWarning:
         result = svc._check_legacy_config()
         assert result.status == Status.WARNING
         assert "PTZ1IP.txt" in result.message and "ATEMIP.txt" in result.message
-        assert "khptz migrate" in result.message
+        # No unconditional "migrate then remove": migrate skips when
+        # config.yaml exists, so the guidance must be verify-first.
+        assert "khptz migrate --dry-run" in result.message
+        assert "skips when config.yaml already exists" in result.message
+        assert "before removing anything" in result.message
 
     def test_no_legacy_files_is_ok(self, tmp_path):
         svc = _make_svc(tmp_path)
