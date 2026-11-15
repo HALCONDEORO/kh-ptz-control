@@ -45,12 +45,15 @@ CHECKLIST = """# Checklist
 | 9.9 | archived NOT_TESTED | 🔲 NOT_TESTED | must be ignored |
 """
 
-PASS_ROW = "| 1.1 | version ok | ✅ PASS | verified in CI |"
-WARN_ROW = "| 3.1 | hygiene | ⚠️ WARN | {notes} |"
-WARN_ACCEPTED = "| 3.1 | hygiene | ⚠️ WARN | accepted: documented exception by reviewer |"
-NT_CORE = "| 2.1 | tests | 🔲 NOT_TESTED | not run |"
-NT_HW = "| 9.1 | pi hardware | 🔲 NOT_TESTED | awaits Pi |"
-FAIL_ROW = "| 8.1 | installer | ❌ FAIL | broken |"
+
+def _row(section: int, status: str = "✅ PASS", notes: str = "verified") -> str:
+    return f"| {section}.1 | section {section} check | {status} | {notes} |"
+
+
+def _full_coverage(overrides: dict[int, str] | None = None) -> str:
+    """One row per published section 1-12 - the minimum valid coverage."""
+    overrides = overrides or {}
+    return "\n".join(overrides.get(n, _row(n)) for n in range(1, 13))
 
 
 def _write(tmp_path: Path, decision: str, rows: str) -> Path:
@@ -65,10 +68,14 @@ def _run(tmp_path: Path, decision: str, rows: str) -> int:
 
 class TestDecisionEnum:
     def test_demo_passes_when_consistent(self, tmp_path):
-        assert _run(tmp_path, "DEMO ONLY", PASS_ROW + "\n" + NT_HW) == 0
+        assert _run(tmp_path, "DEMO ONLY", _full_coverage()) == 0
+
+    def test_decision_match_is_exact_not_prefix(self, tmp_path):
+        assert _run(tmp_path, "DEMONSTRATION BANANA", _full_coverage()) == 2
+        assert _run(tmp_path, "CUSTOMER READY NOT APPROVED", _full_coverage()) == 2
 
     def test_unknown_decision_fails_closed(self, tmp_path):
-        assert _run(tmp_path, "BANANA", PASS_ROW + "\n" + NT_HW) == 2
+        assert _run(tmp_path, "BANANA", _full_coverage()) == 2
 
     def test_missing_current_decision_fails_closed(self, tmp_path):
         p = tmp_path / "C.md"
@@ -83,52 +90,89 @@ class TestDecisionEnum:
 
 class TestDemoPolicy:
     def test_not_tested_in_core_section_blocks_demo(self, tmp_path):
-        assert _run(tmp_path, "DEMO ONLY", PASS_ROW + "\n" + NT_CORE) == 1
+        rows = _full_coverage({2: _row(2, "🔲 NOT_TESTED", "not run")})
+        assert _run(tmp_path, "DEMO ONLY", rows) == 1
 
     def test_not_tested_in_hardware_section_ok_for_demo(self, tmp_path):
-        assert _run(tmp_path, "DEMO ONLY", PASS_ROW + "\n" + NT_HW) == 0
+        rows = _full_coverage({9: _row(9, "🔲 NOT_TESTED", "awaits Pi")})
+        assert _run(tmp_path, "DEMO ONLY", rows) == 0
 
     def test_fail_anywhere_blocks_demo(self, tmp_path):
-        assert _run(tmp_path, "DEMO ONLY", PASS_ROW + "\n" + FAIL_ROW) == 1
+        rows = _full_coverage({8: _row(8, "❌ FAIL", "broken")})
+        assert _run(tmp_path, "DEMO ONLY", rows) == 1
 
 
 class TestCustomerPolicy:
     def test_customer_blocks_any_not_tested(self, tmp_path):
-        assert _run(tmp_path, "CUSTOMER READY", PASS_ROW + "\n" + NT_HW) == 1
+        rows = _full_coverage({9: _row(9, "🔲 NOT_TESTED", "awaits Pi")})
+        assert _run(tmp_path, "CUSTOMER READY", rows) == 1
 
     def test_customer_warn_requires_written_acceptance(self, tmp_path):
-        assert _run(tmp_path, "CUSTOMER READY", PASS_ROW + "\n" + WARN_ROW.format(notes="caveat")) == 1
+        rows = _full_coverage({3: _row(3, "⚠️ WARN", "caveat")})
+        assert _run(tmp_path, "CUSTOMER READY", rows) == 1
 
-    def test_customer_warn_with_acceptance_passes(self, tmp_path):
-        assert _run(tmp_path, "CUSTOMER READY", PASS_ROW + "\n" + WARN_ACCEPTED) == 0
+    def test_negative_prose_is_not_acceptance(self, tmp_path):
+        rows = _full_coverage({3: _row(3, "⚠️ WARN", "not accepted by reviewer")})
+        assert _run(tmp_path, "CUSTOMER READY", rows) == 1
+
+    def test_lowercase_prose_is_not_acceptance(self, tmp_path):
+        rows = _full_coverage({3: _row(3, "⚠️ WARN", "accepted: documented exception")})
+        assert _run(tmp_path, "CUSTOMER READY", rows) == 1
+
+    def test_structured_acceptance_field_passes(self, tmp_path):
+        rows = _full_coverage({3: _row(3, "⚠️ WARN", "ACCEPTED: reviewer Jane, 2026-11-15")})
+        assert _run(tmp_path, "CUSTOMER READY", rows) == 0
 
     def test_demo_warn_needs_no_acceptance(self, tmp_path):
-        assert _run(tmp_path, "DEMO ONLY", PASS_ROW + "\n" + WARN_ROW.format(notes="caveat")) == 0
+        rows = _full_coverage({3: _row(3, "⚠️ WARN", "caveat")})
+        assert _run(tmp_path, "DEMO ONLY", rows) == 0
 
 
 class TestSchemaCoverage:
     def test_zero_rows_fails_closed(self, tmp_path):
         assert _run(tmp_path, "DEMO ONLY", "| --- | --- | --- | --- |") == 2
 
+    def test_single_row_is_incomplete_coverage(self, tmp_path):
+        assert _run(tmp_path, "DEMO ONLY", _row(1)) == 2
+
+    def test_missing_one_section_fails_closed(self, tmp_path):
+        rows = "\n".join(_row(n) for n in range(1, 13) if n != 7)
+        assert _run(tmp_path, "DEMO ONLY", rows) == 2
+
     def test_unknown_status_fails_closed(self, tmp_path):
-        assert _run(tmp_path, "DEMO ONLY", "| 1.1 | x | PENDING | later |") == 2
+        assert _run(tmp_path, "DEMO ONLY", _full_coverage({1: _row(1, "PENDING", "later")})) == 2
+
+    def test_status_match_is_exact_not_substring(self, tmp_path):
+        assert _run(tmp_path, "DEMO ONLY", _full_coverage({1: _row(1, "NOT_PASS", "x")})) == 2
+        assert _run(tmp_path, "DEMO ONLY", _full_coverage({1: _row(1, "PASSING", "x")})) == 2
 
     def test_bare_section_number_fails_closed(self, tmp_path):
         assert _run(tmp_path, "DEMO ONLY", "| 9 | x | ✅ PASS | ok |") == 2
 
     def test_archived_rows_are_ignored(self, tmp_path):
         # The template's archived block contains FAIL and NOT_TESTED rows.
-        assert _run(tmp_path, "DEMO ONLY", PASS_ROW) == 0
+        assert _run(tmp_path, "DEMO ONLY", _full_coverage()) == 0
 
     def test_missing_file_fails_closed(self, tmp_path):
         assert readiness.main(["prog", str(tmp_path / "nope.md")]) == 2
 
 
 class TestRealChecklist:
-    def test_shipped_checklist_passes_its_own_gate(self):
-        assert readiness.main(
+    def test_shipped_checklist_records_real_gaps(self, capsys):
+        """The shipped checklist is the real record: sections 3 (git-history
+        scrub, limitation 2), 5 (doctor never gated in CI) and 6 (network
+        never validated on target hardware) are open gaps, so the recorded
+        DEMO ONLY decision is NOT yet backed. The gate must report those
+        findings (exit 1) - the record may fail; rows must never be edited
+        to make the gate pass without re-verification evidence."""
+        rc = readiness.main(
             ["prog", str(REPO_ROOT / "docs" / "RELEASE_READINESS_CHECKLIST.md")]
-        ) == 0
+        )
+        out = capsys.readouterr().out
+        assert rc == 1
+        assert "3.1" in out
+        assert "5.2" in out
+        assert "6.1" in out
 
 
 def _sbom_doc(**over):

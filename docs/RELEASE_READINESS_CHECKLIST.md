@@ -18,18 +18,27 @@ v1.2.3 prerelease was published 2026-11-14. No target-Pi acceptance has
 been recorded for this candidate; sections 8, 9 and 12 stay NOT_TESTED
 until the real Raspberry Pi acceptance is run (#381).
 
+**Gate status for this candidate:** the automated gate currently reports
+blocking findings against the recorded DEMO ONLY decision - 3.1 FAIL
+(git-history scrub, known limitation 2), 5.2 NOT_TESTED (doctor never
+gated in CI) and 6.1 NOT_TESTED (network not validated on target
+hardware). The decision line records the published intent of the v1.2.3
+prerelease; the gate fails until those rows are re-verified with real
+evidence. Never edit a row to make the gate pass without re-verification.
+
 The table below is the current record the automated gate checks, at
 section granularity (item-level detail lives in the archived record
 below and must not be carried forward without re-verification):
 
 | # | Check | Status | Notes |
 |---|-------|--------|-------|
-| 1.1 | Section 1 - version and build metadata | ⚠️ WARN | VERSION file and CLI entry point verified in CI; v1.2.3 tag published as prerelease; annotated-tag requirement re-verified at release time |
-| 2.1 | Section 2 - tests and code quality | ✅ PASS | Full suite and Ruff green in CI on main; no formal coverage report (acceptable for demo) |
-| 3.1 | Section 3 - security and repo hygiene | ⚠️ WARN | Bandit, secret scan and repo hygiene green in CI; git-history scrub still open (known limitation 2) |
-| 4.1 | Section 4 - SBOM and checksum manifest | ⚠️ WARN | SBOM generation and validation automated in the release gate (#513); checksum manifest, dependency completeness and CVE gate pending (#514, items 4.3/4.4) |
-| 5.1 | Section 5 - CLI and diagnostics | ✅ PASS | `khptz version` / `doctor` exercised in CI |
-| 6.1 | Section 6 - network and configuration | ⚠️ WARN | `legacy_config` doctor check added (#520/#452); isolated-VLAN matrix not rerun on Pi |
+| 1.1 | Section 1 - version and build metadata | ⚠️ WARN | VERSION file present in repo; v1.2.3 prerelease tag published 2026-11-14; VERSION-file and `khptz version` checks run only in the manual release-check workflow; annotated-tag requirement re-verified at release time |
+| 2.1 | Section 2 - tests and code quality | ⚠️ WARN | Full pytest suite and Ruff green in gated CI on main; no formal coverage report (archived item 2.5 stays NOT_TESTED) |
+| 3.1 | Section 3 - security and repo hygiene | ❌ FAIL | Secret values persist in git history, scrub pending (known limitation 2); bandit, secret-scan and repo-hygiene workflows green in CI |
+| 4.1 | Section 4 - SBOM and checksum manifest | ⚠️ WARN | SBOM generation and validation automated in the release gate (#513; workflow_dispatch only, not yet exercised in CI); checksum manifest, dependency completeness and CVE gate pending (#514, items 4.3/4.4) |
+| 5.1 | Section 5 - CLI self-test | ✅ PASS | `khptz selftest --json` gated in the tests workflow on every push/PR |
+| 5.2 | Section 5 - doctor diagnostics | 🔲 NOT_TESTED | `khptz doctor` runs only in the manual release-check workflow and with `\|\| true` - never gated |
+| 6.1 | Section 6 - network and configuration | 🔲 NOT_TESTED | `legacy_config` doctor check unit-tested (#520/#452); network behavior never validated on target hardware; isolated-VLAN matrix never run |
 | 7.1 | Section 7 - support bundle and redaction | 🔲 NOT_TESTED | Historical evidence only |
 | 8.1 | Section 8 - installer and systemd | 🔲 NOT_TESTED | Awaits Pi acceptance |
 | 9.1 | Section 9 - Raspberry Pi hardware validation | 🔲 NOT_TESTED | Awaits Pi acceptance (#381) |
@@ -288,6 +297,20 @@ khptz version && khptz status && khptz doctor
 
 The current decision lives in the *Current candidate* record at the top of
 this document (the automated gate reads it from there, fail closed).
+
+The gate enforces strict contracts; violations are schema errors (exit 2),
+never inferred:
+
+- `**Current decision:**` must be exactly `DEMO ONLY` or `CUSTOMER READY`
+  after removing markdown asterisks - no prefixes or extra words
+  (`DEMONSTRATION ...`, `CUSTOMER READY NOT APPROVED` are invalid).
+- Row ids must be numbered `X.Y`, and every published section 1-12 must
+  appear in the current record; missing coverage never counts as PASS.
+- Statuses must equal exactly one of PASS / WARN / FAIL / N/A / NOT_TESTED
+  after removing emoji - substrings such as `NOT_PASS` are invalid.
+- Written acceptance is a structured field: a WARN counts as accepted only
+  when its Notes cell begins with `ACCEPTED: ` naming who and when. Prose
+  such as "not accepted by reviewer" never counts.
 
 Blockers before pilot/customer:
 - [ ] Create annotated git tag `v3.38.2` (1.2)
