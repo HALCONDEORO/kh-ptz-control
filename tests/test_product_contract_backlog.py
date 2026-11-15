@@ -53,8 +53,6 @@ def test_backup_restore_contract(issue: str, requirement: str) -> None:
 # tests/test_release_gate_contracts.py) and the restore dry-run
 # option (test_dry_run_* in tests/test_restore_service.py).
 RELEASE_GATE_CONTRACTS = [
-    ("#520/#452", "release checklist does not treat NOT_TESTED as pass"),
-    ("#520/#452/#513", "release gate fails when SBOM is missing"),
     ("#520/#452/#514", "release gate fails when checksum manifest is missing"),
     ("#520/#452", "release gate fails when issue blocks map is stale"),
 ]
