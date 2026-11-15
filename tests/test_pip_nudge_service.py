@@ -203,11 +203,20 @@ class TestThreadSafety:
     def test_stop_camera_clears_pending_stop(self):
         # Tras completarse el timer, _pending_stop debe quedar limpio.
         svc, port = _svc(pan_speed=5, duration_ms=10)
-        svc.on_pip_on()
-        assert svc._pending_stop is not None
-        time.sleep(0.05)
-        assert svc._pending_stop is None
-        port.stop_move.assert_called_once_with("cam1")
+        stopped = threading.Event()
+        port.stop_move.side_effect = lambda *_: stopped.set()
+        try:
+            with svc._lock:
+                svc.on_pip_on()
+                assert svc._pending_stop is not None
+            # Observe completion, not elapsed wall time. The timer clears
+            # _pending_stop before it calls the port while holding this lock.
+            assert stopped.wait(5), "duration timer never delivered STOP"
+            with svc._lock:
+                assert svc._pending_stop is None
+                port.stop_move.assert_called_once_with("cam1")
+        finally:
+            svc.cancel()
 
     def test_concurrent_entry_points_do_not_raise_or_corrupt(self):
         # on_pip_on/off (hilo monitor), cancel (hilo bus) y los timers
