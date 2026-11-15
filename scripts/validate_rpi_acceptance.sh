@@ -123,13 +123,27 @@ if [[ -r /etc/os-release ]]; then
 fi
 # Hardware status is ALWAYS recorded explicitly (#381): a report that says
 # nothing about the machine can be misread as hardware-verified acceptance.
-if [[ -r /proc/device-tree/model ]]; then
-    PI_MODEL="$(tr -d '\0' < /proc/device-tree/model)"
-    HARDWARE_STATUS="REAL HARDWARE (${PI_MODEL})"
-else
-    PI_MODEL=""
-    HARDWARE_STATUS="NOT DETECTED (no /proc/device-tree/model) - this report does NOT prove hardware acceptance"
-fi
+# A readable device-tree model is only a REPORTED STRING - present but empty,
+# unreadable, or faked under emulation are all possible - so detection never
+# claims physical hardware, and HW_PROOF_NOTE is printed with every result.
+_detect_hardware_status() {
+    DEVICE_TREE_MODEL="${KHPTZ_DEVICE_TREE_MODEL:-/proc/device-tree/model}"
+    if [[ ! -e "${DEVICE_TREE_MODEL}" ]]; then
+        PI_MODEL=""
+        HARDWARE_STATUS="NOT DETECTED (no device-tree model file at ${DEVICE_TREE_MODEL})"
+    elif ! _model_raw="$(tr -d '\0' < "${DEVICE_TREE_MODEL}" 2>/dev/null)"; then
+        PI_MODEL=""
+        HARDWARE_STATUS="NOT DETECTED (device-tree model unreadable)"
+    elif [[ -z "${_model_raw}" ]]; then
+        PI_MODEL=""
+        HARDWARE_STATUS="NOT DETECTED (device-tree model is empty)"
+    else
+        PI_MODEL="${_model_raw}"
+        HARDWARE_STATUS="MODEL REPORTED: ${PI_MODEL}"
+    fi
+    HW_PROOF_NOTE="HARDWARE: a reported model string is not proof of a physical Pi - #890 acceptance requires the manual checks below on the real machine"
+}
+_detect_hardware_status
 say "Pi model    : ${PI_MODEL:-not detected}"
 say "Hardware    : ${HARDWARE_STATUS}"
 say "Python      : $(python3 -V 2>&1)"
@@ -485,9 +499,7 @@ if [[ "${FAIL_N}" -gt 0 ]]; then
 else
     say " RESULT: no automated check failed - complete the MANUAL items above"
 fi
-if [[ -z "${PI_MODEL}" ]]; then
-    say " HARDWARE: NOT DETECTED - #890 acceptance requires a run on a physical Raspberry Pi"
-fi
+say " ${HW_PROOF_NOTE}"
 say " Report saved to: ${REPORT}"
 say "======================================================================"
 
