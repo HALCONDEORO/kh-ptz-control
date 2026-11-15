@@ -681,3 +681,78 @@ class TestShellSyntax:
     def test_service_file_exists(self):
         assert SERVICE_FILE.exists()
 
+
+
+# ── pre-update backup ─────────────────────────────────────────────────────────
+
+class TestPreUpdateBackup:
+    """install.sh must take an automatic pre-update backup before quiescing or
+    replacing an existing product install, and must abort the update if that
+    backup fails."""
+
+    def _backup_block(self, sh: str) -> str:
+        idx = sh.find("Pre-update backup (product re-deploys only)")
+        assert idx != -1, "pre-update backup block not found in install.sh"
+        return sh[idx:]
+
+    def test_block_runs_before_gui_quiesce(self):
+        """A failed backup must abort before any session GUI is stopped."""
+        sh = _sh()
+        backup_idx = sh.find("Pre-update backup (product re-deploys only)")
+        quiesce_idx = sh.find("_stop_session_guis /run/user")
+        assert backup_idx != -1
+        assert quiesce_idx != -1
+        assert backup_idx < quiesce_idx, "backup must run before GUI quiesce"
+
+    def test_block_runs_before_rsync_deploy(self):
+        sh = _sh()
+        backup_idx = sh.find("Pre-update backup (product re-deploys only)")
+        rsync_idx = sh.find('rsync -a')
+        assert backup_idx != -1
+        assert rsync_idx != -1
+        assert backup_idx < rsync_idx, "backup must run before the deploy rsync"
+
+    def test_block_gated_on_existing_product_install(self):
+        block = self._backup_block(_sh())
+        assert '"${DEV_MODE}" == "false"' in block
+        assert '"${REPO_ROOT}" != "${INSTALL_DIR}"' in block
+        assert 'install-state.env' in block
+
+    def test_backup_uses_same_cli_invocation_as_rollback(self):
+        block = self._backup_block(_sh())
+        assert 'runuser -u "${APP_USER}" -- env \\' in block
+        assert 'KHPTZ_CONFIG_DIR="${CONFIG_DIR}"' in block
+        assert 'KHPTZ_DATA_DIR="${DATA_DIR}"' in block
+        assert 'KHPTZ_LOG_DIR="${LOG_DIR}"' in block
+        assert 'KHPTZ_BACKUP_DIR="${BACKUP_DIR}"' in block
+        assert 'PYTHONPATH="${INSTALL_DIR}"' in block
+        assert 'runtime.cli backup --dest' in block
+
+    def test_backup_runs_from_neutral_cwd(self):
+        """`python3 -m` puts the operator's cwd ahead of PYTHONPATH; the
+        operator runs the installer from the NEW checkout, which would shadow
+        the deployed tree the backup must describe. A neutral cwd prevents it."""
+        block = self._backup_block(_sh())
+        assert '( cd / && runuser -u "${APP_USER}"' in block
+
+    def test_backup_failure_aborts_update(self):
+        """No `|| true`-style swallow on the backup command: failure must stop
+        the installer (set -e) or hit an explicit error before the deploy."""
+        block = self._backup_block(_sh())
+        assert 'Pre-update backup failed' in block
+        assert 'error "' in block
+
+    def test_backup_archive_named_with_previous_ref(self):
+        block = self._backup_block(_sh())
+        assert 'pre_update_' in block
+        assert 'KHPTZ_INSTALLED_REF' in block
+
+    def test_skip_flag_is_explicit_opt_out(self):
+        sh = _sh()
+        assert '--skip-pre-update-backup' in sh
+        assert 'SKIP_PRE_UPDATE_BACKUP=false' in sh
+        assert 'SKIP_PRE_UPDATE_BACKUP=true' in sh
+        assert '"${SKIP_PRE_UPDATE_BACKUP}" == "true"' in sh
+
+    def test_sanitize_ref_helper_present(self):
+        assert "sanitize_ref() { printf '%s' \"$1\" | tr -c 'A-Za-z0-9._-'; }".replace("'; }", "' '_'; }") in _sh()
