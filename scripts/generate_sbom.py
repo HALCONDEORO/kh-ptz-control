@@ -77,13 +77,18 @@ def _normalize(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
+UNKNOWN_VERSIONS: list[str] = []
+
+
 def _collect_packages() -> list[dict]:
     """Return sorted list of the declared runtime dependencies.
 
-    Versions and descriptions come from the installed distributions when
-    available (run this in the release environment for accurate versions);
-    a declared dependency that is not installed is listed with version
-    "unknown".
+    Versions and descriptions come from the installed distributions (run
+    this in the release environment for accurate versions). A declared
+    dependency whose exact version cannot be determined makes generation
+    FAIL: an SBOM with "unknown" pins is not a valid release artifact and
+    the gate validator rejects it, so failing here keeps the error at the
+    source.
     """
     installed = {
         _normalize(dist.metadata["Name"] or "unknown"): dist
@@ -96,11 +101,14 @@ def _collect_packages() -> list[dict]:
             meta = dist.metadata
             name = meta["Name"] or req_name
             version = meta["Version"] or "unknown"
+            if version == "unknown":
+                UNKNOWN_VERSIONS.append(req_name)
             description = (meta["Summary"] or "").strip()
         else:
             name = req_name
             version = "unknown"
             description = ""
+            UNKNOWN_VERSIONS.append(req_name)
         packages.append({
             "type": "library",
             "name": name,
@@ -144,6 +152,14 @@ def main() -> int:
     app_version = _app_version()
     git_commit = _git_commit()
     components = _collect_packages()
+    if UNKNOWN_VERSIONS:
+        print(
+            "ERROR: exact versions could not be determined for: "
+            + ", ".join(sorted(UNKNOWN_VERSIONS))
+            + " - run in the release environment with requirements.txt installed",
+            file=sys.stderr,
+        )
+        return 1
     sbom = _build_cyclonedx(app_version, git_commit, components)
 
     out_path.write_text(json.dumps(sbom, indent=2) + "\n", encoding="utf-8")
