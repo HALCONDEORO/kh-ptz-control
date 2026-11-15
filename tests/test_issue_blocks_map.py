@@ -140,7 +140,7 @@ def test_pagination_does_not_follow_untrusted_urls(monkeypatch):
             return Response([issue()], '<https://evil.example/leak>; rel="next"')
         return Response([])
 
-    monkeypatch.setattr(m.urllib.request, "urlopen", request)
+    monkeypatch.setattr(m.urllib.request, "build_opener", lambda *args: type("Opener", (), {"open": staticmethod(request)})())
     assert len(m.get_pages("/repos/HALCONDEORO/kh-ptz-control/issues?state=open")) == 1
     assert len(calls) == 2
     assert all(url.startswith("https://api.github.com/") for url in calls)
@@ -156,7 +156,7 @@ def test_second_page_failure_is_not_partial_success(monkeypatch):
             return Response([issue()], '<https://api.github.com/next>; rel="next"')
         raise urllib.error.URLError("page 2 failed")
 
-    monkeypatch.setattr(m.urllib.request, "urlopen", request)
+    monkeypatch.setattr(m.urllib.request, "build_opener", lambda *args: type("Opener", (), {"open": staticmethod(request)})())
     with pytest.raises(urllib.error.URLError):
         m.get_pages("/repos/HALCONDEORO/kh-ptz-control/issues?state=open")
 
@@ -187,3 +187,35 @@ def test_dependency_error_blocks_whole_graph(monkeypatch):
     monkeypatch.setattr(m, "get_pages", request)
     with pytest.raises(urllib.error.HTTPError):
         m.live_graph("HALCONDEORO/kh-ptz-control")
+
+
+@pytest.mark.parametrize("bad", [issue(number=1, html_url=issue(999)["html_url"]), issue(pull_request={})])
+def test_dependency_identity_matches_url_and_excludes_pr(monkeypatch, bad):
+    monkeypatch.setattr(m, "get_pages", lambda path: [issue()] if "state=open" in path else [bad])
+    with pytest.raises(ValueError):
+        m.live_graph("HALCONDEORO/kh-ptz-control")
+
+
+def test_cross_origin_redirect_is_refused_without_second_request(monkeypatch):
+    # Exercise urllib's actual HTTP redirect machinery, with a synthetic token.
+    from email.message import Message
+    from io import BytesIO
+
+    requests = []
+
+    class RedirectFixture(m.urllib.request.HTTPSHandler):
+        def https_open(self, request):
+            requests.append(request)
+            headers = Message()
+            headers["Location"] = "https://elsewhere.invalid/collect"
+            response = m.urllib.request.addinfourl(BytesIO(b""), headers, request.full_url, 302)
+            response.msg = "Found"
+            return response
+
+    original = m.urllib.request.build_opener
+    monkeypatch.setenv("GITHUB_TOKEN", "SYNTHETIC")
+    monkeypatch.setattr(m.urllib.request, "build_opener", lambda *args: original(*args, RedirectFixture()))
+    with pytest.raises(m.urllib.error.HTTPError):
+        m.get_pages("/repos/HALCONDEORO/kh-ptz-control/issues?state=open")
+    assert len(requests) == 1
+    assert requests[0].host == "api.github.com"

@@ -22,6 +22,13 @@ import urllib.request
 ROOT = Path(__file__).resolve().parent.parent
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Never forward an authenticated request to a redirected destination."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise urllib.error.HTTPError(req.full_url, code, "redirect refused", headers, fp)
+
+
 def get_pages(path: str) -> list[dict]:
     """Bounded pagination. Never send credentials to a server-provided URL."""
     result: list[dict] = []
@@ -33,7 +40,8 @@ def get_pages(path: str) -> list[dict]:
         if token:
             headers["Authorization"] = f"Bearer {token}"
         request = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(request, timeout=30) as response:
+        opener = urllib.request.build_opener(NoRedirect())
+        with opener.open(request, timeout=30) as response:
             data = json.load(response)
             has_next = 'rel="next"' in response.headers.get("Link", "")
         if not isinstance(data, list) or any(not isinstance(row, dict) for row in data):
@@ -50,7 +58,9 @@ def _identity(issue: dict) -> tuple[int, str, str]:
     number, title, url = issue.get("number"), issue.get("title"), issue.get("html_url")
     if type(number) is not int or number < 1 or not isinstance(title, str) or not title.strip():
         raise ValueError("GitHub issue number/title is malformed")
-    if not isinstance(url, str) or not re.fullmatch(r"https://github\.com/[\w.-]+/[\w.-]+/issues/[1-9][0-9]*", url):
+    if "pull_request" in issue:
+        raise ValueError("dependency must be an issue, not a pull request")
+    if not isinstance(url, str) or not re.fullmatch(rf"https://github\.com/[\w.-]+/[\w.-]+/issues/{number}", url):
         raise ValueError("GitHub issue URL is malformed")
     return number, title, url
 
@@ -89,6 +99,10 @@ def render(snapshot: dict) -> str:
         "# Issue dependency snapshot\n\n"
         "This is a snapshot, not release approval or the source of truth.\n"
         "GitHub owns current open issues and explicit dependency links.\n"
+        "Reads are not an atomic snapshot across API calls; changes during a check\n"
+        "can produce a mismatch or escape that particular observation.\n"
+        "Issue events do not cover every dependency edit: manual and release checks\n"
+        "catch changes at check time, not through an immediate dependency monitor.\n"
         "Historical references in source/docs are not reconstructed as live issues.\n"
         "Zero open issues does not imply no product gaps or hardware acceptance.\n\n"
         "Refresh: `python3 scripts/check_issue_blocks_map.py --refresh`\n"

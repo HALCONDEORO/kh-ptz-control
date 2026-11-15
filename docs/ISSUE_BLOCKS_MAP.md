@@ -2,6 +2,10 @@
 
 This is a snapshot, not release approval or the source of truth.
 GitHub owns current open issues and explicit dependency links.
+Reads are not an atomic snapshot across API calls; changes during a check
+can produce a mismatch or escape that particular observation.
+Issue events do not cover every dependency edit: manual and release checks
+catch changes at check time, not through an immediate dependency monitor.
 Historical references in source/docs are not reconstructed as live issues.
 Zero open issues does not imply no product gaps or hardware acceptance.
 
