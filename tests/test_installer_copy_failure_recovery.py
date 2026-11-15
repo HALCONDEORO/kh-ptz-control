@@ -72,7 +72,12 @@ printf 'AFTER_COPY\n' >> "$EVENTS"
 # This copy-only harness ends here; do not pretend that later installation ran.
 trap - EXIT
 '''
+    # The pre-update backup block lives in the extracted window; the real
+    # installer always defines CONFIG_DIR. Point it at a path without an
+    # install-state.env so the block evaluates its gate and skips, as on a
+    # first install.
     env = dict(os.environ, REPO_ROOT=str(source), INSTALL_DIR=str(target),
+               CONFIG_DIR=str(tmp_path / "config-dir"),
                DEV_MODE="true" if dev else "false", GUI_MODE=gui,
                SERVICE_NAME="synthetic-khptz-service", EVENTS=str(events),
                APP_USER="synthetic", DATA_DIR=str(tmp_path / "data"),

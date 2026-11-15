@@ -514,8 +514,10 @@ if [[ "${DEV_MODE}" == "false" && "${REPO_ROOT}" != "${INSTALL_DIR}" && -f "${_s
         warn "Skipping pre-update backup (--skip-pre-update-backup). The update leaves no automatic restore point."
     else
         # On an update this directory already exists from the previous install;
-        # create defensively so the backup never fails on a missing dir.
-        install -d -m 750 -o "${APP_USER}" -g "${APP_USER}" "${BACKUP_DIR}"
+        # create it only when missing, and never tighten an existing one here:
+        # runtime-writable dirs keep the desktop GUI's group-write access until
+        # the quiesce below succeeds (the stage after it hardens the modes).
+        [[ -d "${BACKUP_DIR}" ]] || install -d -m 750 -o "${APP_USER}" -g "${APP_USER}" "${BACKUP_DIR}"
         # Same reader as the install-state stage below; trailing `|| true`
         # keeps pipefail from aborting the installer if the key is absent.
         _prev_ref="$(
