@@ -113,7 +113,10 @@ def _warn_stale_txt_files() -> None:
     for fname in ('PTZ1IP.txt', 'PTZ2IP.txt', 'Cam1ID.txt', 'Cam2ID.txt', 'ATEMIP.txt'):
         if (_PROJECT_ROOT / fname).exists():
             logger.warning(
-                "Stale legacy config file found: %s — migrate to config.yaml and remove this file.",
+                "Stale legacy config file found: %s — verify its values are in "
+                "config.yaml (`khptz migrate --dry-run` previews the import; it "
+                "skips when config.yaml already exists) and keep a copy before "
+                "removing it.",
                 fname,
             )
 
