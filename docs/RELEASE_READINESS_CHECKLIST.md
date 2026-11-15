@@ -35,7 +35,7 @@ below and must not be carried forward without re-verification):
 | 1.1 | Section 1 - version and build metadata | ⚠️ WARN | VERSION file present in repo; v1.2.3 prerelease tag published 2026-11-14; VERSION-file and `khptz version` checks run only in the manual release-check workflow; annotated-tag requirement re-verified at release time |
 | 2.1 | Section 2 - tests and code quality | ⚠️ WARN | Full pytest suite and Ruff green in gated CI on main; no formal coverage report (archived item 2.5 stays NOT_TESTED) |
 | 3.1 | Section 3 - security and repo hygiene | ❌ FAIL | Secret values persist in git history, scrub pending (known limitation 2); bandit, secret-scan and repo-hygiene workflows green in CI |
-| 4.1 | Section 4 - SBOM and checksum manifest | ⚠️ WARN | SBOM generation and validation automated in the release gate (#513; workflow_dispatch only, not yet exercised in CI); checksum manifest, dependency completeness and CVE gate pending (#514, items 4.3/4.4) |
+| 4.1 | Section 4 - SBOM and checksum manifest | ⚠️ WARN | SBOM generation and validation automated in the release gate (#513; workflow_dispatch only; steps 7/8 exercised on reviewed candidate, release decision still blocked); candidate checksum preparation/verification automated (#514; temporary files only, no release approval); dependency completeness and CVE gate pending (items 4.3/4.4) |
 | 5.1 | Section 5 - CLI self-test | ✅ PASS | `khptz selftest --json` gated in the tests workflow on every push/PR |
 | 5.2 | Section 5 - doctor diagnostics | 🔲 NOT_TESTED | `khptz doctor` runs only in the manual release-check workflow and with `\|\| true` - never gated |
 | 6.1 | Section 6 - network and configuration | 🔲 NOT_TESTED | `legacy_config` doctor check unit-tested (#520/#452); network behavior never validated on target hardware; isolated-VLAN matrix never run |
@@ -272,8 +272,8 @@ khptz version && khptz status && khptz doctor
    Run git filter-repo to scrub history before any public or third-party repo share.
 
 3. SBOM generation and validation are automated in the release gate (#513); the
-   checksum manifest (#514), dependency completeness and the CVE gate (4.3/4.4)
-   are not — they block a customer build.
+   candidate checksum integrity is automated (#514, temporary committed-source archive);
+   dependency completeness and the CVE gate (4.3/4.4) are not — they block a customer build.
 
 4. Sections 8–12 (installer, Pi hardware, backup/restore E2E, security hardening)
    all NOT_TESTED — acceptable for demo-only, block pilot/customer.

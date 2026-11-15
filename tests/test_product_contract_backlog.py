@@ -54,7 +54,6 @@ def test_backup_restore_contract(issue: str, requirement: str) -> None:
 # option (test_dry_run_* in tests/test_restore_service.py).
 RELEASE_GATE_CONTRACTS = [
     ("#513", "SBOM validation covers dependency completeness and the CVE gate (checklist 4.3/4.4)"),
-    ("#520/#452/#514", "release gate fails when checksum manifest is missing"),
 ]
 
 

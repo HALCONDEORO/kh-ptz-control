@@ -1,0 +1,38 @@
+name: Candidate archive integrity
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'scripts/package_candidate.py'
+      - 'scripts/validate_candidate_manifest.py'
+      - 'scripts/release_manifest.py'
+      - 'tests/test_candidate_packaging.py'
+      - '.github/workflows/candidate-integrity.yml'
+  pull_request:
+    paths:
+      - 'scripts/package_candidate.py'
+      - 'scripts/validate_candidate_manifest.py'
+      - 'scripts/release_manifest.py'
+      - 'tests/test_candidate_packaging.py'
+      - '.github/workflows/candidate-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.11'
+      - name: Prepare and verify temporary committed source candidate
+        run: python3 scripts/package_candidate.py --out "$RUNNER_TEMP/khptz-candidate"
+      # Deliberately no upload, release creation or readiness override.
