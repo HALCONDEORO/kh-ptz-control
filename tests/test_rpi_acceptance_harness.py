@@ -182,3 +182,25 @@ class TestDesktopSessionTypeIsAccepted:
         sudo = text.index('_accept_desktop_user "${SUDO_USER:-}"')
         invoking = text.index('_accept_desktop_user "$(id -un)"')
         assert flag < state < sudo < invoking
+
+
+class TestExplicitHardwareStatus:
+    """#381: the report must state its hardware status explicitly. A silent
+    omission (the old conditional "Pi model" line) let a non-Pi run read as
+    hardware-verified acceptance evidence."""
+
+    def test_hardware_status_is_computed_once_and_always_set(self, text):
+        assert 'HARDWARE_STATUS="REAL HARDWARE' in text
+        assert 'HARDWARE_STATUS="NOT DETECTED' in text
+
+    def test_environment_block_always_says_hardware_line(self, text):
+        assert 'say "Hardware    : ${HARDWARE_STATUS}"' in text
+        # The model line no longer disappears when the device tree is absent.
+        assert 'say "Pi model    : ${PI_MODEL:-not detected}"' in text
+
+    def test_result_record_carries_hardware_status(self, text):
+        assert 'say "Hardware:    ${HARDWARE_STATUS}"' in text
+
+    def test_final_result_warns_when_not_real_hardware(self, text):
+        assert "HARDWARE: NOT DETECTED" in text
+        assert "physical Raspberry Pi" in text

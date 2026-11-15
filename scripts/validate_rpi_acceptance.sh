@@ -121,9 +121,17 @@ say "Host        : $(uname -a)"
 if [[ -r /etc/os-release ]]; then
     say "OS          : $(. /etc/os-release && printf '%s' "${PRETTY_NAME:-unknown}")"
 fi
+# Hardware status is ALWAYS recorded explicitly (#381): a report that says
+# nothing about the machine can be misread as hardware-verified acceptance.
 if [[ -r /proc/device-tree/model ]]; then
-    say "Pi model    : $(tr -d '\0' < /proc/device-tree/model)"
+    PI_MODEL="$(tr -d '\0' < /proc/device-tree/model)"
+    HARDWARE_STATUS="REAL HARDWARE (${PI_MODEL})"
+else
+    PI_MODEL=""
+    HARDWARE_STATUS="NOT DETECTED (no /proc/device-tree/model) - this report does NOT prove hardware acceptance"
 fi
+say "Pi model    : ${PI_MODEL:-not detected}"
+say "Hardware    : ${HARDWARE_STATUS}"
 say "Python      : $(python3 -V 2>&1)"
 
 INSTALL_DIR="/opt/khptz"
@@ -455,7 +463,8 @@ manual "Wizard shows no QSS parse warnings and two cameras yield standard_2_came
 head2 "Result record (paste into #890)"
 say "Date:        $(date -Iseconds 2>/dev/null || date)"
 say "Tester:      $(id -un)"
-say "Pi model:    $( [[ -r /proc/device-tree/model ]] && tr -d '\0' < /proc/device-tree/model || echo 'unknown')"
+say "Pi model:    ${PI_MODEL:-unknown}"
+say "Hardware:    ${HARDWARE_STATUS}"
 say "OS:          $( [[ -r /etc/os-release ]] && (. /etc/os-release && printf '%s' "${PRETTY_NAME:-unknown}") || echo unknown)"
 say "Python:      $(python3 -V 2>&1)"
 say "KHPTZ version: $( [[ -r ${STATE} ]] && state_value KHPTZ_INSTALLED_VERSION || echo unknown)"
@@ -475,6 +484,9 @@ if [[ "${FAIL_N}" -gt 0 ]]; then
     say " RESULT: ${FAIL_N} automated check(s) FAILED - acceptance not met"
 else
     say " RESULT: no automated check failed - complete the MANUAL items above"
+fi
+if [[ -z "${PI_MODEL}" ]]; then
+    say " HARDWARE: NOT DETECTED - #890 acceptance requires a run on a physical Raspberry Pi"
 fi
 say " Report saved to: ${REPORT}"
 say "======================================================================"
