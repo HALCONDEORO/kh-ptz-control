@@ -1,0 +1,39 @@
+name: Issue dependency snapshot
+
+on:
+  pull_request:
+    paths:
+      - 'docs/ISSUE_BLOCKS_MAP.md'
+      - 'scripts/check_issue_blocks_map.py'
+      - 'tests/test_issue_blocks_map.py'
+      - '.github/workflows/issue-map.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/ISSUE_BLOCKS_MAP.md'
+      - 'scripts/check_issue_blocks_map.py'
+      - 'tests/test_issue_blocks_map.py'
+      - '.github/workflows/issue-map.yml'
+  issues:
+    types: [opened, edited, closed, reopened, transferred, deleted]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  issue-map:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.11'
+      - name: Check snapshot against live issue dependencies
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/check_issue_blocks_map.py

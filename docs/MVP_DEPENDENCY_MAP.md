@@ -5,13 +5,15 @@ gives the recommended implementation order.
 
 **Use this to choose the next implementation PR without guessing.**  
 **Authoritative planning context**: `docs/IMPLEMENTATION_PLAN.md`.  
-**Confirmed blocker graph**: `docs/ISSUE_BLOCKS_MAP.md`.
+**Live dependency snapshot**: `docs/ISSUE_BLOCKS_MAP.md` (GitHub remains authoritative).
 
 Last updated: 2026-05-19. **Archive note (2026-07-02): every issue referenced anywhere
 in this document is closed on GitHub** (verified individually, all 59 numbers). This
 map's job — sequencing *remaining open* MVP work — is done; it is kept for historical
 planning context only. Do not use it to pick the next PR. `docs/ISSUE_BLOCKS_MAP.md` is
-the current open-issue snapshot; check that (and `gh issue list`) instead.
+a machine-checked snapshot of current open issues and explicit GitHub dependency links.
+Check its freshness with `python3 scripts/check_issue_blocks_map.py`; an empty
+snapshot says nothing about unresolved product gaps recorded elsewhere.
 
 ---
 
