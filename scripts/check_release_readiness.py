@@ -22,7 +22,7 @@
 #     "DEMONSTRATION ..." or "CUSTOMER READY NOT APPROVED" are schema errors.
 #   - Row ids must be numbered X.Y ("9" alone is a schema error).
 #   - Statuses must equal exactly one of PASS / WARN / FAIL / N/A / NOT_TESTED
-#     after removing emoji and symbols and normalising case/whitespace.
+#     after removing an optional published emoji and normalising case/whitespace.
 #     "NOT_PASS" or "PENDING" are schema errors, never silently bucketed.
 #   - Coverage: the current record must contain at least one row for every
 #     published section 1-12. Zero rows or missing sections are schema
@@ -74,8 +74,10 @@ def _decision(region: str) -> str | None:
 
 def _normalise_status(status_cell: str) -> str | None:
     """Exact status after removing emoji/symbols; None when not in the enum."""
-    token = re.sub(r"[^A-Za-z/_ ]+", "", status_cell)
-    token = re.sub(r"\s+", " ", token).strip().upper().replace(" ", "_")
+    # Strip only an optional published display icon, never arbitrary data.
+    # Removing arbitrary symbols/digits turns PASS123 / !PASS into PASS.
+    token = re.sub(r"^(?:✅|⚠️?|❌|🔲)\s*", "", status_cell.strip())
+    token = re.sub(r"\s+", " ", token).strip().upper()
     return token if token in _ALLOWED_STATUSES else None
 
 

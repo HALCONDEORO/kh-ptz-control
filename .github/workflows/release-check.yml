@@ -79,10 +79,16 @@ jobs:
           fi
           echo "All required files present."
 
+      # Report the recorded decision even if an earlier check failed.
+      # Neither this nor the SBOM step can turn that failure into success.
       - name: "[7/8] Checklist decision gate (NOT_TESTED never counts as pass)"
+        if: ${{ !cancelled() }}
         run: python3 scripts/check_release_readiness.py docs/RELEASE_READINESS_CHECKLIST.md
 
+      # Collect independent SBOM evidence even when the decision gate blocks.
+      # This does not neutralize prior failures: the job remains failed.
       - name: "[8/8] Generate and validate SBOM"
+        if: ${{ !cancelled() }}
         run: |
           python3 scripts/generate_sbom.py --out "$RUNNER_TEMP/sbom.json"
           python3 scripts/validate_sbom.py "$RUNNER_TEMP/sbom.json"

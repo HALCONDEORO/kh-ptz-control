@@ -146,6 +146,10 @@ class TestSchemaCoverage:
         assert _run(tmp_path, "DEMO ONLY", _full_coverage({1: _row(1, "NOT_PASS", "x")})) == 2
         assert _run(tmp_path, "DEMO ONLY", _full_coverage({1: _row(1, "PASSING", "x")})) == 2
 
+    @pytest.mark.parametrize("bad", ["PASS123", "!PASS", "PASS!", "P.A.S.S", "N/A0", "NOT TESTED", "✅ PASS123"])
+    def test_status_never_discards_non_emoji_data(self, tmp_path, bad):
+        assert _run(tmp_path, "DEMO ONLY", _full_coverage({1: _row(1, bad, "x")})) == 2
+
     def test_bare_section_number_fails_closed(self, tmp_path):
         assert _run(tmp_path, "DEMO ONLY", "| 9 | x | ✅ PASS | ok |") == 2
 
