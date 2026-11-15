@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   real-library-contract:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       QT_QPA_PLATFORM: offscreen
