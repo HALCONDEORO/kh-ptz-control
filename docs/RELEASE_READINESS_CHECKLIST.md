@@ -9,16 +9,42 @@ marked NOT_APPLICABLE or NOT_TESTED in automation.
 
 ---
 
-## Current candidate: 1.2.1
+## Current candidate: 1.2.3
 
-The evidence below is a historical May 2026 record for another build, not
-validation of 1.2.1. Its PASS marks must not be carried into a new release.
-Current acceptance and limitations are tracked in [1.2.1 release notes](releases/1.2.1.md).
-No target-Pi acceptance has been recorded for this candidate here.
+**Current decision:** DEMO ONLY
+
+Current acceptance and limitations are tracked in the release notes; the
+v1.2.3 prerelease was published 2026-11-14. No target-Pi acceptance has
+been recorded for this candidate; sections 8, 9 and 12 stay NOT_TESTED
+until the real Raspberry Pi acceptance is run (#381).
+
+The table below is the current record the automated gate checks, at
+section granularity (item-level detail lives in the archived record
+below and must not be carried forward without re-verification):
+
+| # | Check | Status | Notes |
+|---|-------|--------|-------|
+| 1.1 | Section 1 - version and build metadata | ⚠️ WARN | VERSION file and CLI entry point verified in CI; v1.2.3 tag published as prerelease; annotated-tag requirement re-verified at release time |
+| 2.1 | Section 2 - tests and code quality | ✅ PASS | Full suite and Ruff green in CI on main; no formal coverage report (acceptable for demo) |
+| 3.1 | Section 3 - security and repo hygiene | ⚠️ WARN | Bandit, secret scan and repo hygiene green in CI; git-history scrub still open (known limitation 2) |
+| 4.1 | Section 4 - SBOM and checksum manifest | ⚠️ WARN | SBOM generation and validation automated in the release gate (#513); checksum manifest, dependency completeness and CVE gate pending (#514, items 4.3/4.4) |
+| 5.1 | Section 5 - CLI and diagnostics | ✅ PASS | `khptz version` / `doctor` exercised in CI |
+| 6.1 | Section 6 - network and configuration | ⚠️ WARN | `legacy_config` doctor check added (#520/#452); isolated-VLAN matrix not rerun on Pi |
+| 7.1 | Section 7 - support bundle and redaction | 🔲 NOT_TESTED | Historical evidence only |
+| 8.1 | Section 8 - installer and systemd | 🔲 NOT_TESTED | Awaits Pi acceptance |
+| 9.1 | Section 9 - Raspberry Pi hardware validation | 🔲 NOT_TESTED | Awaits Pi acceptance (#381) |
+| 10.1 | Section 10 - demo and simulation mode | 🔲 NOT_TESTED | E2E on Pi pending |
+| 11.1 | Section 11 - backup and restore | 🔲 NOT_TESTED | Unit/integration green including dry-run; E2E on Pi pending |
+| 12.1 | Section 12 - security hardening | 🔲 NOT_TESTED | On-Pi verification pending |
 
 ---
 
-## Evidence record — build 3.38.2 (commit 8012002)
+## Archived evidence record — build 3.38.2 (commit 8012002)
+
+Historical May 2026 record for another build, kept for item-level detail.
+It is NOT the current candidate's evidence: the automated gate ignores
+everything from this heading on, and its PASS marks must not be carried
+into a new release.
 
 | Field | Value |
 |-------|-------|
@@ -28,7 +54,7 @@ No target-Pi acceptance has been recorded for this candidate here.
 | **Tester** | Claude Code automated evidence pass |
 | **Date** | 2026-05-26 |
 | **Environment** | Windows 10 dev machine (hardware validation pending on Raspberry Pi) |
-| **Decision** | **DEMO ONLY** — Sections 8–12 (hardware, installer, systemd, hardening) NOT_TESTED |
+| **Archived decision** | **DEMO ONLY** — Sections 8–12 (hardware, installer, systemd, hardening) NOT_TESTED |
 
 ---
 
@@ -228,13 +254,17 @@ khptz version && khptz status && khptz doctor
 ## Section 13: Known limitations for this release
 
 ```
-1. No annotated git tag — 1.2 FAIL — must tag before releasing (e.g. git tag -a v3.38.2 -m "Release 3.38.2")
+1. Historical 3.38.2 item: no annotated tag (1.2 FAIL). For the current candidate, v1.2.3
+   was published as a prerelease tag (2026-11-14); the annotated-tag requirement is
+   re-verified when a release is tagged.
 
 2. git history contains password.txt and Contact.txt values from early development.
    Files are untracked from index (PR #760) but values persist in git history.
    Run git filter-repo to scrub history before any public or third-party repo share.
 
-3. SBOM and checksum manifest (#513, #514) not generated — blocks customer build.
+3. SBOM generation and validation are automated in the release gate (#513); the
+   checksum manifest (#514), dependency completeness and the CVE gate (4.3/4.4)
+   are not — they block a customer build.
 
 4. Sections 8–12 (installer, Pi hardware, backup/restore E2E, security hardening)
    all NOT_TESTED — acceptable for demo-only, block pilot/customer.
@@ -256,7 +286,8 @@ khptz version && khptz status && khptz doctor
 | **Demo / no-hardware** | Sections 1–3, 5, 6 — all PASS or WARN; 8–9 may be NOT_TESTED |
 | **Customer / pilot** | All sections — PASS only; WARN requires written acceptance; NOT_TESTED blocks |
 
-**Current decision: DEMO ONLY**
+The current decision lives in the *Current candidate* record at the top of
+this document (the automated gate reads it from there, fail closed).
 
 Blockers before pilot/customer:
 - [ ] Create annotated git tag `v3.38.2` (1.2)
