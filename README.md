@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/screenshots/banner.png" alt="KH PTZ Control: dual-camera VISCA-over-IP operator for Kingdom Halls" width="100%">
+  <img src="docs/screenshots/banner.png" alt="KH PTZ Control: dual-camera VISCA-over-IP operator" width="100%">
 </p>
 
 # KH PTZ Control
