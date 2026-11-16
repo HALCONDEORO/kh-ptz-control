@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/repository-banner.png" alt="KH PTZ Control: Camera control, in clear view" width="100%">
+</p>
+
 # KH PTZ Control
 
 [Project website](https://halcondeoro.github.io/kh-ptz-control/) · [Install](#install) · [Operator guide](docs/OPERATOR_GUIDE.md) · [Troubleshooting](#camera-troubleshooting)
