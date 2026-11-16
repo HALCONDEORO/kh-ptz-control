@@ -42,28 +42,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: "[1/10] Run full test suite"
+      - name: "[1/11] Run full test suite"
         run: python -m pytest
 
-      - name: "[2/10] Run Ruff lint"
+      - name: "[2/11] Run Ruff lint"
         run: python -m ruff check .
 
-      - name: "[3/10] Run ShellCheck on installer scripts"
+      - name: "[3/11] Run ShellCheck on installer scripts"
         uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         with:
           scandir: "."
           severity: warning
 
-      - name: "[4/10] Run startup smoke tests (hardware-free)"
+      - name: "[4/11] Run startup smoke tests (hardware-free)"
         run: |
           python -m pytest tests/test_startup_smoke.py tests/test_app_context.py tests/test_main_startup.py -v
 
-      - name: "[5/10] Verify khptz CLI entry point"
+      - name: "[5/11] Verify khptz CLI entry point"
         run: |
           python -m runtime.cli version
           python -m runtime.cli doctor || true
 
-      - name: "[6/10] Verify required docs and files are present"
+      - name: "[6/11] Verify required docs and files are present"
         run: |
           echo "Checking required files..."
           for f in README.md VERSION requirements.txt runtime/installer/install.sh runtime/systemd/khptz-control.service; do
@@ -82,24 +82,35 @@ jobs:
 
       # Report the recorded decision even if an earlier check failed.
       # Neither this nor the SBOM step can turn that failure into success.
-      - name: "[7/10] Checklist decision gate (NOT_TESTED never counts as pass)"
+      - name: "[7/11] Checklist decision gate (NOT_TESTED never counts as pass)"
         if: ${{ !cancelled() }}
         run: python3 scripts/check_release_readiness.py docs/RELEASE_READINESS_CHECKLIST.md
 
       # Collect independent SBOM evidence even when the decision gate blocks.
       # This does not neutralize prior failures: the job remains failed.
-      - name: "[8/10] Generate and validate SBOM"
+      - name: "[8/11] Generate and validate SBOM"
         if: ${{ !cancelled() }}
         run: |
           python3 scripts/generate_sbom.py --include-transitive --out "$RUNNER_TEMP/sbom.json"
           python3 scripts/validate_sbom.py "$RUNNER_TEMP/sbom.json"
 
-      - name: "[9/10] Verify issue dependency snapshot is current"
+      - name: "[9/11] Verify issue dependency snapshot is current"
         if: ${{ !cancelled() }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/check_issue_blocks_map.py
 
-      - name: "[10/10] Prepare and verify temporary candidate integrity"
+      - name: "[10/11] Prepare and verify temporary candidate integrity"
         if: ${{ !cancelled() }}
         run: python3 scripts/package_candidate.py --out "$RUNNER_TEMP/khptz-candidate"
+      # Audit exactly the installed closure from step 8, without re-resolving,
+      # installing, fixing, ignoring or silently skipping any declared pin.
+      - name: "[11/11] Audit exact SBOM Python pins (all reported severities block)"
+        if: ${{ !cancelled() }}
+        run: |
+          python3 -m pip_audit --version
+          python3 scripts/check_sbom_audit.py "$RUNNER_TEMP/sbom.json" --write-requirements "$RUNNER_TEMP/sbom-audit.txt"
+          audit_rc=0
+          python3 -m pip_audit --strict --no-deps --disable-pip --vulnerability-service pypi --cache-dir "$RUNNER_TEMP/pip-audit-cache" --format json -r "$RUNNER_TEMP/sbom-audit.txt" -o "$RUNNER_TEMP/sbom-audit.json" || audit_rc=$?
+          python3 scripts/check_sbom_audit.py "$RUNNER_TEMP/sbom.json" --audit-report "$RUNNER_TEMP/sbom-audit.json"
+          test "$audit_rc" -eq 0
