@@ -35,6 +35,7 @@
 
 set -uo pipefail
 
+ACCEPTANCE_SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPORT=""
 WITH_BACKUP=false
 WIZARD_USER_ARG=""
@@ -231,10 +232,15 @@ else
 
     # #890: JSON must agree with the human output and the exit code.
     json_out="$(cli_as_service khptz doctor --json 2>/dev/null)"; json_rc=$?
-    if [[ "${json_rc}" -eq "${doctor_rc}" ]]; then
-        pass "khptz doctor --json exit code agrees with human output (${json_rc})"
+    # Equal process codes alone do not prove valid JSON or honest summaries.
+    # Require one explicit human outcome plus JSON checks that derive the same
+    # domain outcome. These are sequential snapshots, so drift needs review.
+    human_outcome="$(printf '%s\n' "${doctor_out}" | sed -n 's/^  Outcome: //p')"
+    if printf '%s\n' "${json_out}" | python3 "${ACCEPTANCE_SCRIPT_DIR}/check_doctor_acceptance.py" \
+        --human-rc "${doctor_rc}" --json-rc "${json_rc}" --human-outcome "${human_outcome}"; then
+        pass "khptz doctor JSON structure and outcomes agree with human output (${json_rc})"
     else
-        fail "doctor --json rc=${json_rc} disagrees with doctor rc=${doctor_rc}"
+        fail "doctor JSON is malformed or disagrees with human/process/check outcomes"
     fi
     printf '%s\n' "${json_out}" > "${REPORT%.txt}-doctor.json" 2>/dev/null \
         && say "         (JSON saved to ${REPORT%.txt}-doctor.json)"
