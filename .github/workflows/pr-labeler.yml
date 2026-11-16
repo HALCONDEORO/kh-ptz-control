@@ -1,20 +1,29 @@
 name: Pull Request Labeler
 
-# Read metadata only. Never check out or execute a pull request's code with
-# the write token supplied by pull_request_target.
+# React to CI metadata, never to pull_request_target. No checkout, artifact
+# download, or execution of PR code. The pinned labeler fetches its config at
+# github.sha, which workflow_run binds to the default branch.
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
 
 permissions:
   contents: read
 
 concurrency:
-  group: pr-labeler-${{ github.event.pull_request.number }}
+  group: pr-labeler-${{ github.event.workflow_run.pull_requests[0].number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   label:
+    # GitHub must associate exactly one PR in this repository. Missing or
+    # ambiguous associations are skipped, never guessed from branches/artifacts.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0].number > 0 &&
+      github.event.workflow_run.pull_requests[1] == null &&
+      github.event.workflow_run.pull_requests[0].base.repo.id == github.repository_id
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions:
@@ -24,5 +33,6 @@ jobs:
       - name: Add matching labels without removing manual labels
         uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6
         with:
+          pr-number: ${{ github.event.workflow_run.pull_requests[0].number }}
           sync-labels: false
           configuration-path: .github/labeler.yml
