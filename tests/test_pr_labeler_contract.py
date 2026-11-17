@@ -28,7 +28,7 @@ def test_metadata_events_only_with_no_checkout_or_shell_execution():
     assert len(job['steps']) == 1
     step = job['steps'][0]
     assert 'run' not in step
-    assert step['uses'] == 'actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d'
+    assert step['uses'] == 'actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13'
     assert set(step) == {'name', 'uses', 'with'}
     assert step['with'] == {
         'pr-number': '${{ github.event.workflow_run.pull_requests[0].number }}',
