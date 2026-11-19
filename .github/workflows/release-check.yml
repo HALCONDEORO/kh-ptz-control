@@ -43,7 +43,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: "[1/11] Run full test suite"
-        run: python -m pytest
+        run: python scripts/run_release_tests.py --full
 
       - name: "[2/11] Run Ruff lint"
         run: python -m ruff check .
