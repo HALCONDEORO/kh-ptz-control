@@ -73,20 +73,30 @@ def group_shared_mode(directory: Path) -> "int | None":
     return None
 
 
-def _fsync_dir(dirpath: Path) -> None:
-    """Best-effort fsync of *dirpath* so a rename into it is durable.
+class PublishedButNotDurableError(OSError):
+    """Replacement is visible, but its directory sync failed.
 
-    No-op where opening a directory for fsync is unsupported (e.g. Windows),
-    which is acceptable: durability of the directory entry is a Linux/Pi concern.
+    The old file has already been replaced. This error does not imply rollback
+    and callers must not report a durably completed save or retry blindly.
     """
-    try:
-        fd = os.open(str(dirpath), os.O_RDONLY)
-    except OSError:
+
+    published = True
+
+    def __init__(self, dest: Path, cause: OSError) -> None:
+        super().__init__(cause.errno, "Replacement published; durability unconfirmed", str(dest))
+
+
+def _fsync_dir(dirpath: Path) -> None:
+    """Sync a directory on POSIX; Windows does not support this operation.
+
+    Do not confuse an actual I/O/access/resource error on Linux/Pi with an
+    unsupported platform. Such errors must reach the caller.
+    """
+    if os.name == "nt":
         return
+    fd = os.open(str(dirpath), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
     try:
         os.fsync(fd)
-    except OSError:
-        pass
     finally:
         os.close(fd)
 
@@ -101,7 +111,9 @@ def write_bytes_atomic(dest: Path, data: bytes, *, mode: "int | None" = None,
     (0600) and fsync'd before the rename; the parent directory is fsync'd after.
     If *mode* is given, it is applied to the file before the rename. If the
     write or rename fails, the temporary file is removed and OSError is
-    re-raised so the existing *dest* is never corrupted.
+    re-raised so the existing *dest* is never corrupted. A directory sync
+    failure after replacement raises PublishedButNotDurableError: the new
+    content is visible but durability is unconfirmed, with no automatic rollback.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     previous = dest.stat() if preserve_metadata and dest.exists() else None
@@ -139,7 +151,10 @@ def write_bytes_atomic(dest: Path, data: bytes, *, mode: "int | None" = None,
     except OSError:
         tmp.unlink(missing_ok=True)
         raise
-    _fsync_dir(dest.parent)
+    try:
+        _fsync_dir(dest.parent)
+    except OSError as exc:
+        raise PublishedButNotDurableError(dest, exc) from exc
 
 
 def write_text_atomic(
