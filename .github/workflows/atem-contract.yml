@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install Qt system libraries
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0
+        run: bash scripts/ci/install_qt.sh libegl1 libgl1 libxkbcommon-x11-0
       - name: Install test and pinned ATEM dependencies
         run: python -m pip install -r requirements-dev.txt -r requirements-atem.txt
       - name: Verify exact published package and run loopback-only contracts
