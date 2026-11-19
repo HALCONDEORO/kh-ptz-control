@@ -1010,11 +1010,15 @@ class TestAtemAdminUpdateInputNames:
     inmediatamente — se verifica el flujo de control que no depende de Qt.
     """
 
-    def test_empty_names_calls_fallback(self):
-        """Si names está vacío, se llama a _build_fallback_buttons (antes del guard Qt)."""
+    def test_empty_names_clears_grid_without_assuming_room_mapping(self):
+        """Empty live names must not restore an unverified hardcoded map."""
         stub = MagicMock()
         _aap.AtemAdminPanel.update_input_names(stub, {})
-        stub._build_fallback_buttons.assert_called_once()
+        stub._clear_buttons.assert_called_once()
+        stub._lbl_inputs.setText.assert_called_once_with(
+            "Waiting for ATEM input names. No room mapping assumed."
+        )
+        stub._build_fallback_buttons.assert_not_called()
 
     def test_nonempty_names_no_crash_without_qt(self):
         """Con inputs reales y sin Qt, update_input_names retorna limpiamente sin error."""

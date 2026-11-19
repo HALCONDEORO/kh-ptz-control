@@ -15,8 +15,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Callable, Optional
 
-from domain.atem_constants import ATEM_INPUT_LABELS_LIST as _INPUT_LABELS_LIST
-
 try:
     from PyQt5.QtCore import QTimer, Qt
     from PyQt5.QtWidgets import (
@@ -98,7 +96,6 @@ class AtemAdminPanel(_QFrameBase):  # type: ignore[valid-type]
 
     _REFRESH_MS = 1000
 
-    _INPUT_LABELS = _INPUT_LABELS_LIST
     _PREVIEW_COLS = 5  # botones por fila en la cuadrícula de inputs
 
     def __init__(
@@ -171,8 +168,8 @@ class AtemAdminPanel(_QFrameBase):  # type: ignore[valid-type]
         prev_lbl.setStyleSheet(_SECTION_STYLE)
         root.addWidget(prev_lbl)
 
-        # Contenedor reconstruible — se llena con fallback hardcodeado y se reemplaza
-        # con los inputs reales cuando input_names_ready llega del ATEMMonitor
+        # Do not assume the demo input map matches the room's physical wiring.
+        # Populate only when input_names_ready arrives from ATEMMonitor.
         self._prev_buttons_widget = QFrame()
         self._prev_buttons_layout = QGridLayout(self._prev_buttons_widget)
         self._prev_buttons_layout.setSpacing(3)
@@ -180,8 +177,10 @@ class AtemAdminPanel(_QFrameBase):  # type: ignore[valid-type]
         self._preview_btns: dict[int, QPushButton] = {}
         self._current_program: "int | None" = None
 
-        # Arranca con los botones fallback — se reemplazan al conectar el ATEM real
-        self._build_fallback_buttons()
+        self._lbl_inputs = QLabel("Waiting for ATEM input names. No room mapping assumed.")
+        self._lbl_inputs.setWordWrap(True)
+        self._lbl_inputs.setStyleSheet(_STATUS_STYLE)
+        root.addWidget(self._lbl_inputs)
 
         root.addWidget(self._prev_buttons_widget)
 
@@ -417,22 +416,6 @@ class AtemAdminPanel(_QFrameBase):  # type: ignore[valid-type]
 
     # ── Input buttons helpers ──────────────────────────────────────────────────
 
-    def _build_fallback_buttons(self) -> None:
-        """Construye los botones con los labels hardcodeados de atem_constants.
-
-        Se usa como estado inicial y como fallback si el ATEM no envía inputs.
-        """
-        if not _QT_AVAILABLE:
-            return
-        self._clear_buttons()
-        for idx, (inp, label) in enumerate(self._INPUT_LABELS):
-            btn = QPushButton(f"{inp}: {label}")
-            btn.setStyleSheet(_BTN_NORMAL)
-            btn.clicked.connect(self._make_preview_fn(inp))
-            row, col = divmod(idx, self._PREVIEW_COLS)
-            self._prev_buttons_layout.addWidget(btn, row, col)
-            self._preview_btns[inp] = btn
-
     def _clear_buttons(self) -> None:
         """Elimina todos los widgets del contenedor de botones."""
         while self._prev_buttons_layout.count():
@@ -450,15 +433,14 @@ class AtemAdminPanel(_QFrameBase):  # type: ignore[valid-type]
         Reemplaza completamente la cuadrícula — soporta cualquier número de inputs.
         Si ya había un input en programa, lo re-ilumina tras reconstruir.
         """
-        # Si no hay inputs, volver al fallback hardcodeado
-        if not names:
-            self._build_fallback_buttons()
-            return
-
         if not _QT_AVAILABLE:
             return
 
         self._clear_buttons()
+        self._lbl_inputs.setText(
+            "Input names reported by ATEM. Check cabling before switching live."
+            if names else "Waiting for ATEM input names. No room mapping assumed."
+        )
 
         # Construir un botón por cada input recibido del ATEM, en orden
         for idx, input_id in enumerate(sorted(names.keys())):
@@ -476,6 +458,7 @@ class AtemAdminPanel(_QFrameBase):  # type: ignore[valid-type]
             if btn is not None:
                 btn.setStyleSheet(_BTN_PROGRAM)
 
+        self.refresh()
         logger.info("[ATEM] %d inputs recibidos del switcher: %s",
                     len(names), sorted(names.keys()))
 
@@ -556,9 +539,14 @@ class AtemAdminPanel(_QFrameBase):  # type: ignore[valid-type]
         self._lbl_role.setText(f"Role: {role.value}")
 
         tech = self._is_technician()
-        tip = "" if tech else "Requires admin role to perform live switching"
-        self._btn_cut.setEnabled(tech)
-        self._btn_auto.setEnabled(tech)
+        writable = tech and connected
+        tip = ("Requires admin role to perform manual switching" if not tech
+               else "" if connected else "ATEM is disconnected")
+        for button in self._preview_btns.values():
+            button.setEnabled(writable)
+            button.setToolTip(tip)
+        self._btn_cut.setEnabled(writable)
+        self._btn_auto.setEnabled(writable)
         self._btn_cut.setToolTip(tip)
         self._btn_auto.setToolTip(tip)
 
