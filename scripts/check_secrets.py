@@ -21,10 +21,8 @@ Rules:
     - High-confidence secret content in staged files → fail.
     - Lower-confidence patterns → warn only (do not block commits).
 
-Safe allowlists:
-    - config/examples/*.yaml  — explicitly safe examples
-    - tests/fixtures/          — explicitly safe test fixtures
-    - docs/                    — documentation with safe sample data
+No directory is exempt from content scanning. Synthetic fixtures must build
+secret-like canaries at runtime rather than embed a complete matching value.
 """
 
 from __future__ import annotations
@@ -91,16 +89,13 @@ _BLOCKED_DIRS: frozenset[str] = frozenset({
     "local_config",
 })
 
-# Path prefixes that are explicitly safe (allow-listed).
-# Files under these prefixes are excluded from content scanning.
-# (They may contain fake/example key material for testing or documentation.)
-_SAFE_PREFIXES: tuple[str, ...] = (
-    "config/examples/",
-    "config/defaults/",
-    "config.example/",   # legacy example directory
-    "tests/",            # test files contain fake sample key headers
-    "docs/",
-)
+# Narrow filename exceptions for committed non-secret examples. These do not
+# exempt their contents from scanning, or any future files in the directories.
+_SAFE_EXAMPLE_PATHS = frozenset({
+    "config/examples/starter_1_camera.yaml",
+    "config/defaults/starter.yaml",
+    "tests/fixtures/config/minimal_valid.yaml",
+})
 
 
 # ── Content scanning patterns ─────────────────────────────────────────────────
@@ -110,6 +105,8 @@ _KEY_BEGIN = "-----" + "BEGIN "
 
 # High-confidence: file contains these → fail.
 _FAIL_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    ("GitHub token", re.compile(r"\bgh" + r"[pousr]_[A-Za-z0-9]{36,255}\b")),
+    ("GitHub fine-grained token", re.compile(r"\bgithub_" + r"pat_[A-Za-z0-9_]{50,255}\b")),
     ("SSH/TLS private key block",    re.compile(_KEY_BEGIN + r"[A-Z ]* PRIVATE KEY-----", re.IGNORECASE)),
     ("OPENSSH private key block",    re.compile(_KEY_BEGIN + r"OPENSSH PRIVATE KEY-----", re.IGNORECASE)),
     ("Generic PEM private key block",re.compile(_KEY_BEGIN + r"RSA PRIVATE KEY-----", re.IGNORECASE)),
@@ -144,8 +141,8 @@ def _git_lines(root: Path, *args: str) -> list[str]:
         capture_output=True,
         text=True,
     )
-    if result.returncode not in (0, 1):
-        return []
+    if result.returncode != 0:
+        raise RuntimeError("Secret scan could not enumerate repository files")
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
@@ -162,7 +159,7 @@ def _tracked_files(root: Path) -> set[Path]:
 
 def _is_safe_path(rel: str) -> bool:
     """Return True if the relative path is in an explicit safe prefix."""
-    return any(rel.startswith(prefix) for prefix in _SAFE_PREFIXES)
+    return rel in _SAFE_EXAMPLE_PATHS
 
 
 def _is_blocked_name(path: Path, root: Path) -> str | None:
@@ -197,9 +194,6 @@ def _scan_content(path: Path, root: Path) -> list[str]:
     Scan file content for high-confidence secret patterns.
     Returns a list of category descriptions (not the secret values themselves).
     """
-    rel = path.relative_to(root).as_posix()
-    if _is_safe_path(rel):
-        return []
     if path.suffix.lower() in _SKIP_CONTENT_EXTENSIONS:
         return []
     if not path.is_file():
@@ -207,7 +201,7 @@ def _scan_content(path: Path, root: Path) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return []
+        return ["unreadable file (scan incomplete)"]
 
     findings = []
     for category, pattern in _FAIL_PATTERNS:

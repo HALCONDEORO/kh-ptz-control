@@ -36,12 +36,13 @@ class TestIsSafePath:
         "config/examples/starter_1_camera.yaml",
         "config/defaults/starter.yaml",
         "tests/fixtures/config/minimal_valid.yaml",
-        "docs/NETWORK_ARCHITECTURE.md",
     ])
     def test_explicit_safe_prefixes_are_safe(self, path):
         assert _is_safe_path(path)
 
     @pytest.mark.parametrize("path", [
+        "docs/NETWORK_ARCHITECTURE.md",
+        "tests/other.py",
         "config.yaml",
         "password.enc",
         "id_rsa",
@@ -144,7 +145,7 @@ class TestScanContent:
         root = tmp_path
         f = root / "bad.yaml"
         # FAKE sample key header — not a real private key
-        f.write_text("-----BEGIN RSA PRIVATE KEY-----\nFAKE_KEY_DATA_FOR_TEST\n-----END RSA PRIVATE KEY-----\n", encoding="utf-8")
+        f.write_text("-----" + "BEGIN RSA PRIVATE KEY-----\nFAKE_KEY_DATA_FOR_TEST\n-----END RSA PRIVATE KEY-----\n", encoding="utf-8")
         findings = _scan_content(f, root)
         assert findings  # at least one category detected
         # Must not include the actual key content in findings
@@ -155,17 +156,17 @@ class TestScanContent:
         root = tmp_path
         f = root / "bad.key"
         # FAKE sample key header — not a real key
-        f.write_text("-----BEGIN OPENSSH PRIVATE KEY-----\nFAKE_DATA\n-----END OPENSSH PRIVATE KEY-----\n", encoding="utf-8")
+        f.write_text("-----" + "BEGIN OPENSSH PRIVATE KEY-----\nFAKE_DATA\n-----END OPENSSH PRIVATE KEY-----\n", encoding="utf-8")
         findings = _scan_content(f, root)
         assert findings
 
-    def test_safe_prefix_not_scanned(self, tmp_path):
+    def test_example_content_is_scanned(self, tmp_path):
         root = tmp_path
         path = root / "config" / "examples" / "demo.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
         # Even if a safe example contains a private key header (it shouldn't, but)
-        path.write_text("-----BEGIN RSA PRIVATE KEY-----\nFAKE\n-----END RSA PRIVATE KEY-----\n", encoding="utf-8")
-        assert _scan_content(path, root) == []
+        path.write_text("-----" + "BEGIN RSA PRIVATE KEY-----\nFAKE\n-----END RSA PRIVATE KEY-----\n", encoding="utf-8")
+        assert _scan_content(path, root)
 
     def test_binary_extension_not_scanned(self, tmp_path):
         root = tmp_path
@@ -223,6 +224,8 @@ class TestRunScan:
     def test_clean_repo_dir_no_errors(self, tmp_path):
         """A directory with no dangerous files produces no errors."""
         (tmp_path / "main.py").write_text("print('hello')\n", encoding="utf-8")
+        import subprocess
+        subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
         errors, _ = run_scan(tmp_path)
         assert errors == []
 
@@ -250,7 +253,7 @@ class TestRunScan:
         bad_file = tmp_path / "bad.yaml"
         # FAKE key header — not real
         bad_file.write_text(
-            "-----BEGIN RSA PRIVATE KEY-----\nFAKE_KEY_FOR_TEST\n-----END RSA PRIVATE KEY-----\n",
+            "-----" + "BEGIN RSA PRIVATE KEY-----\nFAKE_KEY_FOR_TEST\n-----END RSA PRIVATE KEY-----\n",
             encoding="utf-8",
         )
 
@@ -272,7 +275,7 @@ class TestRunScan:
         """Error messages must never include the actual secret content."""
         bad_file = tmp_path / "secret.yaml"
         bad_file.write_text(
-            "-----BEGIN RSA PRIVATE KEY-----\nSECRET_VALUE_DO_NOT_LEAK\n-----END RSA PRIVATE KEY-----\n",
+            "-----" + "BEGIN RSA PRIVATE KEY-----\nSECRET_VALUE_DO_NOT_LEAK\n-----END RSA PRIVATE KEY-----\n",
             encoding="utf-8",
         )
 
@@ -478,7 +481,7 @@ class TestScriptsAreScanned:
     def test_script_with_key_header_is_blocked(self, tmp_path):
         script = tmp_path / "scripts" / "deploy.py"
         script.parent.mkdir()
-        script.write_text("-----BEGIN OPENSSH PRIVATE KEY-----\nFAKE-ONLY\n")
+        script.write_text("-----" + "BEGIN OPENSSH PRIVATE KEY-----\nFAKE-ONLY\n")
         assert _scan_content(script, tmp_path)
 
     def test_script_credential_filename_is_blocked(self, tmp_path):
@@ -494,7 +497,7 @@ class TestScriptsAreScanned:
         subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
         script = tmp_path / "scripts" / "deploy.py"
         script.parent.mkdir()
-        script.write_text("-----BEGIN RSA PRIVATE KEY-----\nFAKE-CANARY-ONLY\n")
+        script.write_text("-----" + "BEGIN RSA PRIVATE KEY-----\nFAKE-CANARY-ONLY\n")
         subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
         errors, _ = run_scan(tmp_path, scan_tracked=True)
         assert any("scripts/deploy.py" in error for error in errors)

@@ -31,7 +31,7 @@ class TestRedactText:
     def test_ssh_private_key_block_is_redacted(self):
         text = (
             "some text\n"
-            "-----BEGIN RSA PRIVATE KEY-----\n"
+            "-----" + "BEGIN RSA PRIVATE KEY-----\n"
             "MIIEowIBAAKCAQEA0+jnmyxkABC123==\n"
             "-----END RSA PRIVATE KEY-----\n"
             "more text"
@@ -87,7 +87,7 @@ class TestRedactMapping:
         assert result["api_key"] == "<REDACTED>"
 
     def test_private_key_substring_in_key_is_redacted(self):
-        d = {"private_key": "-----BEGIN EC PRIVATE KEY-----"}
+        d = {"private_key": "-----" + "BEGIN EC PRIVATE KEY-----"}
         result = _GUARD.redact_mapping(d)
         assert result["private_key"] == "<REDACTED>"
 
@@ -142,7 +142,7 @@ class TestScanForSecrets:
         assert _GUARD.scan_for_secrets("No secrets here.") == []
 
     def test_ssh_key_is_detected(self):
-        text = "-----BEGIN RSA PRIVATE KEY-----\nABC123\n-----END RSA PRIVATE KEY-----"
+        text = "-----" + "BEGIN RSA PRIVATE KEY-----\nABC123\n-----END RSA PRIVATE KEY-----"
         findings = _GUARD.scan_for_secrets(text)
         assert any("private key" in f.lower() or "ssh" in f.lower() for f in findings)
 
@@ -172,7 +172,7 @@ class TestIsSafeForExport:
         assert not _GUARD.is_safe_for_export("password=opensesame")
 
     def test_text_with_ssh_key_is_not_safe(self):
-        text = "-----BEGIN RSA PRIVATE KEY-----\ndata\n-----END RSA PRIVATE KEY-----"
+        text = "-----" + "BEGIN RSA PRIVATE KEY-----\ndata\n-----END RSA PRIVATE KEY-----"
         assert not _GUARD.is_safe_for_export(text)
 
     def test_empty_text_is_safe(self):
