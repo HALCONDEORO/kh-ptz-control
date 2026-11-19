@@ -31,17 +31,22 @@ class TestDisabledAtem:
 
 class TestSetPreview:
     @pytest.mark.parametrize("role", list(OperatingMode))
-    def test_ok_for_any_role(self, role):
-        svc, _ = _svc()
-        assert svc.set_preview(1, role=role).ok is True
+    def test_only_admin_can_write_preview(self, role):
+        svc, adapter = _svc()
+        before = adapter.get_preview_input()
+        result = svc.set_preview(1, role=role)
+        assert result.ok is (role is OperatingMode.ADMIN)
+        if role is not OperatingMode.ADMIN:
+            assert adapter.get_preview_input() == before
+            assert "admin" in result.message.lower()
 
     def test_fails_when_disconnected(self):
         svc, _ = _svc(connected=False)
-        assert svc.set_preview(1).ok is False
+        assert svc.set_preview(1, role=OperatingMode.ADMIN).ok is False
 
     def test_result_data_has_correlation_id(self):
         svc, _ = _svc()
-        result = svc.set_preview(2)
+        result = svc.set_preview(2, role=OperatingMode.ADMIN)
         assert result.ok is True
         assert "correlation_id" in result.data
 

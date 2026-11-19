@@ -9,7 +9,7 @@
 #   auto(actor, role)
 #
 # Safety rules:
-#   - CUT/AUTO require ADMIN role.  Normal operator/camera_operator cannot cut live.
+#   - Preview/CUT/AUTO require ADMIN role.  Normal operator/camera_operator cannot cut live.
 #   - CUT/AUTO never retry automatically — one call, one result.
 #   - Commands require ATEM to be connected.
 #   - All commands are auditable: correlation_id + actor in result data.
@@ -51,10 +51,19 @@ class AtemCommandService:
     ) -> OperationResult:
         """Set ATEM preview bus input.
 
-        Any role may set preview — it does not cause an on-air transition.
+        ADMIN is required for all manual switcher writes, including preview.
         """
         if self._port is None:
             return self._disabled("set_preview")
+        if not can_live_switch(role):
+            return OperationResult(
+                ok=False,
+                code=OperationCode.PERMISSION_DENIED,
+                message=f"Preview requires admin role (current: {role.value})",
+                severity=OperationSeverity.WARNING,
+                operation="atem_set_preview",
+                target="atem",
+            )
         try:
             result = self._port.set_preview_input(input_id)
             logger.info(
