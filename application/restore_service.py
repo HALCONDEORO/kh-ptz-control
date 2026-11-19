@@ -266,48 +266,57 @@ class RestoreService:
             raise RestoreError(f"manifest.json is corrupt: {exc}") from exc
         if not isinstance(manifest, dict):
             raise RestoreError("Manifest must be a JSON object. Restore aborted.")
+        version = manifest.get("schema_version", 1)
+        if type(version) is not int or version not in (1, 2):
+            raise RestoreError("Manifest schema_version is unsupported. Restore aborted.")
         included = manifest.get("included", [])
         if not isinstance(included, list) or not all(isinstance(name, str) for name in included):
             raise RestoreError("Manifest included must be a list of paths. Restore aborted.")
         return manifest
 
     def _verify_hashes(self, zf: zipfile.ZipFile, manifest: dict) -> None:
+        """Validate supported manifest integrity before the safety backup/writes.
+
+        Only explicitly supported legacy v1 (including an omitted version) may
+        omit hash records. Modern v2 must describe every included archive member
+        exactly once. Hashes check consistency, not authenticity of the author.
         """
-        If the manifest includes a ``files`` list with SHA-256 hashes, verify each
-        file in the archive matches its declared hash.
-
-        Does nothing when the manifest was created before hash support was added
-        (schema_version < 2 or ``files`` key absent).
-
-        Raises
-        ------
-        RestoreError
-            If any file's computed hash does not match the manifest hash.
-        """
-        file_records = manifest.get("files")
-        if not file_records:
-            return  # old-format backup — no hashes to verify
-
+        modern = manifest.get("schema_version", 1) == 2
+        if "files" not in manifest:
+            if modern:
+                raise RestoreError("Manifest v2 files are required. Restore aborted.")
+            return
+        file_records = manifest["files"]
         if not isinstance(file_records, list):
             raise RestoreError("Manifest files must be a list. Restore aborted.")
+        if modern and manifest.get("hash_algorithm") != "sha256":
+            raise RestoreError("Manifest hash_algorithm must be sha256. Restore aborted.")
+        included = manifest.get("included", [])
+        if len(included) != len(set(included)):
+            raise RestoreError("Manifest included contains duplicate paths. Restore aborted.")
         hash_map = {}
         for rec in file_records:
             if not isinstance(rec, dict) or not isinstance(rec.get("path"), str):
                 raise RestoreError("Manifest file record has no valid path. Restore aborted.")
-            if "sha256" in rec:
-                if not isinstance(rec["sha256"], str):
-                    raise RestoreError("Manifest file hash must be text. Restore aborted.")
-                hash_map[rec["path"]] = rec["sha256"]
-        if not hash_map:
-            return  # nothing to verify
+            path = rec["path"]
+            if path in hash_map:
+                raise RestoreError("Manifest files contain duplicate paths. Restore aborted.")
+            digest = rec.get("sha256")
+            if (not isinstance(digest, str) or len(digest) != 64
+                    or any(c not in "0123456789abcdef" for c in digest)):
+                raise RestoreError("Manifest file hash must be lowercase SHA-256. Restore aborted.")
+            size = rec.get("size_bytes")
+            if modern and (type(size) is not int or size < 0):
+                raise RestoreError("Manifest file size must be a non-negative integer. Restore aborted.")
+            hash_map[path] = (digest, size)
 
-        for arc_name, expected_hash in hash_map.items():
-            if arc_name not in zf.namelist():
-                # BackupService records hashes only for included files, never
-                # for skipped optional files. Absence means an incomplete ZIP.
-                raise RestoreError(
-                    f"Missing hashed member '{arc_name}' from backup. Restore aborted."
-                )
+        members = set(zf.namelist()) - {MANIFEST_ARCHIVE_NAME}
+        missing = set(hash_map) - members
+        if missing:
+            raise RestoreError("Missing hashed member from backup. Restore aborted.")
+        if modern and (set(hash_map) != set(included) or set(included) != members):
+            raise RestoreError("Manifest v2 files must cover all included archive members. Restore aborted.")
+        for arc_name, (expected_hash, size) in hash_map.items():
             actual_data = zf.read(arc_name)
             actual_hash = hashlib.sha256(actual_data).hexdigest()
             if actual_hash != expected_hash:
@@ -316,6 +325,8 @@ class RestoreService:
                     f"expected {expected_hash!r}, got {actual_hash!r}. "
                     "The backup may be corrupt. Restore aborted."
                 )
+            if modern and len(actual_data) != size:
+                raise RestoreError("Manifest file size mismatch. Restore aborted.")
 
     @staticmethod
     def _validate_zip_integrity(zf: zipfile.ZipFile) -> None:
