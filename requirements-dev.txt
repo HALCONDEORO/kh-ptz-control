@@ -29,4 +29,4 @@ pip-audit>=2.9,<2.10
 bandit>=1.8.6,<1.9
 
 # Requirement/marker parsing for opt-in installed-closure SBOM tooling (Python 3.9).
-packaging>=24.2,<26
+packaging>=26.3,<27
