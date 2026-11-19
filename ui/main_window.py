@@ -387,9 +387,8 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
         self._build_camera_indicator()
         self._build_mode_buttons()
         self._build_admin_hotspot()
-        from ui.persistence_indicator import PersistenceIndicator
-        self._persistence_indicator = PersistenceIndicator(self)
-        self._persistence_indicator.setGeometry(350, 1044, 900, 30)
+        from ui.persistence_indicator import install
+        install(self)
 
         self.BtnNames.raise_()
 
@@ -446,13 +445,8 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
         background.lower()
 
     def _build_table_seats(self):
-        mesa = QLabel(self)
-        mesa.setGeometry(96, 900, 245, 50)
-        mesa.setStyleSheet(
-            "background-color: rgba(100, 80, 60, 120);"
-            "border: 2px solid rgba(70, 50, 30, 200);"
-            "border-radius: 4px;"
-        )
+        from ui.table_decoration import build_table_decoration
+        build_table_decoration(self)
 
     def _build_platform_icons(self):
         btn_w, btn_h = 110, 115

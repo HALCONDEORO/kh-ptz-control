@@ -39,3 +39,9 @@ class PersistenceIndicator(QLabel):
             self.setText(f"Last confirmed save: {last}")
             self.setStyleSheet("QLabel {color: #183c29; background: #eff7f2; "
                               "border: 1px solid #37674a; padding: 3px; font: 12px;}")
+
+
+def install(window):
+    """Keep the fixed-design placement out of the main window builder."""
+    window._persistence_indicator = PersistenceIndicator(window)
+    window._persistence_indicator.setGeometry(350, 1044, 900, 30)
