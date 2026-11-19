@@ -387,6 +387,9 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
         self._build_camera_indicator()
         self._build_mode_buttons()
         self._build_admin_hotspot()
+        from ui.persistence_indicator import PersistenceIndicator
+        self._persistence_indicator = PersistenceIndicator(self)
+        self._persistence_indicator.setGeometry(350, 1044, 900, 30)
 
         self.BtnNames.raise_()
 

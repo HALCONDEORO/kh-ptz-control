@@ -33,7 +33,8 @@ it, restoring a backup or importing a layout wrote files only their creator
 could read, which is how a session-owned GUI ends up with no presets after a
 recovery (#885).
 
-Overlapping writes use independent private temp files, so each replacement
+Public writes serialize publication and the session receipt per destination.
+The underlying implementation uses independent private temp files, so each replacement
 publishes only its own complete content. The last replacement wins. Callers
 still need a lock around read-modify-write transactions to prevent lost updates
 (or core.json_io.save_json which is lock-per-path).
@@ -101,7 +102,7 @@ def _fsync_dir(dirpath: Path) -> None:
         os.close(fd)
 
 
-def write_bytes_atomic(dest: Path, data: bytes, *, mode: "int | None" = None,
+def _write_bytes_atomic(dest: Path, data: bytes, *, mode: "int | None" = None,
                        preserve_metadata: bool = False) -> None:
     """Write *data* to *dest* atomically (tmp + fsync + os.replace).
 
@@ -155,6 +156,20 @@ def write_bytes_atomic(dest: Path, data: bytes, *, mode: "int | None" = None,
         _fsync_dir(dest.parent)
     except OSError as exc:
         raise PublishedButNotDurableError(dest, exc) from exc
+
+
+def write_bytes_atomic(dest: Path, data: bytes, *, mode: "int | None" = None,
+                       preserve_metadata: bool = False) -> None:
+    """Publish through the atomic helper and retain a session-only receipt."""
+    from core.persistence_status import publication_lock, record_safely
+
+    with publication_lock(dest):
+        try:
+            _write_bytes_atomic(dest, data, mode=mode, preserve_metadata=preserve_metadata)
+        except OSError:
+            record_safely(dest, confirmed=False)
+            raise
+        record_safely(dest, confirmed=os.name != "nt")
 
 
 def write_text_atomic(
