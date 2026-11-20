@@ -92,23 +92,10 @@ def load_json(path: Path | str, default: Any = None) -> Any:
 
 
 def _fsync_dir(dirpath: Path) -> None:
-    """Best-effort fsync of *dirpath* so the os.replace rename is durable.
+    """Use the shared platform policy; propagate actual directory sync errors."""
+    from core.atomic_write import _fsync_dir as sync_directory
 
-    Mirrors core.atomic_write._fsync_dir: the temp file is fsync'd before the
-    rename, but without also fsync'ing the directory a power loss can drop the
-    directory entry itself and the saved file vanishes. No-op where opening a
-    directory for fsync is unsupported (e.g. Windows).
-    """
-    try:
-        fd = os.open(str(dirpath), os.O_RDONLY)
-    except OSError:
-        return
-    try:
-        os.fsync(fd)
-    except OSError:
-        pass
-    finally:
-        os.close(fd)
+    sync_directory(dirpath)
 
 
 def _apply_group_access(tmp_path: str, directory: Path) -> None:
@@ -148,7 +135,9 @@ def save_json(path: Path | str, data: Any, indent: int = 2, *, create_backup: bo
     y bloqueo por archivo. Crea `.bak` antes de reemplazarlo solo si el primario
     contiene JSON UTF-8 válido.
     Use create_backup=False when restoring a good backup over a corrupt primary.
-    Devuelve True si tuvo éxito.
+    Returns True only after the file and directory syncs succeed (directory
+    sync is unsupported on Windows). False can mean the replacement is already
+    visible but its durability is unconfirmed; it does not promise rollback.
     """
     p = Path(path)
     lock = _lock_for(p)
@@ -180,13 +169,14 @@ def save_json(path: Path | str, data: Any, indent: int = 2, *, create_backup: bo
                 with os.fdopen(fd, "w", encoding="utf-8") as fh:
                     fh.write(text)
                     fh.flush()
-                    try:
-                        os.fsync(fh.fileno())
-                    except OSError:
-                        pass
+                    os.fsync(fh.fileno())
                 _apply_group_access(tmp, dir_)
                 os.replace(tmp, p)
-                _fsync_dir(dir_)
+                try:
+                    _fsync_dir(dir_)
+                except OSError:
+                    logger.error("Replacement published for %s; durability unconfirmed", p)
+                    raise
             except Exception:
                 try:
                     os.unlink(tmp)
