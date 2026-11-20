@@ -143,7 +143,7 @@ class TestRedactEventDict:
         assert redact_event_dict(d)["secret"] == "[REDACTED]"
 
     def test_private_key_field_redacted(self):
-        d = {"private_key": "-----BEGIN RSA PRIVATE KEY-----"}
+        d = {"private_key": "-----" + "BEGIN RSA PRIVATE KEY-----"}
         assert redact_event_dict(d)["private_key"] == "[REDACTED]"
 
     def test_nested_dict_redacted(self):

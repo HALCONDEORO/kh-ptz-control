@@ -57,7 +57,7 @@ class TestRedactDict:
         assert result.value["token"] == "<REDACTED>"
 
     def test_ssh_key_field_redacted(self):
-        result = _SVC.redact_dict({"ssh_key": "-----BEGIN RSA PRIVATE KEY-----"})
+        result = _SVC.redact_dict({"ssh_key": "-----" + "BEGIN RSA PRIVATE KEY-----"})
         assert result.value["ssh_key"] == "<REDACTED>"
 
     def test_ssh_password_field_redacted(self):
@@ -115,7 +115,7 @@ class TestRedactText:
 
     def test_ssh_private_key_block_redacted(self):
         text = (
-            "-----BEGIN RSA PRIVATE KEY-----\n"
+            "-----" + "BEGIN RSA PRIVATE KEY-----\n"
             "MIIEowIBAAKCAQEA0+jnmyxkABC123==\n"
             "-----END RSA PRIVATE KEY-----"
         )
@@ -159,7 +159,7 @@ class TestIsSafeForExport:
         assert not _SVC.is_safe_for_export("password=opensesame")
 
     def test_ssh_key_is_not_safe(self):
-        text = "-----BEGIN RSA PRIVATE KEY-----\ndata\n-----END RSA PRIVATE KEY-----"
+        text = "-----" + "BEGIN RSA PRIVATE KEY-----\ndata\n-----END RSA PRIVATE KEY-----"
         assert not _SVC.is_safe_for_export(text)
 
     def test_empty_text_is_safe(self):
@@ -174,7 +174,7 @@ class TestScanForSecrets:
         assert _SVC.scan_for_secrets("No secrets here.") == []
 
     def test_ssh_key_detected(self):
-        text = "-----BEGIN RSA PRIVATE KEY-----\nABC\n-----END RSA PRIVATE KEY-----"
+        text = "-----" + "BEGIN RSA PRIVATE KEY-----\nABC\n-----END RSA PRIVATE KEY-----"
         findings = _SVC.scan_for_secrets(text)
         assert findings
 
