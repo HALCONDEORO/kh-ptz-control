@@ -27,7 +27,10 @@ def test_overlapping_writers_keep_independent_temporary_files(tmp_path, monkeypa
 
     def save(payload):
         try:
-            atomic_write.write_bytes_atomic(destination, payload, mode=0o600)
+            # Exercise the underlying temporary-file ownership invariant.
+            # The public helper now serializes publication+receipt per path;
+            # its ordering is tested in test_persistence_status.py.
+            atomic_write._write_bytes_atomic(destination, payload, mode=0o600)
             results.append((payload, "ok"))
         except OSError:
             results.append((payload, "error"))

@@ -129,7 +129,7 @@ def _apply_group_access(tmp_path: str, directory: Path) -> None:
         logger.debug("No se pudo ajustar el acceso de grupo en %s: %s", tmp_path, exc)
 
 
-def save_json(path: Path | str, data: Any, indent: int = 2, *, create_backup: bool = True) -> bool:
+def _save_json(path: Path | str, data: Any, indent: int = 2, *, create_backup: bool = True) -> bool:
     """
     Escribe `data` en `path` de forma atómica (temp-file + os.replace) con backup
     y bloqueo por archivo. Crea `.bak` antes de reemplazarlo solo si el primario
@@ -186,6 +186,16 @@ def save_json(path: Path | str, data: Any, indent: int = 2, *, create_backup: bo
             return True
         except (OSError, TypeError, ValueError):
             return False
+
+
+def save_json(path: Path | str, data: Any, indent: int = 2, *, create_backup: bool = True) -> bool:
+    """Serialize publication and its session receipt with all shared helpers."""
+    from core.persistence_status import publication_lock, record_safely
+
+    with publication_lock(path):
+        result = _save_json(path, data, indent, create_backup=create_backup)
+        record_safely(path, confirmed=result and os.name != "nt")
+        return result
 
 
 def detect_leftover_files(directory: Path | str) -> list[Path]:
