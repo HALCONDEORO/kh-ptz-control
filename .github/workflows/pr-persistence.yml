@@ -21,8 +21,7 @@ jobs:
           python-version: '3.9'
       - name: Install Qt libraries and test dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0
+          bash scripts/ci/install_qt.sh libegl1 libgl1 libxkbcommon-x11-0
           python -m pip install -r requirements-dev.txt
       - name: Startup, persistence and restore contracts (no hardware)
         run: python scripts/run_release_tests.py
