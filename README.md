@@ -4,7 +4,7 @@
 
 # KH PTZ Control
 
-[Project website](https://halcondeoro.github.io/kh-ptz-control/) · [Install](#install) · [Operator guide](docs/OPERATOR_GUIDE.md) · [Troubleshooting](#camera-troubleshooting)
+[One-page install checklist](QUICKSTART.md) · [Project website](https://halcondeoro.github.io/kh-ptz-control/) · [Install](#install) · [Operator guide](docs/OPERATOR_GUIDE.md) · [Troubleshooting](#camera-troubleshooting)
 
 The live website follows the install, use and help path. Optional ATEM and
 architecture details are folded after help. See [local preview and publication
@@ -154,18 +154,24 @@ troubleshooting — is [docs/INSTALL_RPI.md](docs/INSTALL_RPI.md).
 New to the project? Follow the [installation checklist](docs/INSTALL_TODAY_ES.md)
 for equipment checks, installation and handover.
 
-### Try it without cameras (simulation mode)
+### Try it without cameras
+
+From a disposable source checkout, run the new **console-only adapter rehearsal**:
 
 ```bash
-python3 adapters/sim_mode.py on
+python3 -m simulation.rehearsal
+python3 -m simulation.rehearsal --json
 ```
 
-This legacy helper writes loopback camera addresses into local configuration files
-and keeps a backup so `python3 adapters/sim_mode.py off` can restore them. It does
-not start the simulator or prove that ATEM and other integrations are isolated.
-Use a disposable development checkout, never a live installation. Simulation
-does not prove physical motion, STOP delivery or camera compatibility. Rehearse
-on the actual equipment before live use.
+It uses the existing in-memory FakeCamera adapters for Platform and Comments,
+without PyQt, camera addresses, passwords or production configuration. It denies
+socket operations in its process and exercises save/recall, stop and standby.
+It is not the full operator GUI and does not prove physical motion, network STOP
+delivery, hardware latency, camera compatibility or a Pi installation. See the
+[one-page checklist and limits](QUICKSTART.md).
+
+The older `adapters/sim_mode.py on` helper rewrites local camera configuration;
+it is a different mechanism. Do not use it on a working installation.
 
 ## Camera operation and presets
 
