@@ -154,7 +154,7 @@ def main():
     editor.initialize()
     origin = f"http://127.0.0.1:{args.port}"
     server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(editor, origin))
-    print(f"Editor de prueba: {origin} | Sin cámaras ni datos del salón", flush=True)
+    print(f"Test editor: {origin} | No cameras or live hall data", flush=True)
     try:
         server.serve_forever()
     finally:

@@ -94,7 +94,7 @@ class WebLayoutEditor:
 
     def initialize(self):
         if not self.path.exists():
-            raw = {"schema_version": 1, "room_id": "editor-sandbox", "room_name": "Salón de prueba",
+            raw = {"schema_version": 1, "room_id": "editor-sandbox", "room_name": "Test hall",
                    "screen_width": 1200, "screen_height": 800, "seats": []}
             if not self._service.save(self._service._deserialize(raw)):
                 raise EditorError("save_failed", 500)
