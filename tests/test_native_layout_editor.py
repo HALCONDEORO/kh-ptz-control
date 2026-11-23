@@ -201,7 +201,9 @@ def test_escape_releases_turn(native):
 
 
 def test_http_and_native_share_one_master(native):
-    import json, threading, urllib.request
+    import json
+    import threading
+    import urllib.request
     from runtime.web_layout_editor import BoundedEditorServer, make_handler
 
     widget, editor, _ = native
