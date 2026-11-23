@@ -56,13 +56,13 @@ def test_assigned_legacy_preset_alias_is_preserved(shell):
     assert calls == [(17, 'id-c')]
 
 
-def test_synthetic_registry_visual(shell):
+def test_synthetic_registry_visual(shell, tmp_path):
     root, _, _, app = shell
     root.resize(480, 260)
     root.setWindowTitle('Synthetic stable-ID seat test, no cameras')
     root.show()
     app.processEvents()
-    assert root.grab().save('/downloads/kh-stable-seat-qt-synthetic.png')
+    assert root.grab().save(str(tmp_path / 'stable-seat-qt-synthetic.png'))
 
 
 def test_legacy_name_assignment_clear_and_restart_cannot_resurrect(shell,monkeypatch):
