@@ -57,6 +57,8 @@ class BoundedEditorServer(ThreadingHTTPServer):
                 finally:
                     deadline.cancel()
             super().process_request_thread(request, client_address)
+        except OSError:
+            self.shutdown_request(request)
         finally:
             self.slots.release()
 
@@ -160,6 +162,11 @@ def make_handler(editor, origin, *, clock=time.monotonic, authenticator=None):
             if not self.valid_host():
                 return self.send_result(403, {"error": "host_rejected"})
             path = urlsplit(self.path).path
+            if path == "/api/state":
+                if not self.session() or self.headers.get("X-KH-Editor") != "1":
+                    return self.send_result(403, {"error": "session_required"})
+                return self.send_result(200, {"authentication_required": authenticator is not None,
+                                              "authenticated": self.authenticated()})
             if path == "/api/layout":
                 if not self.authenticated():
                     return self.send_result(401, {"error": "admin_login_required"})
@@ -244,9 +251,12 @@ def make_handler(editor, origin, *, clock=time.monotonic, authenticator=None):
                         authenticated[self.cookie_session()] = clock()
                     return self.send_result(200, {"active": True})
                 if self.path == "/api/logout":
-                    editor.release(session, data.get("generation"))
                     with auth_mutex:
                         authenticated.pop(self.cookie_session(), None)
+                    try:
+                        editor.release(session, data.get("generation"))
+                    except EditorError:
+                        pass  # Revocation must not depend on a tab's lease token.
                     return self.send_result(200, {"logged_out": True})
                 if self.path == "/api/lease":
                     result = editor.acquire(session)

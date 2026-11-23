@@ -423,7 +423,11 @@ def test_polling_does_not_renew_authenticated_idle_timeout(editor):
         for current in (300, 600, 899):
             now[0] = current
             assert request(origin, '/api/layout', **headers).status == 200
+            assert request(origin, '/api/renew', {'generation': 'expired-test-token'}, **headers).status == 423
+        state=json.load(request(origin, '/api/state', **headers))
+        assert state == {'authentication_required': True, 'authenticated': True}
         now[0] = 901
+        assert not json.load(request(origin, '/api/state', **headers))['authenticated']
         assert request(origin, '/api/layout', **headers).status == 401
         assert request(origin, '/api/activity', {}, **headers).status == 401
         assert request(origin, '/api/login', {'password': 'fixture'}, **headers).status == 200

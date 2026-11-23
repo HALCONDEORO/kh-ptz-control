@@ -2,20 +2,40 @@
 const $ = id => document.getElementById(id);
 const clone = value => JSON.parse(JSON.stringify(value));
 const tabId = crypto.randomUUID();
-let generation=null, signedIn=false, lastActivity=0;
+let generation=null, signedIn=false, lastActivity=0, authRequired=false, authEpoch=0;
 let doc, revision, selected = null, mine = false, dirty = false, undo = [], redo = [], drag = null, busy = false;
 const errors = {editor_busy:'Another editor has the turn. This layout remains read only.',lease_required:'Your editing turn expired. Keep your draft and request a new turn.',revision_conflict:'The master layout changed. Nothing was overwritten. Keep your draft before reloading.',admin_login_required:'Sign in as administrator to open this test layout.',invalid_login:'The administrator password was not accepted.',login_rate_limited:'Too many sign-in attempts. Wait one minute before retrying.',save_failed:'Save failed. Check the current state before retrying.'};
 function status(text) { $('status').textContent = text; }
 async function api(path, data) {
+  const epoch=authEpoch;
   const controller = new AbortController();
   const timer = setTimeout(()=>controller.abort(), 6000);
   let response, result;
   try { response = await fetch('/api/' + path,{method:data === undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-KH-Editor':'1','X-KH-Tab':tabId},body:data === undefined?undefined:JSON.stringify(data),signal:controller.signal}); result = await response.json(); } finally { clearTimeout(timer); }
-  if(!response.ok) { if(response.status===401){mine=false;generation=null;signedIn=false;$('loginPanel').hidden=false;$('logout').hidden=true;controls();} if(result.error==='lease_required'){mine=false;generation=null;controls();} throw new Error(errors[result.error] || 'Request failed: ' + result.error); }
+  if(epoch!==authEpoch)throw new Error('Session state changed. Request ignored.');
+  if(!response.ok) { if(response.status===401){clearPrivateState('Your administrator session ended. Unsaved changes were discarded.');} if(result.error==='lease_required'){mine=false;generation=null;controls();} throw new Error(errors[result.error] || 'Request failed: ' + result.error); }
   return result;
 }
 $('loginForm').onsubmit=run(async event=>{event.preventDefault();const password=$('adminPassword').value;$('adminPassword').value='';try{await api('login',{password});signedIn=true;lastActivity=Date.now();$('loginPanel').hidden=true;$('logout').hidden=false;await load();}catch(error){$('loginStatus').textContent=error.message;}});
-$('logout').onclick=run(async()=>{if(dirty&&!confirm('Discard unsaved changes and sign out?'))return;await api('logout',{generation});mine=false;generation=null;dirty=false;signedIn=false;doc=null;selected=null;undo=[];redo=[];drag=null;$('seats').replaceChildren();for(const id of ['room','label','x','y'])$(id).value='';$('roomTitle').textContent='Sign in to open the layout';$('count').textContent='No layout open';$('selectedText').textContent='None';$('locked').checked=false;$('loginPanel').hidden=false;$('logout').hidden=true;controls();status('Signed out.');});
+function clearPrivateState(message) {
+  authEpoch++;mine=false;generation=null;dirty=false;signedIn=false;doc=null;revision=null;
+  selected=null;undo=[];redo=[];drag=null;
+  $('seats').replaceChildren();
+  for(const id of ['room','label','x','y','adminPassword'])$(id).value='';
+  $('blockForm').reset();$('blockDialog').close();$('blockError').textContent='';
+  $('roomTitle').textContent='Sign in to open the layout';$('count').textContent='No layout open';
+  $('selectedText').textContent='None';$('locked').checked=false;$('loginStatus').textContent='';
+  $('empty').hidden=true;$('loginPanel').hidden=!authRequired;$('logout').hidden=true;
+  controls();status(message);
+}
+$('logout').onclick=run(async()=>{if(dirty&&!confirm('Discard unsaved changes and sign out?'))return;await api('logout',{generation});clearPrivateState('Signed out.');});
+async function checkAuthentication() {
+  const state=await api('state');authRequired=state.authentication_required;
+  if(authRequired&&!state.authenticated){clearPrivateState('Sign in as administrator. Inactive sessions discard unsaved changes.');return false;}
+  signedIn=authRequired&&state.authenticated;$('logout').hidden=!signedIn;$('loginPanel').hidden=true;
+  return true;
+}
+
 function seat() { return doc?.seats.find(s=>s.id === selected); }
 function snapshot() { undo.push(clone(doc)); if(undo.length>100)undo.shift(); redo=[]; dirty=true; }
 function controls() {
@@ -64,7 +84,7 @@ $('add').onclick=()=>{if(!mine||busy)return;snapshot();const s=newSeat(60,80,doc
 $('remove').onclick=()=>{if(!mine||busy||!seat()||seat().locked)return;snapshot();doc.seats=doc.seats.filter(s=>s.id!==selected);selected=null;render();};
 $('undo').onclick=()=>{if(!mine||busy||!undo.length)return;redo.push(clone(doc));doc=undo.pop();dirty=true;render();};
 $('redo').onclick=()=>{if(!mine||busy||!redo.length)return;undo.push(clone(doc));doc=redo.pop();dirty=true;render();};
-$('snap').onchange=()=>render();
+$('snap').onchange=()=>{if(doc)render();};
 function updateZoom(){if(!doc)return;const z=$('zoom').value;$('plan').style.width=z==='auto'?Math.max($('plan').parentElement.clientWidth,doc.screen_width*0.9)+'px':(Number(z)*100)+'%';}
 $('zoom').onchange=updateZoom;window.addEventListener('resize',updateZoom);
 $('block').onclick=()=>{if(mine&&!busy){$('blockError').textContent='';$('blockDialog').showModal();}};
@@ -84,9 +104,9 @@ $('plan').onpointermove=event=>{if(!drag||!mine||busy)return;const s=doc.seats.f
 function endDrag(){if(!drag)return;const s=seat();if(s&&(s.x!==drag.x||s.y!==drag.y)){undo.push(drag.before);redo=[];dirty=true;}drag=null;controls();}
 $('plan').onpointerup=endDrag;$('plan').onpointercancel=endDrag;
 $('plan').onkeydown=event=>{if(!mine||busy||!seat()||seat().locked)return;if(event.key==='Delete'){event.preventDefault();$('remove').click();return;}const delta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[event.key];if(!delta)return;event.preventDefault();snapshot();const s=seat(),step=(event.shiftKey?10:1)*($('snap').checked?10:1);s.x=Math.max(0,Math.min(doc.screen_width-40,s.x+delta[0]*step));s.y=Math.max(0,Math.min(doc.screen_height-40,s.y+delta[1]*step));render();};
-setInterval(run(async()=>{if(!mine&&!dirty){const result=await api('layout');if(result.revision!==revision){doc=result.document;revision=result.revision;render();status('Layout updated from master · version '+revision.slice(0,8));}}}),5000);
+setInterval(run(async()=>{if(!(await checkAuthentication()))return;if(!mine&&!dirty){const result=await api('layout');if(result.revision!==revision){doc=result.document;revision=result.revision;render();status('Layout updated from master · version '+revision.slice(0,8));}}}),5000);
 setInterval(run(async()=>{if(mine){try{await api('renew',{generation});}catch(e){mine=false;controls();throw e;}}}),25000);
 window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
-run(load)();
+run(async()=>{if(await checkAuthentication())await load();})();
 
 for(const eventName of ['pointerdown','keydown'])document.addEventListener(eventName,event=>{if(!event.isTrusted||!signedIn||Date.now()-lastActivity<60000)return;lastActivity=Date.now();run(()=>api('activity',{}))();},{passive:true});

@@ -127,3 +127,8 @@ with the operator process, safe session exclusion, live seat identity/presets,
 trusted certificates on real equipment, an administrator-only entry in Qt and
 installation/rollback/hardware tests. Do not proxy the unauthenticated loopback
 prototype to make it reachable remotely.
+
+Authenticated HTTPS test mode clears the local draft, history, selection and rendered
+layout when authentication expires or the user signs out. Unsaved edits are discarded
+on expiry. State checks run every five seconds even while editing. Cookie-restored
+login shows Sign out; loopback mode shows neither authentication control.
