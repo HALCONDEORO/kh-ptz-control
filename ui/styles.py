@@ -306,3 +306,15 @@ def touch_scrollbar_qss() -> str:
         "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
         "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }"
     )
+
+
+def web_editor_tokens_css() -> str:
+    """Expose existing brand tokens to the local web editor without importing Qt."""
+    tokens = {
+        "brand-dark": BRAND_DARK, "brand-mid": BRAND_MID, "brand-light": BRAND_LIGHT,
+        "success": SUCCESS, "success-bg": SUCCESS_BG, "card-bd": CARD_BD,
+        "field-bg": FIELD_BG, "field-bd": FIELD_BD, "muted": MUTED,
+        "secondary": SECONDARY, "warning": WARNING, "warning-bg": WARNING_BG,
+        "error": ERROR,
+    }
+    return ":root{" + "".join(f"--{key}:{value};" for key, value in tokens.items()) + "}"
