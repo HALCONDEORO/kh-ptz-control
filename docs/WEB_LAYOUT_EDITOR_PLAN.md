@@ -90,3 +90,45 @@ reload, check previous-byte backup, reject second writer, inspect desktop/mobile
 This is synthetic evidence only, not a real hall, two physical machines or cameras.
 
 Browser requests abort after6seconds. Default readable-seat zoom maintains about36px seat targets with internal scrolling; Fit overview deliberately trades target size for overview.
+
+## Phase 2a: authenticated HTTPS local-network sandbox
+
+An explicit, opt-in adapter is available as `runtime.web_layout_editor_lan`.
+It still uses a separate synthetic folder and does NOT edit the live hall file.
+It requires an existing dedicated administrator credential, a certificate/key
+provided by the installer, and a specific private IPv4 interface. No wildcard
+listener, port forwarding, firewall modification, automatic certificate creation,
+public DNS endpoint or service installation is performed.
+
+```sh
+python -m runtime.web_layout_editor_lan --sandbox /tmp/kh-editor-lan-test \
+  --bind 192.168.1.20 --port 8766 --certificate /path/server.pem \
+  --private-key /path/server-key.pem
+```
+
+The address above is an example, not a discovered address for any installation.
+Certificate trust must be configured normally on both browsers, with the actual
+address/name covered by its SAN. Never disable certificate validation for use.
+The implementation enforces TLS1.2or newer. The administrator verifier is the same
+fail-closed service used by the camera application; user-mode installations whose
+admin verifier is unavailable remain unavailable, without bypass. A global limit
+of5sign-in attempts per minute and15minute idle authenticated sessions applies. Reads, save/lease renewal and background
+polling do not refresh authentication. A separate activity endpoint is called only
+from trusted keyboard/pointer events, at most once a minute; this is a UI idle
+policy, not proof of human presence against an authenticated malicious client.
+
+Authentication gates layout reads and every editor mutation. Cookies are HttpOnly,
+SameSite=Strict and Secure over HTTPS; each tab still owns its separate writer
+lease. TLS handshakes run under the same bounded-worker/deadline policy rather
+than blocking acceptance of other requests.
+
+This is not customer deployment readiness. Remaining gates include integration
+with the operator process, safe session exclusion, live seat identity/presets,
+trusted certificates on real equipment, an administrator-only entry in Qt and
+installation/rollback/hardware tests. Do not proxy the unauthenticated loopback
+prototype to make it reachable remotely.
+
+Authenticated HTTPS test mode clears the local draft, history, selection and rendered
+layout when authentication expires or the user signs out. Unsaved edits are discarded
+on expiry. State checks run every five seconds even while editing. Cookie-restored
+login shows Sign out; loopback mode shows neither authentication control.

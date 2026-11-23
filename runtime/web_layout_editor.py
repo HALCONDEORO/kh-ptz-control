@@ -45,15 +45,31 @@ class BoundedEditorServer(ThreadingHTTPServer):
 
     def process_request_thread(self, request, client_address):
         try:
+            if hasattr(self, "tls_context"):
+                request.settimeout(IO_TIMEOUT)
+                request = self.tls_context.wrap_socket(request, server_side=True,
+                                                        do_handshake_on_connect=False)
+                deadline = threading.Timer(IO_TIMEOUT, request.close)
+                deadline.daemon = True
+                deadline.start()
+                try:
+                    request.do_handshake()
+                finally:
+                    deadline.cancel()
             super().process_request_thread(request, client_address)
+        except OSError:
+            self.shutdown_request(request)
         finally:
             self.slots.release()
 
 
 
-def make_handler(editor, origin, *, clock=time.monotonic):
+def make_handler(editor, origin, *, clock=time.monotonic, authenticator=None):
     sessions = {}
     session_mutex = threading.Lock()
+    authenticated = {}
+    attempts = []
+    auth_mutex = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "KHLayoutSandbox"
@@ -101,7 +117,7 @@ def make_handler(editor, origin, *, clock=time.monotonic):
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'")
             if cookie:
-                self.send_header("Set-Cookie", f"kh_editor={cookie}; HttpOnly; SameSite=Strict; Path=/")
+                self.send_header("Set-Cookie", f"kh_editor={cookie}; HttpOnly; SameSite=Strict; Path=/" + ("; Secure" if origin.startswith("https://") else ""))
             self.end_headers()
             self.wfile.write(data)
 
@@ -130,11 +146,30 @@ def make_handler(editor, origin, *, clock=time.monotonic):
                 return cookie + ":" + tab
             return None
 
+        def authenticated(self):
+            if authenticator is None:
+                return True
+            cookie = self.cookie_session()
+            with auth_mutex:
+                for key in list(authenticated):
+                    if clock() - authenticated[key] >= 900:
+                        del authenticated[key]
+                if cookie in authenticated:
+                    return True
+            return False
+
         def do_GET(self):
             if not self.valid_host():
                 return self.send_result(403, {"error": "host_rejected"})
             path = urlsplit(self.path).path
+            if path == "/api/state":
+                if not self.session() or self.headers.get("X-KH-Editor") != "1":
+                    return self.send_result(403, {"error": "session_required"})
+                return self.send_result(200, {"authentication_required": authenticator is not None,
+                                              "authenticated": self.authenticated()})
             if path == "/api/layout":
+                if not self.authenticated():
+                    return self.send_result(401, {"error": "admin_login_required"})
                 session = self.session()
                 if not session or self.headers.get("X-KH-Editor") != "1":
                     return self.send_result(403, {"error": "session_required"})
@@ -160,7 +195,10 @@ def make_handler(editor, origin, *, clock=time.monotonic):
                         return self.send_result(503, {"error": "session_limit"})
                     session = secrets.token_urlsafe(32)
                     sessions[session] = clock()
-            self.send_result(200, (ASSETS / name).read_bytes(), mime,
+            content = (ASSETS / name).read_bytes()
+            if path == "/" and authenticator is not None:
+                content = content.replace(b"WEB EDITOR \xc2\xb7 PHASE 1", b"WEB EDITOR \xc2\xb7 HTTPS LAN TEST")
+            self.send_result(200, content, mime,
                              cookie=session if path == "/" else None)
 
         def do_POST(self):
@@ -187,6 +225,39 @@ def make_handler(editor, origin, *, clock=time.monotonic):
                 data = json.loads(raw)
                 if not isinstance(data, dict):
                     raise ValueError()
+                if self.path == "/api/login":
+                    if authenticator is None:
+                        return self.send_result(404, {"error": "not_found"})
+                    password = data.get("password")
+                    if not isinstance(password, str) or not 1 <= len(password) <= 512:
+                        return self.send_result(400, {"error": "invalid_login"})
+                    # Small global limit, not attacker-controlled per-IP buckets.
+                    with auth_mutex:
+                        attempts[:] = [value for value in attempts if clock() - value < 60]
+                        if len(attempts) >= 5:
+                            return self.send_result(429, {"error": "login_rate_limited"})
+                        attempts.append(clock())
+                        if not authenticator(password):
+                            return self.send_result(401, {"error": "invalid_login"})
+                        for key in list(authenticated):
+                            if clock() - authenticated[key] >= 900:
+                                del authenticated[key]
+                        authenticated[self.cookie_session()] = clock()
+                    return self.send_result(200, {"authenticated": True})
+                if not self.authenticated():
+                    return self.send_result(401, {"error": "admin_login_required"})
+                if self.path == "/api/activity":
+                    with auth_mutex:
+                        authenticated[self.cookie_session()] = clock()
+                    return self.send_result(200, {"active": True})
+                if self.path == "/api/logout":
+                    with auth_mutex:
+                        authenticated.pop(self.cookie_session(), None)
+                    try:
+                        editor.release(session, data.get("generation"))
+                    except EditorError:
+                        pass  # Revocation must not depend on a tab's lease token.
+                    return self.send_result(200, {"logged_out": True})
                 if self.path == "/api/lease":
                     result = editor.acquire(session)
                 elif self.path == "/api/renew":

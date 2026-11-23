@@ -369,3 +369,75 @@ def test_dripping_request_line_has_absolute_deadline(http_editor):
     finally:
         for sock in sockets:
             sock.close()
+
+
+def test_authenticated_mode_requires_admin_and_rate_limits(editor):
+    server = BoundedEditorServer(('127.0.0.1', 0), make_handler(editor, 'unused'))
+    origin = f'http://127.0.0.1:{server.server_port}'
+    server.RequestHandlerClass = make_handler(editor, origin,
+                                              authenticator=lambda candidate: candidate == 'fixture-only')
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    try:
+        root = request(origin)
+        cookie = root.headers['Set-Cookie'].split(';')[0]
+        headers = {'Cookie': cookie, 'Content-Type': 'application/json', 'X-KH-Editor': '1',
+                   'X-KH-Tab': 'test-tab-abcdefghijklmnop', 'Origin': origin}
+        assert request(origin, '/api/layout', **headers).status == 401
+        assert request(origin, '/api/lease', {}, **headers).status == 401
+        assert request(origin, '/api/login', {'password': 'wrong'}, **headers).status == 401
+        assert request(origin, '/api/login', {'password': 'fixture-only'}, **headers).status == 200
+        assert request(origin, '/api/layout', **headers).status == 200
+        assert request(origin, '/api/logout', {}, **headers).status == 200
+        assert request(origin, '/api/layout', **headers).status == 401
+        for _ in range(3):
+            assert request(origin, '/api/login', {'password': 'wrong'}, **headers).status == 401
+        assert request(origin, '/api/login', {'password': 'fixture-only'}, **headers).status == 429
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join()
+
+
+@pytest.mark.parametrize('address', ['0.0.0.0', '8.8.8.8', '224.0.0.1', '::1'])
+def test_lan_adapter_rejects_wildcard_public_and_unsupported_interfaces(editor, address):
+    from runtime.web_layout_editor_lan import build_lan_server
+    with pytest.raises(ValueError, match='private IPv4'):
+        build_lan_server(editor, address=address, port=8766,
+                         certificate='unused', private_key='unused', authenticator=lambda _: False)
+
+
+def test_polling_does_not_renew_authenticated_idle_timeout(editor):
+    now = [0]
+    server = BoundedEditorServer(('127.0.0.1', 0), make_handler(editor, 'unused'))
+    origin = f'http://127.0.0.1:{server.server_port}'
+    server.RequestHandlerClass = make_handler(editor, origin, clock=lambda: now[0],
+                                              authenticator=lambda _: True)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    try:
+        cookie = request(origin).headers['Set-Cookie'].split(';')[0]
+        headers = {'Cookie': cookie, 'Content-Type': 'application/json', 'X-KH-Editor': '1',
+                   'X-KH-Tab': 'test-tab-abcdefghijklmnop', 'Origin': origin}
+        assert request(origin, '/api/login', {'password': 'fixture'}, **headers).status == 200
+        for current in (300, 600, 899):
+            now[0] = current
+            assert request(origin, '/api/layout', **headers).status == 200
+            assert request(origin, '/api/renew', {'generation': 'expired-test-token'}, **headers).status == 423
+        state=json.load(request(origin, '/api/state', **headers))
+        assert state == {'authentication_required': True, 'authenticated': True}
+        now[0] = 901
+        assert not json.load(request(origin, '/api/state', **headers))['authenticated']
+        assert request(origin, '/api/layout', **headers).status == 401
+        assert request(origin, '/api/activity', {}, **headers).status == 401
+        assert request(origin, '/api/login', {'password': 'fixture'}, **headers).status == 200
+        now[0] = 1500
+        assert request(origin, '/api/activity', {}, **headers).status == 200
+        now[0] = 2000
+        assert request(origin, '/api/layout', **headers).status == 200
+        assert request(origin, '/api/logout', {}, **headers).status == 200
+        assert request(origin, '/api/layout', **headers).status == 401
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join()
