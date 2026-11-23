@@ -19,7 +19,7 @@ from typing import Optional
 
 from config import save_names_data
 from ui.widgets import GoButton, SpecialDragButton
-from ui.seat_registry import seat_button
+from ui.seat_registry import SeatRegistry, seat_button
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,19 @@ class SeatNamesController:
         # Pila de snapshots de _seat_names para deshacer asignaciones (A2).
         self._undo_stack: list[dict] = []
 
+    def _canonicalize_names(self):
+        registry = getattr(self._w, '_seat_registry', None)
+        if not isinstance(registry, SeatRegistry):
+            return
+        normalized = registry.canonical_names(self._w._seat_names)
+        if normalized != self._w._seat_names:
+            self._w._seat_names.clear()
+            self._w._seat_names.update(normalized)
+            save_names_data(self._w._names_list, self._w._seat_names)
+        self._undo_stack = [registry.canonical_names(item) for item in self._undo_stack]
+
     def _push_undo(self):
+        self._canonicalize_names()
         """Guarda una instantánea del estado de asientos antes de mutarlo."""
         self._undo_stack.append(dict(self._w._seat_names))
         if len(self._undo_stack) > self._UNDO_DEPTH:
@@ -41,6 +53,7 @@ class SeatNamesController:
 
     def undo_last_assignment(self) -> bool:
         """Restaura el estado de asientos anterior a la última asignación/borrado (A2)."""
+        self._canonicalize_names()
         if not self._undo_stack:
             return False
         prev = self._undo_stack.pop()
@@ -56,6 +69,7 @@ class SeatNamesController:
         return True
 
     def _restore_seat_names(self):
+        self._canonicalize_names()
         for seat_str, name in self._w._seat_names.items():
             btn = seat_button(self._w, seat_str)
             if isinstance(btn, (GoButton, SpecialDragButton)) and name:
@@ -65,7 +79,8 @@ class SeatNamesController:
 
     def _on_seat_name_assigned(self, seat_number: int | str, name: str):
         self._push_undo()
-        key = str(seat_number)
+        registry = getattr(self._w, '_seat_registry', None)
+        key = registry.canonical_key(seat_number) if isinstance(registry, SeatRegistry) else str(seat_number)
         if name:
             # Exclusividad: un nombre solo puede estar en un asiento a la vez
             for other_key, other_name in list(self._w._seat_names.items()):
@@ -83,6 +98,7 @@ class SeatNamesController:
         self._sync_assigned_to_panel()
 
     def _on_names_list_changed(self, old_name: Optional[str] = None, new_name: Optional[str] = None):
+        self._canonicalize_names()
         if old_name and new_name:
             # Undo changes seat positions, not the attendee's current name.
             # Migrate every saved position snapshot alongside the live map.

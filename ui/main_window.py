@@ -1059,6 +1059,13 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
             if seat is not None and seat.preset > 0:
                 self._dispatch_layout_seat(seat.id, InputType.TAP)
             return
+        registry = getattr(self, '_seat_registry', None)
+        if isinstance(registry, SeatRegistry):
+            try:
+                if int(match_key) in registry._presets:
+                    return  # Unresolved/ambiguous layout alias, never guess.
+            except ValueError:
+                pass
         try:
             self._dispatch_preset_action(int(match_key), InputType.TAP)
         except ValueError:

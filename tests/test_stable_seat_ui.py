@@ -63,3 +63,50 @@ def test_synthetic_registry_visual(shell):
     root.show()
     app.processEvents()
     assert root.grab().save('/downloads/kh-stable-seat-qt-synthetic.png')
+
+
+def test_legacy_name_assignment_clear_and_restart_cannot_resurrect(shell,monkeypatch):
+    from ui.seat_names_mixin import SeatNamesController
+    root, _, _, _ = shell
+    root._seat_names={'17':'Old Person'}
+    root._names_list=['Old Person','New Person']
+    root._names_panel=SimpleNamespace(set_assigned=lambda _:None)
+    writes=[]
+    monkeypatch.setattr('ui.seat_names_mixin.save_names_data',lambda names,seats:writes.append(dict(seats)))
+    ctrl=SeatNamesController(root)
+    root._seat_names_ctrl=ctrl
+    ctrl._restore_seat_names()
+    assert root._seat_names=={'id-c':'Old Person'}
+    root.Seat17.set_name('New Person')
+    assert root._seat_names=={'id-c':'New Person'}
+    root.Seat17.set_name('')
+    assert root._seat_names=={}
+    ctrl._restore_seat_names()
+    assert root.Seat17.assigned_name==''
+    assert writes[-1]=={}
+    assert ctrl.undo_last_assignment()
+    assert root._seat_names=={'id-c':'New Person'}
+
+
+def test_name_recall_ambiguous_numeric_alias_cannot_fallback(shell):
+    from ui.main_window import MainWindow
+    from ui.seat_registry import SeatRegistry
+    root, _, calls, _ = shell
+    root._seat_registry=SeatRegistry()
+    root._seat_registry.add(SimpleNamespace(id='a',preset=17),object())
+    root._seat_registry.add(SimpleNamespace(id='b',preset=17),object())
+    del root.Seat17
+    root._seat_names={'17':'Legacy Person'}
+    MainWindow._recall_seat_by_name(root,'Legacy Person')
+    assert calls==[]
+
+
+def test_fixed_platform_name_recall_keeps_legacy_path(shell):
+    from ui.main_window import MainWindow
+    root, _, _, _ = shell
+    calls=[]
+    root._seat_names={'1':'Platform Person'}
+    root.Seat1=object()
+    root._dispatch_preset_action=lambda preset,gesture:calls.append(preset)
+    MainWindow._recall_seat_by_name(root,'Platform Person')
+    assert calls==[1]
