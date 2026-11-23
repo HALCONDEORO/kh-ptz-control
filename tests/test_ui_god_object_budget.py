@@ -44,7 +44,7 @@ BUDGETS: dict[str, tuple[int, int]] = {
     # ui/camera_led_wiring.py (VISCA robustness review); then down again when
     # the VISCA speed-watchdog shell moved to ui/visca_watchdog.py. The ratchet
     # moves down, never up.
-    "ui/main_window.py": (1686, 87),
+    "ui/main_window.py": (1652, 87),
     "ui/splash_screen.py": (1332, 53),
 }
 

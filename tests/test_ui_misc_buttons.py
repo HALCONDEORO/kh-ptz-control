@@ -536,6 +536,18 @@ class TestGoButtonSetName:
         _GoButton.set_name(stub, "")
         stub.setText.assert_called_with("7")
 
+    def test_set_name_empty_restores_layout_label(self):
+        stub = _go_stub(seat_number=7)
+        stub._layout_label = 'North aisle'
+        _GoButton.set_name(stub, '')
+        stub.setText.assert_called_with('North aisle')
+
+    def test_set_name_empty_invalid_layout_label_falls_back_to_preset(self):
+        stub = _go_stub(seat_number=7)
+        stub._layout_label = ''
+        _GoButton.set_name(stub, '')
+        stub.setText.assert_called_with('7')
+
     def test_set_name_calls_apply_style(self):
         stub = _go_stub()
         _GoButton.set_name(stub, "PersonB")
