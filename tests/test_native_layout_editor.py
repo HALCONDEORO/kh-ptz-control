@@ -71,7 +71,7 @@ def test_native_visual(native, tmp_path):
     widget.save()
     widget.show()
     app.processEvents()
-    assert widget.grab().save(str(tmp_path / 'native-layout-editor.png'))
+    assert widget.grab().save(str(tmp_path / "native-layout-editor.png"))
 
 
 def test_expired_turn_keeps_draft_and_stale_revision_rejected(native):
@@ -256,3 +256,18 @@ def test_http_and_native_share_one_master(native):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_dialog_reopen_restarts_lifecycle_and_releases_second_turn(native):
+    widget, editor, app = native
+    widget.show()
+    widget.take()
+    widget.accept()
+    widget.show()
+    app.processEvents()
+    assert widget.timer.isActive()
+    assert not widget._finalized
+    widget.take()
+    widget.accept()
+    assert editor.acquire("web-after-second-close")["generation"]
+    assert not widget.timer.isActive()

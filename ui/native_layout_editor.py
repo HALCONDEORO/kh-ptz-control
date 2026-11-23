@@ -243,6 +243,8 @@ class NativeLayoutEditor(QDialog):
         self.fit_readable()
 
     def take(self):
+        if self._finalized:
+            return
         if not self.dirty:
             self.load()
         lease = self.editor.acquire(self.session)
@@ -402,6 +404,14 @@ class NativeLayoutEditor(QDialog):
             self.document = self.future.pop()
             self.dirty = True
             self.render()
+
+    def showEvent(self, event):
+        if self._finalized:
+            self._finalized = False
+            self.timer.start()
+            self.poll.start()
+            self.run(self.load)
+        super().showEvent(event)
 
     def _finalize(self):
         if self._finalized:
