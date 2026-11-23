@@ -62,20 +62,24 @@ def make_handler(editor, origin, *, clock=time.monotonic):
             self.request.settimeout(IO_TIMEOUT)
             super().setup()
 
-        def parse_request(self):
-            # Bound the total time for all headers, not just each individual read.
-            self._header_timer = threading.Timer(IO_TIMEOUT, self._abort_socket)
-            self._header_timer.daemon = True
-            self._header_timer.start()
+        def handle_one_request(self):
+            # Start BEFORE BaseHTTPRequestHandler reads raw_requestline. Socket
+            # inactivity timeouts alone do not stop a client dripping bytes.
+            timer = threading.Timer(IO_TIMEOUT, self._abort_socket)
+            timer.daemon = True
+            timer.start()
             try:
-                if not super().parse_request():
-                    return False
-                if self.headers.get_all("Transfer-Encoding") or len(self.headers.get_all("Content-Length", [])) > 1:
-                    self.send_result(400, {"error": "ambiguous_framing"})
-                    return False
-                return True
+                super().handle_one_request()
             finally:
-                self._header_timer.cancel()
+                timer.cancel()
+
+        def parse_request(self):
+            if not super().parse_request():
+                return False
+            if self.headers.get_all("Transfer-Encoding") or len(self.headers.get_all("Content-Length", [])) > 1:
+                self.send_result(400, {"error": "ambiguous_framing"})
+                return False
+            return True
 
         def _abort_socket(self):
             try:

@@ -343,3 +343,29 @@ def test_cookie_pool_expires_and_purges(editor):
         server.shutdown()
         server.server_close()
         worker.join()
+
+
+def test_dripping_request_line_has_absolute_deadline(http_editor):
+    import socket
+    import time
+    from urllib.parse import urlsplit
+    parts = urlsplit(http_editor)
+    sockets = []
+    try:
+        for _ in range(8):
+            sock = socket.create_connection((parts.hostname, parts.port), timeout=3)
+            sockets.append(sock)
+        # No first CRLF is ever sent. Traffic stays well below inactivity timeout.
+        for _ in range(5):
+            for sock in sockets:
+                try:
+                    sock.sendall(b'G')
+                except OSError:
+                    pass
+            time.sleep(0.65)
+        assert request(http_editor).status == 200
+        for sock in sockets:
+            assert sock.recv(4096) == b''
+    finally:
+        for sock in sockets:
+            sock.close()

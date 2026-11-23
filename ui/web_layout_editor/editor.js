@@ -9,9 +9,8 @@ function status(text) { $('status').textContent = text; }
 async function api(path, data) {
   const controller = new AbortController();
   const timer = setTimeout(()=>controller.abort(), 6000);
-  let response;
-  try { response = await fetch('/api/' + path,{method:data === undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-KH-Editor':'1','X-KH-Tab':tabId},body:data === undefined?undefined:JSON.stringify(data),signal:controller.signal}); } finally { clearTimeout(timer); }
-  const result = await response.json();
+  let response, result;
+  try { response = await fetch('/api/' + path,{method:data === undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-KH-Editor':'1','X-KH-Tab':tabId},body:data === undefined?undefined:JSON.stringify(data),signal:controller.signal}); result = await response.json(); } finally { clearTimeout(timer); }
   if(!response.ok) { if(result.error==='lease_required'){mine=false;generation=null;controls();} throw new Error(errors[result.error] || 'Request failed: ' + result.error); }
   return result;
 }
@@ -57,7 +56,7 @@ $('save').onclick=run(async()=>{
 });
 $('cancel').onclick=run(async()=>{if(dirty&&!confirm('Discard unsaved changes?'))return;await api('release',{generation});generation=null;dirty=false;mine=false;await load();});
 $('room').onchange=()=>{if(!mine||busy)return;const name=$('room').value.trim();if(!name){render();return;}snapshot();doc.room_name=name;render();};
-for(const id of ['label','x','y','locked']) $(id).onchange=()=>{const s=seat();if(!mine||busy||!s||s.locked&&id!=='locked')return;let value=$(id).value;if(id==='locked')value=$(id).checked;else if(id==='x'||id==='y'){value=Number(value);const max=doc[id==='x'?'screen_width':'screen_height']-40;if(!Number.isFinite(value)||value<0||value>max){render();return;}}else{value=value.trim();if(!value){render();return;}}snapshot();s[id]=value;render();};
+for(const id of ['label','x','y','locked']) $(id).onchange=()=>{const s=seat();if(!mine||busy||!s||s.locked&&id!=='locked')return;let value=$(id).value;if(id==='locked')value=$(id).checked;else if(id==='x'||id==='y'){value=Number(value);const max=doc[id==='x'?'screen_width':'screen_height']-40;if(!Number.isInteger(value)||value<0||value>max){render();return;}}else{value=value.trim();if(!value){render();return;}}snapshot();s[id]=value;render();};
 function newSeat(x,y,label,row=null,column=null){return {id:crypto.randomUUID(),label:String(label),preset:0,camera_role:'comments',x,y,row,column,type:'delegate',visible:true,locked:false,calibrated:false};}
 $('add').onclick=()=>{if(!mine||busy)return;snapshot();const s=newSeat(60,80,doc.seats.length+1);doc.seats.push(s);selected=s.id;render();};
 $('remove').onclick=()=>{if(!mine||busy||!seat()||seat().locked)return;snapshot();doc.seats=doc.seats.filter(s=>s.id!==selected);selected=null;render();};
