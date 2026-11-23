@@ -47,12 +47,10 @@ printf '%s\n' \
 # fresh index requirements and final failure remain mandatory. No source edits.
 # No translation/CNF indexes or unrelated restricted/multiverse repositories.
 # A single uninterrupted budget lets downloads finish instead of killing/restarting.
-for attempt in 1; do
-    if timeout --kill-after=5s 195s bash "$0" --attempt "$@"; then
-        exit 0
-    else
-        result=$?
-        echo "Qt package installation attempt ${attempt}/1 failed (exit ${result})" >&2
-    fi
-done
+if timeout --kill-after=5s 195s bash "$0" --attempt "$@"; then
+    exit 0
+else
+    result=$?
+    echo "Qt package installation attempt 1/1 failed (exit ${result})" >&2
+fi
 exit "$result"
