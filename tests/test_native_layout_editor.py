@@ -64,14 +64,14 @@ def test_undo_redo_remove_and_stable_ids(native):
     assert widget.document["seats"] == []
 
 
-def test_native_visual(native):
+def test_native_visual(native, tmp_path):
     widget, _, app = native
     widget.take()
     widget.create_block(6)
     widget.save()
     widget.show()
     app.processEvents()
-    assert widget.grab().save("/downloads/kh-native-layout-editor.png")
+    assert widget.grab().save(str(tmp_path / 'native-layout-editor.png'))
 
 
 def test_expired_turn_keeps_draft_and_stale_revision_rejected(native):
