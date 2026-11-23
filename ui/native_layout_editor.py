@@ -362,11 +362,25 @@ class NativeLayoutEditor(QDialog):
         if not self.generation or item.seat["locked"]:
             self.render()
             return
-        x = max(0, min(self.document["screen_width"] - 40, x))
-        y = max(0, min(self.document["screen_height"] - 40, y))
-        if (x, y) != (item.seat["x"], item.seat["y"]):
+        # Qt moves every movable selected item during one drag. Commit the
+        # complete gesture before rebuilding the scene, with one undo entry.
+        candidates = {
+            selected for selected in self.scene.selectedItems() if isinstance(selected, SeatItem)
+        }
+        candidates.add(item)
+        changes = []
+        for selected in candidates:
+            if selected.seat["locked"]:
+                continue
+            sx, sy = (x, y) if selected is item else (round(selected.x()), round(selected.y()))
+            sx = max(0, min(self.document["screen_width"] - 40, sx))
+            sy = max(0, min(self.document["screen_height"] - 40, sy))
+            if (sx, sy) != (selected.seat["x"], selected.seat["y"]):
+                changes.append((selected.seat, sx, sy))
+        if changes:
             self.checkpoint()
-            item.seat.update(x=x, y=y)
+            for seat, sx, sy in changes:
+                seat.update(x=sx, y=sy)
             QTimer.singleShot(0, self.render)
 
     def toggle_lock(self):

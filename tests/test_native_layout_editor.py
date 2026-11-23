@@ -271,3 +271,47 @@ def test_dialog_reopen_restarts_lifecycle_and_releases_second_turn(native):
     widget.accept()
     assert editor.acquire("web-after-second-close")["generation"]
     assert not widget.timer.isActive()
+
+
+def test_multi_selection_mouse_drag_is_one_persisted_undo_transaction(native):
+    from PyQt5.QtCore import Qt, QPoint
+    from PyQt5.QtGui import QMouseEvent
+    from PyQt5.QtTest import QTest
+
+    widget, editor, app = native
+    widget.show()
+    widget.take()
+    widget.create_block(1)
+    widget.save()
+    app.processEvents()
+    items = sorted(
+        [item for item in widget.scene.items() if hasattr(item, "seat")],
+        key=lambda item: item.seat["column"],
+    )
+    a, b = items[:2]
+    before = [(seat["x"], seat["y"]) for seat in widget.document["seats"]]
+    history = len(widget.history)
+    a.setSelected(True)
+    b.setSelected(True)
+    start = widget.view.mapFromScene(a.sceneBoundingRect().center())
+    end = start + QPoint(100, 90)
+    QTest.mousePress(widget.view.viewport(), Qt.LeftButton, Qt.NoModifier, start)
+    app.sendEvent(
+        widget.view.viewport(),
+        QMouseEvent(QMouseEvent.MouseMove, end, Qt.NoButton, Qt.LeftButton, Qt.NoModifier),
+    )
+    moved = [(round(item.x()), round(item.y())) for item in (a, b)]
+    assert all(moved[i] != before[i] for i in range(2))
+    QTest.mouseRelease(widget.view.viewport(), Qt.LeftButton, Qt.NoModifier, end)
+    app.processEvents()
+    after = [(seat["x"], seat["y"]) for seat in widget.document["seats"]]
+    assert after[:2] == moved
+    assert after[2:] == before[2:]
+    assert len(widget.history) == history + 1
+    widget.undo()
+    assert [(s["x"], s["y"]) for s in widget.document["seats"]] == before
+    widget.redo()
+    assert [(s["x"], s["y"]) for s in widget.document["seats"]] == after
+    widget.save()
+    saved = editor.read("web-client")["document"]["seats"]
+    assert [(s["x"], s["y"]) for s in saved] == after
