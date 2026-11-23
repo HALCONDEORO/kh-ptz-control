@@ -25,6 +25,7 @@ def run_fake(tmp_path, outcomes, args=('libegl1', 'libgl1')):
     echo $((i+1)) > "$COUNTER"
     exit "${code:-0}"
     ''')
+    command('dpkg', 'echo amd64')
     command('sleep', 'echo "sleep $*" >> "$RECORD"\n')
     command('timeout', 'echo "timeout $1 $2" >> "$RECORD"\nshift 2\nexec "$@"\n')
     counter, codes, record = [tmp_path / n for n in ('counter', 'codes', 'record')]
@@ -32,38 +33,49 @@ def run_fake(tmp_path, outcomes, args=('libegl1', 'libgl1')):
     codes.write_text('\n'.join(map(str, outcomes)) + '\n')
     env = dict(os.environ, PATH=str(bindir) + os.pathsep + os.environ['PATH'],
                COUNTER=str(counter), OUTCOMES=str(codes), RECORD=str(record))
-    result = subprocess.run(['bash', str(SCRIPT), *args], env=env, capture_output=True, timeout=5)
+    runner = tmp_path / 'install_qt.sh'
+    release = tmp_path / 'os-release'
+    release.write_text('ID=ubuntu\nVERSION_ID=24.04\n')
+    keyring = tmp_path / 'ubuntu-keyring.gpg'
+    keyring.write_text('synthetic key metadata only')
+    runner.write_text(SCRIPT.read_text().replace('/etc/os-release', str(release)).replace('/usr/share/keyrings/ubuntu-archive-keyring.gpg',str(keyring)))
+    result = subprocess.run(['bash', str(runner), *args], env=env, capture_output=True, timeout=5)
     return result.returncode, record.read_text() if record.exists() else ''
 
 
 def test_first_attempt_success(tmp_path):
     code, log = run_fake(tmp_path, [0, 0])
     assert code == 0
-    assert log.count('timeout --kill-after=5s 60s') == 1
+    assert log.count('timeout --kill-after=5s 195s') == 1
     assert 'APT::Update::Error-Mode=any' in log
+    assert 'Dir::Etc::sourceparts=-' in log
+    assert 'Acquire::Retries=0' in log
+    assert 'trusted=yes' not in SCRIPT.read_text()
+    assert 'signed-by=' in SCRIPT.read_text()
+    assert 'https://archive.ubuntu.com/ubuntu noble' in SCRIPT.read_text()
+    assert 'https://security.ubuntu.com/ubuntu noble-security' in SCRIPT.read_text()
     assert 'install -y --no-install-recommends libegl1 libgl1' in log
     assert 'sleep' not in log
 
 
 def test_update_failure_does_not_install_stale_indices(tmp_path):
     code, log = run_fake(tmp_path, [100, 0, 0])
-    assert code == 0
-    assert log.count(' update') == 2
-    assert log.count(' install') == 1
-    assert 'sleep 5' in log
+    assert code == 100
+    assert log.count(' update') == 1
+    assert log.count(' install') == 0
 
 
-def test_install_failure_retries_complete_pair(tmp_path):
+def test_install_failure_remains_failure(tmp_path):
     code, log = run_fake(tmp_path, [0, 100, 0, 0])
-    assert code == 0
-    assert log.count(' update') == log.count(' install') == 2
+    assert code == 100
+    assert log.count(' update') == log.count(' install') == 1
 
 
-def test_final_failure_stays_failure_with_three_attempt_limit(tmp_path):
+def test_final_failure_stays_failure_with_one_attempt_limit(tmp_path):
     code, log = run_fake(tmp_path, [100, 100, 100])
     assert code == 100
-    assert log.count('timeout --kill-after=5s 60s') == 3
-    assert 'sleep 5' in log and 'sleep 10' in log
+    assert log.count('timeout --kill-after=5s 195s') == 1
+    assert 'sleep' not in log
     assert ' install' not in log
 
 
