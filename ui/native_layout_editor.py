@@ -53,6 +53,17 @@ class NativeLayoutEditor(QDialog):
         self.editor = editor
         self.session = "native:" + secrets.token_urlsafe(24)
         self.generation = None
+        self._finalized = False
+        self._lease_holder = {"generation": None}
+        holder, session = self._lease_holder, self.session
+
+        def release_destroyed(*_):
+            try:
+                editor.release(session, holder["generation"])
+            except (EditorError, OSError, ValueError):
+                pass
+
+        self.destroyed.connect(release_destroyed)
         self.document = None
         self.revision = None
         self.dirty = False
@@ -236,6 +247,7 @@ class NativeLayoutEditor(QDialog):
             self.load()
         lease = self.editor.acquire(self.session)
         self.generation = lease["generation"]
+        self._lease_holder["generation"] = self.generation
         self.render()
         self.status.setText("Your editing turn. Save layout to change the shared master.")
 
@@ -391,16 +403,37 @@ class NativeLayoutEditor(QDialog):
             self.dirty = True
             self.render()
 
-    def reject(self):
-        if self.leave():
+    def _finalize(self):
+        if self._finalized:
+            return True
+        if not self.discard_ok():
+            return False
+        try:
+            self.editor.release(self.session, self.generation)
+        except (EditorError, OSError, ValueError):
+            # No renewal survives a failed release. Server-side lease expires.
+            self.status.setText("Could not release editing turn. It will expire automatically.")
+        finally:
+            self.generation = None
+            self._lease_holder["generation"] = None
             self.timer.stop()
             self.poll.stop()
-            super().reject()
+            self.dirty = False
+            self._finalized = True
+        return True
+
+    def done(self, result):
+        if self._finalize():
+            super().done(result)
+
+    def accept(self):
+        self.done(QDialog.Accepted)
+
+    def reject(self):
+        self.done(QDialog.Rejected)
 
     def closeEvent(self, event):
-        if self.leave():
-            self.timer.stop()
-            self.poll.stop()
+        if self._finalize():
             event.accept()
         else:
             event.ignore()

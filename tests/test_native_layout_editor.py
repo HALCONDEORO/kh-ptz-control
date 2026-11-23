@@ -16,8 +16,11 @@ def native(tmp_path):
     editor.initialize()
     widget = NativeLayoutEditor(editor)
     yield widget, editor, app
-    widget.dirty = False
-    widget.close()
+    from PyQt5 import sip
+
+    if not sip.isdeleted(widget):
+        widget.dirty = False
+        widget.close()
 
 
 def test_native_saves_same_master_seen_by_web_adapter(native):
@@ -117,3 +120,137 @@ def test_shared_revision_refreshes_readonly_native(native):
     editor.save("web", current["revision"], current["document"], lease["generation"])
     widget.refresh()
     assert widget.name.text() == "Shared update"
+
+
+@pytest.mark.parametrize("exit_method", ["close", "reject", "accept", "done"])
+def test_all_dialog_exit_paths_release_writer_and_timers(native, exit_method):
+    widget, editor, _ = native
+    widget.take()
+    widget.show()
+    if exit_method == "done":
+        widget.done(1)
+    else:
+        getattr(widget, exit_method)()
+    assert widget.generation is None
+    assert not widget.timer.isActive()
+    assert not widget.poll.isActive()
+    assert editor.acquire("web-after-exit")["generation"]
+
+
+def test_widget_destruction_releases_writer(native):
+    from PyQt5 import sip
+
+    widget, editor, _ = native
+    widget.take()
+    sip.delete(widget)
+    assert editor.acquire("web-after-destroy")["generation"]
+
+
+@pytest.mark.parametrize("exit_method", ["close", "reject", "accept", "done"])
+def test_close_does_not_read_corrupt_master(native, exit_method):
+    widget, editor, _ = native
+    widget.take()
+    editor.path.write_text("{corrupt")
+    if exit_method == "done":
+        widget.done(1)
+    else:
+        getattr(widget, exit_method)()
+    assert widget.generation is None
+    assert not widget.timer.isActive()
+    assert not widget.poll.isActive()
+
+
+def test_refusing_discard_keeps_visible_editor_and_turn(native, monkeypatch):
+    widget, editor, _ = native
+    widget.take()
+    widget.add()
+    monkeypatch.setattr(widget, "discard_ok", lambda: False)
+    widget.accept()
+    assert widget.generation is not None
+    assert widget.timer.isActive()
+    assert not widget._finalized
+    assert editor.read(widget.session)["lease"] == "mine"
+
+
+def test_release_failure_stops_timers_without_reading(native, monkeypatch):
+    widget, editor, _ = native
+    widget.take()
+
+    def fail(*_):
+        raise OSError("fixture release failed")
+
+    monkeypatch.setattr(editor, "release", fail)
+    widget.done(1)
+    assert widget.generation is None
+    assert not widget.timer.isActive()
+    assert not widget.poll.isActive()
+
+
+def test_escape_releases_turn(native):
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtCore import Qt
+
+    widget, editor, app = native
+    widget.take()
+    widget.show()
+    app.processEvents()
+    QTest.keyClick(widget, Qt.Key_Escape)
+    assert widget.generation is None
+    assert not widget.timer.isActive()
+    assert editor.acquire("web-after-escape")["generation"]
+
+
+def test_http_and_native_share_one_master(native):
+    import json, threading, urllib.request
+    from runtime.web_layout_editor import BoundedEditorServer, make_handler
+
+    widget, editor, _ = native
+    server = BoundedEditorServer(("127.0.0.1", 0), make_handler(editor, "unused"))
+    origin = f"http://127.0.0.1:{server.server_port}"
+    server.RequestHandlerClass = make_handler(editor, origin)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        first = urllib.request.urlopen(origin)
+        cookie = first.headers["Set-Cookie"].split(";")[0]
+        headers = {
+            "Cookie": cookie,
+            "X-KH-Editor": "1",
+            "X-KH-Tab": "native-http-test-abcdefghijkl",
+            "Origin": origin,
+            "Content-Type": "application/json",
+        }
+
+        def request(path, data=None):
+            return json.load(
+                urllib.request.urlopen(
+                    urllib.request.Request(
+                        origin + "/api/" + path,
+                        headers=headers,
+                        data=None if data is None else json.dumps(data).encode(),
+                    )
+                )
+            )
+
+        widget.take()
+        widget.create_block(6)
+        widget.save()
+        assert len(request("layout")["document"]["seats"]) == 84
+        widget.leave()
+        lease = request("lease", {})
+        current = request("layout")
+        current["document"]["room_name"] = "HTTP shared master"
+        request(
+            "save",
+            dict(
+                document=current["document"],
+                revision=current["revision"],
+                generation=lease["generation"],
+            ),
+        )
+        widget.refresh()
+        assert widget.document["room_name"] == "HTTP shared master"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
