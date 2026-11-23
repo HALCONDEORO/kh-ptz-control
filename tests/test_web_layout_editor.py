@@ -405,3 +405,35 @@ def test_lan_adapter_rejects_wildcard_public_and_unsupported_interfaces(editor, 
     with pytest.raises(ValueError, match='private IPv4'):
         build_lan_server(editor, address=address, port=8766,
                          certificate='unused', private_key='unused', authenticator=lambda _: False)
+
+
+def test_polling_does_not_renew_authenticated_idle_timeout(editor):
+    now = [0]
+    server = BoundedEditorServer(('127.0.0.1', 0), make_handler(editor, 'unused'))
+    origin = f'http://127.0.0.1:{server.server_port}'
+    server.RequestHandlerClass = make_handler(editor, origin, clock=lambda: now[0],
+                                              authenticator=lambda _: True)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    try:
+        cookie = request(origin).headers['Set-Cookie'].split(';')[0]
+        headers = {'Cookie': cookie, 'Content-Type': 'application/json', 'X-KH-Editor': '1',
+                   'X-KH-Tab': 'test-tab-abcdefghijklmnop', 'Origin': origin}
+        assert request(origin, '/api/login', {'password': 'fixture'}, **headers).status == 200
+        for current in (300, 600, 899):
+            now[0] = current
+            assert request(origin, '/api/layout', **headers).status == 200
+        now[0] = 901
+        assert request(origin, '/api/layout', **headers).status == 401
+        assert request(origin, '/api/activity', {}, **headers).status == 401
+        assert request(origin, '/api/login', {'password': 'fixture'}, **headers).status == 200
+        now[0] = 1500
+        assert request(origin, '/api/activity', {}, **headers).status == 200
+        now[0] = 2000
+        assert request(origin, '/api/layout', **headers).status == 200
+        assert request(origin, '/api/logout', {}, **headers).status == 200
+        assert request(origin, '/api/layout', **headers).status == 401
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join()

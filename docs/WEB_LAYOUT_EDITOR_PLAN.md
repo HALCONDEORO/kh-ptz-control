@@ -112,7 +112,10 @@ address/name covered by its SAN. Never disable certificate validation for use.
 The implementation enforces TLS1.2or newer. The administrator verifier is the same
 fail-closed service used by the camera application; user-mode installations whose
 admin verifier is unavailable remain unavailable, without bypass. A global limit
-of5sign-in attempts per minute and15minute idle authenticated sessions applies.
+of5sign-in attempts per minute and15minute idle authenticated sessions applies. Reads, save/lease renewal and background
+polling do not refresh authentication. A separate activity endpoint is called only
+from trusted keyboard/pointer events, at most once a minute; this is a UI idle
+policy, not proof of human presence against an authenticated malicious client.
 
 Authentication gates layout reads and every editor mutation. Cookies are HttpOnly,
 SameSite=Strict and Secure over HTTPS; each tab still owns its separate writer

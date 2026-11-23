@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const clone = value => JSON.parse(JSON.stringify(value));
 const tabId = crypto.randomUUID();
-let generation=null;
+let generation=null, signedIn=false, lastActivity=0;
 let doc, revision, selected = null, mine = false, dirty = false, undo = [], redo = [], drag = null, busy = false;
 const errors = {editor_busy:'Another editor has the turn. This layout remains read only.',lease_required:'Your editing turn expired. Keep your draft and request a new turn.',revision_conflict:'The master layout changed. Nothing was overwritten. Keep your draft before reloading.',admin_login_required:'Sign in as administrator to open this test layout.',invalid_login:'The administrator password was not accepted.',login_rate_limited:'Too many sign-in attempts. Wait one minute before retrying.',save_failed:'Save failed. Check the current state before retrying.'};
 function status(text) { $('status').textContent = text; }
@@ -11,11 +11,11 @@ async function api(path, data) {
   const timer = setTimeout(()=>controller.abort(), 6000);
   let response, result;
   try { response = await fetch('/api/' + path,{method:data === undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-KH-Editor':'1','X-KH-Tab':tabId},body:data === undefined?undefined:JSON.stringify(data),signal:controller.signal}); result = await response.json(); } finally { clearTimeout(timer); }
-  if(!response.ok) { if(response.status===401){mine=false;generation=null;$('loginPanel').hidden=false;controls();} if(result.error==='lease_required'){mine=false;generation=null;controls();} throw new Error(errors[result.error] || 'Request failed: ' + result.error); }
+  if(!response.ok) { if(response.status===401){mine=false;generation=null;signedIn=false;$('loginPanel').hidden=false;$('logout').hidden=true;controls();} if(result.error==='lease_required'){mine=false;generation=null;controls();} throw new Error(errors[result.error] || 'Request failed: ' + result.error); }
   return result;
 }
-$('loginForm').onsubmit=run(async event=>{event.preventDefault();const password=$('adminPassword').value;$('adminPassword').value='';try{await api('login',{password});$('loginPanel').hidden=true;$('logout').hidden=false;await load();}catch(error){$('loginStatus').textContent=error.message;}});
-$('logout').onclick=run(async()=>{if(dirty&&!confirm('Discard unsaved changes and sign out?'))return;await api('logout',{generation});mine=false;generation=null;dirty=false;doc=null;selected=null;$('seats').replaceChildren();$('loginPanel').hidden=false;$('logout').hidden=true;controls();status('Signed out.');});
+$('loginForm').onsubmit=run(async event=>{event.preventDefault();const password=$('adminPassword').value;$('adminPassword').value='';try{await api('login',{password});signedIn=true;lastActivity=Date.now();$('loginPanel').hidden=true;$('logout').hidden=false;await load();}catch(error){$('loginStatus').textContent=error.message;}});
+$('logout').onclick=run(async()=>{if(dirty&&!confirm('Discard unsaved changes and sign out?'))return;await api('logout',{generation});mine=false;generation=null;dirty=false;signedIn=false;doc=null;selected=null;undo=[];redo=[];drag=null;$('seats').replaceChildren();for(const id of ['room','label','x','y'])$(id).value='';$('roomTitle').textContent='Sign in to open the layout';$('count').textContent='No layout open';$('selectedText').textContent='None';$('locked').checked=false;$('loginPanel').hidden=false;$('logout').hidden=true;controls();status('Signed out.');});
 function seat() { return doc?.seats.find(s=>s.id === selected); }
 function snapshot() { undo.push(clone(doc)); if(undo.length>100)undo.shift(); redo=[]; dirty=true; }
 function controls() {
@@ -88,3 +88,5 @@ setInterval(run(async()=>{if(!mine&&!dirty){const result=await api('layout');if(
 setInterval(run(async()=>{if(mine){try{await api('renew',{generation});}catch(e){mine=false;controls();throw e;}}}),25000);
 window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
 run(load)();
+
+for(const eventName of ['pointerdown','keydown'])document.addEventListener(eventName,event=>{if(!event.isTrusted||!signedIn||Date.now()-lastActivity<60000)return;lastActivity=Date.now();run(()=>api('activity',{}))();},{passive:true});

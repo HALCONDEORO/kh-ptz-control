@@ -153,7 +153,6 @@ def make_handler(editor, origin, *, clock=time.monotonic, authenticator=None):
                     if clock() - authenticated[key] >= 900:
                         del authenticated[key]
                 if cookie in authenticated:
-                    authenticated[cookie] = clock()
                     return True
             return False
 
@@ -189,7 +188,10 @@ def make_handler(editor, origin, *, clock=time.monotonic, authenticator=None):
                         return self.send_result(503, {"error": "session_limit"})
                     session = secrets.token_urlsafe(32)
                     sessions[session] = clock()
-            self.send_result(200, (ASSETS / name).read_bytes(), mime,
+            content = (ASSETS / name).read_bytes()
+            if path == "/" and authenticator is not None:
+                content = content.replace(b"WEB EDITOR \xc2\xb7 PHASE 1", b"WEB EDITOR \xc2\xb7 HTTPS LAN TEST")
+            self.send_result(200, content, mime,
                              cookie=session if path == "/" else None)
 
         def do_POST(self):
@@ -237,6 +239,10 @@ def make_handler(editor, origin, *, clock=time.monotonic, authenticator=None):
                     return self.send_result(200, {"authenticated": True})
                 if not self.authenticated():
                     return self.send_result(401, {"error": "admin_login_required"})
+                if self.path == "/api/activity":
+                    with auth_mutex:
+                        authenticated[self.cookie_session()] = clock()
+                    return self.send_result(200, {"active": True})
                 if self.path == "/api/logout":
                     editor.release(session, data.get("generation"))
                     with auth_mutex:
