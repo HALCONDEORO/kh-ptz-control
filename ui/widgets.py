@@ -649,7 +649,7 @@ class GoButton(PresetActionMixin, DragDropButton, QPushButton):
         no disparar guardados al cargar datos ya persistidos.
         """
         self.assigned_name = name
-        self.setText(name.split()[0] if name else str(self.seat_number))
+        self.setText(name.split()[0] if name else getattr(self, '_layout_label', str(self.seat_number)))
         self._apply_style()
         if emit_signal:
             self.name_assigned.emit(self.seat_number, name)

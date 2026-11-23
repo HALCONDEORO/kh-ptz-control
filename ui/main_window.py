@@ -62,6 +62,7 @@ from ui.session_mixin import SessionController
 from ui.dialogs_mixin import DialogsController
 from ui.config_dialog import ConfigDialog
 from ui.seat_names_mixin import SeatNamesController
+from ui.seat_registry import SeatRegistry, seat_button
 
 from ui.platform_icons import SVG_LEFT, SVG_CHAIRMAN, SVG_RIGHT
 from ui.seat_builder import build_special_seat_button
@@ -591,6 +592,7 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
             logger.error("_build_seat_buttons: LayoutService not available — no seat buttons created")
             return
         seats = self._layout_svc.visible_seats()
+        self._seat_registry = SeatRegistry()
         for seat in seats:
             seat_number = seat.preset
             x, y = seat.x, seat.y
@@ -609,8 +611,23 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
                     call_cb=self._call_preset_from_button,
                     set_cb=self._confirm_and_set_preset,
                 )
-            button.name_assigned.connect(self._seat_names_ctrl._on_seat_name_assigned)
-            setattr(self, f"Seat{seat_number}", button)
+            button._layout_seat_id = seat.id
+            button._layout_label = seat.label
+            if isinstance(button, GoButton):
+                button.setText(seat.label)
+            button.name_assigned.connect(
+                lambda _number, name, seat_id=seat.id:
+                    self._seat_names_ctrl._on_seat_name_assigned(seat_id, name))
+            self._seat_registry.add(seat, button)
+            button._call_cb = lambda _preset, seat_id=seat.id: self._dispatch_layout_seat(seat_id, InputType.TAP)
+            button._set_cb = lambda _preset, seat_id=seat.id: self._dispatch_layout_seat(seat_id, InputType.LONG_PRESS)
+            if seat_number == 0:
+                button.setToolTip('No camera memory assigned. Calibration required.')
+        # Existing preset-based paths keep only unambiguous, assigned aliases.
+        for preset in {seat.preset for seat in seats if seat.preset > 0}:
+            button = self._seat_registry.legacy(preset)
+            if button is not None:
+                setattr(self, f"Seat{preset}", button)
 
     def _build_session_controls(self):
         self.BtnSession = QPushButton('\u23fb', self)
@@ -1036,7 +1053,16 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
                 (k for k, n in self._seat_names.items() if q in n.casefold()), None)
         if match_key is None:
             return
-        self._dispatch_preset_action(int(match_key), InputType.TAP)
+        button = seat_button(self, match_key)
+        if button is not None and hasattr(button, '_layout_seat_id'):
+            seat = self._layout_svc.seat_by_id(button._layout_seat_id)
+            if seat is not None and seat.preset > 0:
+                self._dispatch_layout_seat(seat.id, InputType.TAP)
+            return
+        try:
+            self._dispatch_preset_action(int(match_key), InputType.TAP)
+        except ValueError:
+            return
 
     def _toggle_names_panel(self, checked: bool):
         if checked:
@@ -1109,6 +1135,7 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
         self,
         preset_number: int,
         input_type: InputType = InputType.LEFT_CLICK,
+        *, seat_id: str | None = None,
     ) -> None:
         """
         Único punto de despacho para todas las acciones de preset iniciadas por usuario.
@@ -1118,8 +1145,12 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
         """
         cam = 1 if self.Cam1.isChecked() else 2
 
+        if preset_number <= 0:
+            return
+        button = getattr(self, f"Seat{preset_number}", None)
+        stable_id = seat_id if seat_id is not None else getattr(button, '_layout_seat_id', preset_number)
         result = self._app_ctrl.recall_seat(
-            seat_id=preset_number,
+            seat_id=stable_id,
             preset=preset_number,
             input_type=input_type,
             cam=cam,
@@ -1175,6 +1206,16 @@ class MainWindow(QMainWindow, CameraDisplayMixin, AtemOperationalMixin):
                 else self._right_panel._btn_enter_admin
             )
             self._flash_blocked(btn_to_flash)
+
+    def _dispatch_layout_seat(self, seat_id: str, input_type: InputType) -> None:
+        seat = self._layout_svc.seat_by_id(seat_id)
+        if seat is None or not seat.visible or seat.preset <= 0:
+            return
+        # Remaining SET/feedback paths are preset-based. Until they migrate,
+        # reject ambiguous memories instead of choosing a camera or widget.
+        if self._seat_registry.legacy(seat.preset) is None:
+            return
+        self._dispatch_preset_action(seat.preset, input_type, seat_id=seat.id)
 
     def _call_preset_from_button(self, preset_number: int) -> None:
         """GoButton tap/left-click → CALL via unified dispatch."""

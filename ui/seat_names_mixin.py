@@ -17,6 +17,7 @@ from typing import Optional
 
 from config import save_names_data
 from ui.widgets import GoButton, SpecialDragButton
+from ui.seat_registry import seat_button
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class SeatNamesController:
         prev = self._undo_stack.pop()
         for key in set(self._w._seat_names) | set(prev):
             name = prev.get(key, "")
-            btn = getattr(self._w, f"Seat{key}", None)
+            btn = seat_button(self._w, key)
             if isinstance(btn, (GoButton, SpecialDragButton)):
                 btn.set_name(name, emit_signal=False)
         self._w._seat_names.clear()
@@ -54,20 +55,20 @@ class SeatNamesController:
 
     def _restore_seat_names(self):
         for seat_str, name in self._w._seat_names.items():
-            btn = getattr(self._w, f"Seat{seat_str}", None)
+            btn = seat_button(self._w, seat_str)
             if isinstance(btn, (GoButton, SpecialDragButton)) and name:
                 # emit_signal=False: no mueve cámara ni persiste al arrancar
                 btn.set_name(name, emit_signal=False)
         self._sync_assigned_to_panel()
 
-    def _on_seat_name_assigned(self, seat_number: int, name: str):
+    def _on_seat_name_assigned(self, seat_number: int | str, name: str):
         self._push_undo()
         key = str(seat_number)
         if name:
             # Exclusividad: un nombre solo puede estar en un asiento a la vez
             for other_key, other_name in list(self._w._seat_names.items()):
                 if other_name == name and other_key != key:
-                    other_btn = getattr(self._w, f"Seat{other_key}", None)
+                    other_btn = seat_button(self._w, other_key)
                     if isinstance(other_btn, (GoButton, SpecialDragButton)):
                         other_btn.set_name("", emit_signal=False)
                     del self._w._seat_names[other_key]
@@ -90,7 +91,7 @@ class SeatNamesController:
             for key, v in self._w._seat_names.items():
                 if v == old_name:
                     self._w._seat_names[key] = new_name
-                    btn = getattr(self._w, f"Seat{key}", None)
+                    btn = seat_button(self._w, key)
                     if isinstance(btn, (GoButton, SpecialDragButton)):
                         btn.set_name(new_name, emit_signal=False)
 
@@ -124,7 +125,7 @@ class SeatNamesController:
         """Borra todos los nombres asignados de los asientos."""
         self._push_undo()
         for key in list(self._w._seat_names.keys()):
-            btn = getattr(self._w, f"Seat{key}", None)
+            btn = seat_button(self._w, key)
             if isinstance(btn, (GoButton, SpecialDragButton)):
                 btn.set_name("", emit_signal=False)
         self._w._seat_names.clear()
