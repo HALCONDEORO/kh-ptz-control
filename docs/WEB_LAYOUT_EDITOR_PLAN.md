@@ -4,14 +4,17 @@
 
 Status: review candidate. No production activation, no LAN listener, no camera commands.
 Parent: owner request on 23 November 2026 to use one web editor on the hall screen and laptop.
-Depends on: existing layout persistence and schema1. No new runtime dependencies.
+Depends on: existing layout persistence and schema1. No new runtime dependencies. POSIX-only (fcntl, O_NOFOLLOW, O_DIRECTORY).
+Python3.9 syntax compatibility is intended but has not been executed on3.9 here;
+local tests ran on3.10. Hardware validation on supported3.9/3.11remains required.
 Related: later admin/session integration and seat identity separation.
 Risk: medium for future integration, low for existing runtime because it is never imported at startup.
 
 Acceptance checks:
 - Generate rows with aisle-separated groups, add/remove/move/relabel/lock seats, undo/redo.
 - One browser tab owns an expiring editing turn. Other tabs/browsers cannot save.
-- Save uses a content revision; stale versions are rejected, not merged automatically.
+- Save uses a content revision; stale versions are rejected, not merged automatically. Integer-only x/y are enforced, and a
+confirmed save returns the canonical document (including row/column) to the UI.
 - Previous exact bytes retained in history before atomic save via LayoutService.
 - Reload sees saved data; corrupt files produce an error, never automatic replacement.
 - Loopback only, no service installation, no camera imports and no live data adoption.
@@ -24,9 +27,15 @@ python -m runtime.web_layout_editor --sandbox /tmp/kh-layout-sandbox --port 8765
 
 Open the printed loopback URL in a browser on the same computer. The sandbox owns a
 process lock and refuses nonempty directories without its own marker. Do not put its
-marker in a customer data directory. Runtime environment data paths are not used.
+marker in a customer data directory. Markers have exact versioned content and
+links/special files in ancestors or nested history are rejected. These are safety
+checks for accidental misuse, NOT a hostile local filesystem isolation boundary;
+a malicious local process can still race directory changes. Use only trusted,
+user-owned test directories. Runtime environment data paths are not used.
 
-This phase is NOT a supported customer server. Cookies identify browser sessions,
+This phase is NOT a supported customer server. Connections have a2second header/body deadline and at most8workers.
+Session cookies expire after30minutes idle and are purged on access.
+Cookies identify browser sessions,
 not administrators. There is no user authentication, TLS, rate limiting or LAN
 binding. Do not reverse-proxy it, tunnel it or expose it to the local network or
 internet. The stdlib HTTP server is used only for this loopback prototype.
@@ -39,7 +48,8 @@ migration is an acceptance gate for production, not something phase1 claims to s
 
 Read-only views refresh the master every5seconds, and before acquiring a turn.
 Editing turns renew every25seconds and expire after90seconds without renewal.
-A lost turn or revision conflict preserves the in-memory draft and reports an error.
+Renewal requires the current unexpired generation; expired turns are never
+reacquired by the heartbeat. A lost turn or revision conflict preserves the in-memory draft and reports an error.
 Reload/cancel ask before discarding changes; no offline merge or draft recovery after
 a browser crash is provided yet. Undo history lasts only within the current tab.
 History snapshots are not automatically pruned in this prototype. Saving geometry
@@ -78,3 +88,5 @@ rejection and bounded static routes. Existing layout/architecture tests must pas
 Browser smoke: two isolated sessions, generate84seats (6×(4+6+4)), move one, save,
 reload, check previous-byte backup, reject second writer, inspect desktop/mobile.
 This is synthetic evidence only, not a real hall, two physical machines or cameras.
+
+Browser requests abort after6seconds. Default readable-seat zoom maintains about36px seat targets with internal scrolling; Fit overview deliberately trades target size for overview.

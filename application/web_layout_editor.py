@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
+import os
+import stat
 import secrets
 import threading
 import time
@@ -11,7 +12,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from application.layout_service import LayoutService
-from core.atomic_write import write_bytes_atomic
 
 
 @dataclass
@@ -53,7 +53,7 @@ def validate_document(document: dict) -> dict:
             if type(seat[key]) is not bool:
                 raise EditorError("invalid_seat_flag", 422)
         for key in ("x", "y"):
-            if type(seat[key]) not in (int, float) or not math.isfinite(seat[key]):
+            if type(seat[key]) is not int:
                 raise EditorError("invalid_position", 422)
             limit = document["screen_width" if key == "x" else "screen_height"]
             if not 0 <= seat[key] <= limit - 40:
@@ -73,7 +73,45 @@ def validate_document(document: dict) -> dict:
         # New geometry intentionally has no camera memory attached.
         if preset == 0 and seat["calibrated"]:
             raise EditorError("unassigned_calibration", 422)
-    return document
+    # Canonical serialization always contains both optional coordinates.
+    return {**document, "seats": [{**seat, "row": seat.get("row"),
+                                   "column": seat.get("column")} for seat in seats]}
+
+
+def check_workspace_tree(path):
+    """Reject existing links/special files. Not a hostile-filesystem sandbox."""
+    path = Path(path).absolute()
+    for item in [*reversed(path.parents), path]:
+        if item.is_symlink():
+            raise ValueError("Symlink ancestor is not allowed")
+    if path.exists():
+        for item in path.rglob("*"):
+            mode = item.lstat().st_mode
+            if stat.S_ISLNK(mode) or not (stat.S_ISDIR(mode) or stat.S_ISREG(mode)):
+                raise ValueError("Only regular files and directories are allowed")
+
+
+def preserve_snapshot(path, content):
+    """Reserve exclusively; never follow or replace a competing snapshot."""
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    except FileExistsError:
+        if not stat.S_ISREG(path.lstat().st_mode) or path.read_bytes() != content:
+            raise EditorError("backup_mismatch", 500)
+        return
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except OSError:
+        # Preserve a failed reservation for inspection; it can never pass comparison.
+        raise
+    directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
 
 
 class WebLayoutEditor:
@@ -90,6 +128,7 @@ class WebLayoutEditor:
         self._mutex = threading.Lock()
         self._owner = None
         self._deadline = 0
+        self._generation = None
         self._service = LayoutService(self.path, legacy_positions={})
 
     def initialize(self):
@@ -102,6 +141,7 @@ class WebLayoutEditor:
 
     def _current(self):
         # No automatic default recovery: a corrupt master must be surfaced.
+        check_workspace_tree(self.path.parent)
         content = self.path.read_bytes()
         document = validate_document(json.loads(content))
         return document, hashlib.sha256(content).hexdigest()
@@ -121,35 +161,42 @@ class WebLayoutEditor:
             if self._owner is not None and self.clock() < self._deadline and self._owner != session:
                 raise EditorError("editor_busy", 423)
             self._owner = session
+            self._generation = secrets.token_urlsafe(24)
             self._deadline = self.clock() + self.lease_seconds
-            return {"lease": "mine", "expires_in": self.lease_seconds}
+            return {"lease": "mine", "generation": self._generation, "expires_in": self.lease_seconds}
 
-    def release(self, session):
+    def renew(self, session, generation):
         with self._mutex:
-            if self._owns(session):
+            self._require(session, generation)
+            self._deadline = self.clock() + self.lease_seconds
+            return {"renewed": True}
+
+    def _require(self, session, generation):
+        if not self._owns(session) or not generation or generation != self._generation:
+            raise EditorError("lease_required", 423)
+
+    def release(self, session, generation):
+        with self._mutex:
+            if self._owns(session) and generation == self._generation:
                 self._owner = None
                 self._deadline = 0
             return {"released": True}
 
-    def save(self, session, revision, document):
+    def save(self, session, revision, document, generation):
         with self._mutex:
-            if not self._owns(session):
-                raise EditorError("lease_required", 423)
+            self._require(session, generation)
             _, current = self._current()
             if not isinstance(revision, str) or not secrets.compare_digest(current, revision):
                 raise EditorError("revision_conflict")
-            validate_document(document)
+            document = validate_document(document)
             # Preserve exact previous bytes before publication. Never overwrite history.
             self.backups.mkdir(exist_ok=True)
             backup = self.backups / (current + ".json")
             old_bytes = self.path.read_bytes()
-            if not backup.exists():
-                write_bytes_atomic(backup, old_bytes)
-            elif backup.read_bytes() != old_bytes:
-                raise EditorError("backup_mismatch", 500)
+            preserve_snapshot(backup, old_bytes)
             layout = self._service._deserialize(document)
             if not self._service.save(layout):
                 raise EditorError("save_failed", 500)
-            _, saved = self._current()
+            canonical, saved = self._current()
             self._deadline = self.clock() + self.lease_seconds
-            return {"revision": saved, "backup": backup.name, "saved": True}
+            return {"revision": saved, "backup": backup.name, "saved": True, "document": canonical}

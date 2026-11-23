@@ -6,23 +6,82 @@ import fcntl
 import json
 import re
 import secrets
+import socket
+import threading
+import time
+import os
+import stat
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from application.web_layout_editor import EditorError, WebLayoutEditor
+from application.web_layout_editor import EditorError, WebLayoutEditor, check_workspace_tree
 from ui.styles import web_editor_tokens_css
 
 ASSETS = Path(__file__).resolve().parents[1] / "ui" / "web_layout_editor"
 MAX_BODY = 512_000
+IO_TIMEOUT = 2
+SESSION_TTL = 1800
+MARKER = b"KH layout editor synthetic workspace v1\n"
 
 
-def make_handler(editor, origin):
-    sessions = set()
+class BoundedEditorServer(ThreadingHTTPServer):
+    daemon_threads = True
+
+    def __init__(self, *args, max_workers=8, **kwargs):
+        self.slots = threading.BoundedSemaphore(max_workers)
+        super().__init__(*args, **kwargs)
+
+    def process_request(self, request, client_address):
+        if not self.slots.acquire(blocking=False):
+            request.close()
+            return
+        try:
+            super().process_request(request, client_address)
+        except Exception:
+            self.slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self.slots.release()
+
+
+
+def make_handler(editor, origin, *, clock=time.monotonic):
+    sessions = {}
+    session_mutex = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "KHLayoutSandbox"
+
+        def setup(self):
+            self.request.settimeout(IO_TIMEOUT)
+            super().setup()
+
+        def parse_request(self):
+            # Bound the total time for all headers, not just each individual read.
+            self._header_timer = threading.Timer(IO_TIMEOUT, self._abort_socket)
+            self._header_timer.daemon = True
+            self._header_timer.start()
+            try:
+                if not super().parse_request():
+                    return False
+                if self.headers.get_all("Transfer-Encoding") or len(self.headers.get_all("Content-Length", [])) > 1:
+                    self.send_result(400, {"error": "ambiguous_framing"})
+                    return False
+                return True
+            finally:
+                self._header_timer.cancel()
+
+        def _abort_socket(self):
+            try:
+                self.connection.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
 
         def log_message(self, *args):
             pass  # Never log cookies, draft contents or request paths.
@@ -43,13 +102,20 @@ def make_handler(editor, origin):
             self.wfile.write(data)
 
         def valid_host(self):
-            return self.headers.get("Host") == urlsplit(origin).netloc
+            return len(self.headers.get_all("Host", [])) == 1 and self.headers.get("Host") == urlsplit(origin).netloc
 
         def cookie_session(self):
             try:
                 cookies = SimpleCookie(self.headers.get("Cookie", ""))
                 value = cookies["kh_editor"].value
-                return value if value in sessions else None
+                with session_mutex:
+                    for key in list(sessions):
+                        if clock() - sessions[key] >= SESSION_TTL:
+                            del sessions[key]
+                    if value in sessions:
+                        sessions[value] = clock()
+                        return value
+                    return None
             except (KeyError, ValueError):
                 return None
 
@@ -82,10 +148,14 @@ def make_handler(editor, origin):
             name, mime = files[path]
             session = self.cookie_session()
             if path == "/" and not session:
-                if len(sessions) >= 100:
-                    return self.send_result(503, {"error": "session_limit"})
-                session = secrets.token_urlsafe(32)
-                sessions.add(session)
+                with session_mutex:
+                    for key in list(sessions):
+                        if clock() - sessions[key] >= SESSION_TTL:
+                            del sessions[key]
+                    if len(sessions) >= 100:
+                        return self.send_result(503, {"error": "session_limit"})
+                    session = secrets.token_urlsafe(32)
+                    sessions[session] = clock()
             self.send_result(200, (ASSETS / name).read_bytes(), mime,
                              cookie=session if path == "/" else None)
 
@@ -101,15 +171,26 @@ def make_handler(editor, origin):
                 length = int(self.headers.get("Content-Length", "0"))
                 if not 0 < length <= MAX_BODY:
                     return self.send_result(413, {"error": "body_size"})
-                data = json.loads(self.rfile.read(length))
+                timer = threading.Timer(IO_TIMEOUT, self._abort_socket)
+                timer.daemon = True
+                timer.start()
+                try:
+                    raw = self.rfile.read(length)
+                finally:
+                    timer.cancel()
+                if len(raw) != length:
+                    return self.send_result(408, {"error": "incomplete_body"})
+                data = json.loads(raw)
                 if not isinstance(data, dict):
                     raise ValueError()
                 if self.path == "/api/lease":
                     result = editor.acquire(session)
+                elif self.path == "/api/renew":
+                    result = editor.renew(session, data.get("generation"))
                 elif self.path == "/api/release":
-                    result = editor.release(session)
+                    result = editor.release(session, data.get("generation"))
                 elif self.path == "/api/save":
-                    result = editor.save(session, data.get("revision"), data.get("document"))
+                    result = editor.save(session, data.get("revision"), data.get("document"), data.get("generation"))
                 else:
                     return self.send_result(404, {"error": "not_found"})
                 return self.send_result(200, result)
@@ -117,6 +198,8 @@ def make_handler(editor, origin):
                 return self.send_result(exc.status, {"error": exc.code})
             except (ValueError, TypeError, KeyError):
                 return self.send_result(400, {"error": "invalid_request"})
+            except (TimeoutError, socket.timeout):
+                return self.send_result(408, {"error": "request_timeout"})
             except OSError:
                 return self.send_result(500, {"error": "storage_error_reload_before_retry"})
 
@@ -125,17 +208,25 @@ def make_handler(editor, origin):
 
 def prepare_workspace(path):
     path = path.expanduser().absolute()
-    # The sandbox may resume only its own workspace, never adopt an existing layout.
-    if path.is_symlink():
-        raise ValueError("Sandbox must not be a symlink")
+    # Checked at startup and at every master read/save. Not a defence against
+    # another local process actively swapping directory entries during a request.
+    check_workspace_tree(path)
     path.mkdir(parents=True, exist_ok=True)
     marker = path / ".kh-web-editor-sandbox"
-    if not marker.exists() and any(path.iterdir()):
-        raise ValueError("Choose a new empty sandbox directory; production data is not accepted")
-    marker.touch(exist_ok=True)
-    if any(p.is_symlink() for p in path.iterdir()):
-        raise ValueError("Sandbox files must not be symlinks")
-    lock = (path / ".editor.lock").open("a")
+    if marker.exists():
+        if not stat.S_ISREG(marker.lstat().st_mode) or marker.read_bytes() != MARKER:
+            raise ValueError("Invalid sandbox marker")
+    else:
+        if any(path.iterdir()):
+            raise ValueError("Choose a new empty sandbox directory; production data is not accepted")
+        fd = os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(MARKER)
+            stream.flush()
+            os.fsync(stream.fileno())
+    check_workspace_tree(path)
+    fd = os.open(path / ".editor.lock", os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    lock = os.fdopen(fd, "a")
     try:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
@@ -153,7 +244,7 @@ def main():
     editor = WebLayoutEditor(workspace)
     editor.initialize()
     origin = f"http://127.0.0.1:{args.port}"
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(editor, origin))
+    server = BoundedEditorServer(("127.0.0.1", args.port), make_handler(editor, origin))
     print(f"Test editor: {origin} | No cameras or live hall data", flush=True)
     try:
         server.serve_forever()
