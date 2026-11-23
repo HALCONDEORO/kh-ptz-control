@@ -5,6 +5,7 @@ from ui.widgets import GoButton
 from ui.seat_builder import build_special_seat_button
 from ui.seat_registry import SeatRegistry, seat_button
 from domain.call_set_policy import InputType
+from domain.preset import PLATFORM_PRESETS
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,11 @@ def build_layout_seat_buttons(self):
         logger.error("_build_seat_buttons: LayoutService not available — no seat buttons created")
         return
     seats = self._layout_svc.visible_seats()
+    if any(
+        seat.preset in PLATFORM_PRESETS or str(seat.id) in {str(p) for p in PLATFORM_PRESETS}
+        for seat in seats
+    ):
+        raise ValueError("Layout seats conflict with fixed platform controls")
     self._seat_registry = SeatRegistry()
     for seat in seats:
         seat_number = seat.preset
@@ -36,7 +42,7 @@ def build_layout_seat_buttons(self):
         button._layout_seat_id = seat.id
         button._layout_label = seat.label
         if isinstance(button, GoButton):
-            button.setText(seat.label)
+            button.set_name("", emit_signal=False)
         button.name_assigned.connect(
             lambda _number, name, seat_id=seat.id: self._seat_names_ctrl._on_seat_name_assigned(
                 seat_id, name
@@ -85,6 +91,8 @@ def recall_layout_seat_by_name(self, query):
                 return  # Unresolved/ambiguous layout alias, never guess.
         except ValueError:
             pass
+    if isinstance(registry, SeatRegistry) and button is None:
+        return  # Deleted/unbound seats are not a license to recall a memory.
     try:
         self._dispatch_preset_action(int(match_key), InputType.TAP)
     except ValueError:

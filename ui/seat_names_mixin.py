@@ -45,8 +45,8 @@ class SeatNamesController:
         self._undo_stack = [registry.canonical_names(item) for item in self._undo_stack]
 
     def _push_undo(self):
-        self._canonicalize_names()
         """Guarda una instantánea del estado de asientos antes de mutarlo."""
+        self._canonicalize_names()
         self._undo_stack.append(dict(self._w._seat_names))
         if len(self._undo_stack) > self._UNDO_DEPTH:
             self._undo_stack.pop(0)

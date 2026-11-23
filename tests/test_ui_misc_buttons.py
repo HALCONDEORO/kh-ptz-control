@@ -773,3 +773,11 @@ class TestSpecialDragButtonClearConfirmMsg:
         stub._default_label = "Chairman"
         msg = _SpecialDragButton._clear_confirm_msg(stub)
         assert "Chairman" in msg
+
+
+@_need_widgets
+def test_go_button_whitespace_name_uses_layout_label():
+    stub=_go_stub(seat_number=7)
+    stub._layout_label='North aisle'
+    _GoButton.set_name(stub,'   ',emit_signal=False)
+    stub.setText.assert_called_with('North aisle')

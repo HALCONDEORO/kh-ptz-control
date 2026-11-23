@@ -110,3 +110,48 @@ def test_fixed_platform_name_recall_keeps_legacy_path(shell):
     root._dispatch_preset_action=lambda preset,gesture:calls.append(preset)
     MainWindow._recall_seat_by_name(root,'Platform Person')
     assert calls==[1]
+
+
+@pytest.mark.parametrize('key',['0','-1','50'])
+def test_orphan_numeric_names_never_recall_hidden_memory(shell,key):
+    from ui.main_window import MainWindow
+    root,_,calls,_=shell
+    root._seat_names={key:'Orphan'}
+    MainWindow._recall_seat_by_name(root,'Orphan')
+    assert calls==[]
+
+
+@pytest.mark.parametrize('seat_id,preset',[('chair-clash',1),('1',17),('left-clash',2),('132',17)])
+def test_layout_platform_collisions_rejected_before_widget_creation(shell,seat_id,preset):
+    from ui.main_window import MainWindow
+    from domain.room_layout import SeatLayout
+    from PyQt5.QtWidgets import QPushButton
+    root,_,_,_=shell
+    before=root.findChildren(QPushButton)
+    root._layout_svc.visible_seats=lambda:[SeatLayout(seat_id,'X',preset,'comments',60,100)]
+    with pytest.raises(ValueError,match='fixed platform'):
+        MainWindow._build_seat_buttons(root)
+    assert root.findChildren(QPushButton)==before
+
+
+@pytest.mark.parametrize('label',['',None,12])
+def test_initial_ordinary_label_fallback_matches_clear(shell,label):
+    from ui.main_window import MainWindow
+    from domain.room_layout import SeatLayout
+    root,_,_,_=shell
+    root._layout_svc.visible_seats=lambda:[SeatLayout('fallback',label,17,'comments',60,100)]
+    MainWindow._build_seat_buttons(root)
+    button=root._seat_registry.get('fallback')
+    assert button.text()=='17'
+    button.set_name('')
+    assert button.text()=='17'
+
+
+def test_platform_widgets_exist_before_name_restore():
+    import ast
+    from pathlib import Path
+    source=ast.parse(Path('ui/main_window.py').read_text())
+    method=next(n for n in ast.walk(source) if isinstance(n,ast.FunctionDef) and n.name=='_build_ui')
+    calls=[n.func.attr for statement in method.body for n in ast.walk(statement)
+           if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute)]
+    assert calls.index('_build_platform_icons')<calls.index('_restore_seat_names')
