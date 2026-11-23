@@ -132,3 +132,28 @@ Authenticated HTTPS test mode clears the local draft, history, selection and ren
 layout when authentication expires or the user signs out. Unsaved edits are discarded
 on expiry. State checks run every five seconds even while editing. Cookie-restored
 login shows Sign out; loopback mode shows neither authentication control.
+
+## Native editor comparison sandbox
+
+An isolated native Qt dialog uses the exact same WebLayoutEditor object as the
+optional HTTPS adapter. There is one workspace lock, master file, backup history,
+revision and writer lease, not two files synchronized after editing. Launch:
+
+```
+python -m runtime.native_layout_editor --sandbox /path/to/new-empty-test-folder
+```
+
+To compare simultaneous native/web clients, append the same explicit --bind,
+--port, --certificate and --private-key parameters used by the HTTPS sandbox.
+The web side still requires the configured dedicated administrator credential.
+The native comparison launcher is a local synthetic-only test utility, not an
+admin-gated operator menu or supported installation. Do not add it to operator
+startup or point it at live hall data.
+
+Native controls cover row-block generation (4-6-4 with adjustable row count),
+add/delete/drag/relabel/lock, undo/redo, readable scale, shared save and explicit
+writer release. Read-only native views refresh every five seconds. It deliberately
+does not offer camera memory allocation, production apply, camera control, custom
+aisle patterns, keyboard movement or a completed technician settings entry.
+Existing session, certificate, physical-device, supported-runtime and installation
+acceptance gates remain open. Unsaved native drafts exist only in memory.
