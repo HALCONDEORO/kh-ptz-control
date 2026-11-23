@@ -12,6 +12,8 @@
 #   self._chairman_btn (ChairmanButton)
 #   getattr(self, f"Seat{N}")  (GoButton / SpecialDragButton / ChairmanButton)
 
+from __future__ import annotations
+
 import logging
 from typing import Optional
 
