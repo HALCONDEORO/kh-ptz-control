@@ -30,11 +30,12 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPainter
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtWidgets import (
-    QButtonGroup, QFrame, QHBoxLayout, QLabel,
+    QButtonGroup, QFrame, QHBoxLayout, QLabel, QMessageBox,
     QPushButton, QSlider, QVBoxLayout, QWidget,
 )
 
 from core.events import EventType
+from ui.widgets import CommentsHomeButton
 
 
 
@@ -353,7 +354,9 @@ class RightPanel:
         bl.addLayout(joy_right_row)
 
         # ── HOME manual (solo visible si ATEM no detectado) ──────────────
-        self._home_btn = QPushButton('Comments → Home', block)
+        # Tap → Comments camera a Home; mantener 5 s → guardar la posición
+        # actual como nuevo Home (editable, con confirmación).
+        self._home_btn = CommentsHomeButton('Comments → Home', block)
         self._home_btn.setFixedHeight(44)
         self._home_btn.setContentsMargins(0, 0, 0, 0)
         self._home_btn.setStyleSheet(
@@ -365,7 +368,12 @@ class RightPanel:
             "}"
             "QPushButton:pressed { background: #805010; }"
         )
-        self._home_btn.clicked.connect(lambda: mw._bus.emit(EventType.CAMERA_HOME, camera=2))
+        self._home_btn.setToolTip(
+            'Tap: send the Comments camera to Home\n'
+            'Hold 5 seconds: save the current position as Home')
+        self._home_btn.tapped.connect(
+            lambda: mw._bus.emit(EventType.CAMERA_HOME, camera=2))
+        self._home_btn.held.connect(self._confirm_save_comments_home)
         self._home_btn.hide()
         bl.addSpacing(6)
         bl.addWidget(self._home_btn)
@@ -651,6 +659,35 @@ class RightPanel:
         self._on_air_label.setVisible(operative)
         self._home_btn.setVisible(not operative)
         QtCore.QTimer.singleShot(0, self._fit_container_height)
+
+    def _confirm_save_comments_home(self) -> None:
+        """Pulsación de 5 s en Comments → Home: confirmar y guardar posición.
+
+        La pulsación larga solo pide el SET; el operador confirma en el
+        diálogo (No por defecto), igual que en los presets de plataforma.
+        """
+        reply = QMessageBox.question(
+            self._home_btn, "Save Comments Home",
+            "Save the current Comments camera position as the new Home?\n\n"
+            "Tapping Comments → Home will return to this position from now on.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        self._mw._bus.emit(EventType.COMMENTS_HOME_SAVE, camera=2)
+        self._flash_home_saved()
+
+    def _flash_home_saved(self, duration_ms: int = 1500) -> None:
+        """Feedback optimista tras pedir el guardado (como show_saved() de asientos)."""
+        self._home_btn.setText('Position saved ✓')
+        button_ref = weakref.ref(self._home_btn)
+
+        def restore_text():
+            button = button_ref()
+            if button is not None and not sip.isdeleted(button):
+                button.setText('Comments → Home')
+
+        QtCore.QTimer.singleShot(duration_ms, restore_text)
 
     def set_atem_input_names(self, names: dict) -> None:
         """Actualiza los labels de los inputs con los nombres reales del ATEM.

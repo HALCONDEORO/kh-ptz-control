@@ -16,3 +16,10 @@ PLATFORM_PRESETS = frozenset(
     {PRESET_CHAIRMAN_GENERIC, PRESET_LEFT, PRESET_RIGHT, PRESET_PLATFORM_2}
 )
 
+# Posición editable de Comments → Home (se guarda manteniendo el botón 5 s).
+# Vive en el slot 3 de la memoria de presets de CAM2: los presets de plataforma
+# 1-3 solo se guardan/invocan en CAM1 y los asientos ocupan 4-131 en CAM2, así
+# que el slot 3 de CAM2 está libre. La app recuerda que existe una posición
+# personalizada en comments_home.json (application/comments_home.py).
+PRESET_COMMENTS_HOME = 3
+

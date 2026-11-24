@@ -296,6 +296,77 @@ class PresetActionMixin:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# CommentsHomeButton — Comments → Home: tap = CALL, pulsación 5 s = SET
+# ─────────────────────────────────────────────────────────────────────────────
+
+class CommentsHomeButton(QPushButton):
+    """Botón Comments → Home: tap corto → CALL (ir a Home); mantener 5 s → SET.
+
+    Distinto de PresetActionMixin: el umbral de pulsación larga es 5 s (una
+    acción deliberada, más difícil de disparar por accidente que el SET de 1 s
+    de los presets) y el botón no lleva número de preset ni drag-drop.
+
+    Señales:
+        tapped — pulsación corta: ir a Home.
+        held   — 5 s mantenidos: petición de guardar la posición actual.
+
+    `clicked` se enruta internamente: tras una pulsación larga el release
+    también emite `clicked`, y ese caso no debe disparar el CALL.
+    """
+
+    HOLD_MS: int = 5000
+
+    tapped = pyqtSignal()
+    held   = pyqtSignal()
+
+    def __init__(self, text: str = "", parent=None):
+        super().__init__(text, parent)
+        self._hold_timer = QTimer(self)
+        self._hold_timer.setSingleShot(True)
+        self._hold_timer.setInterval(self.HOLD_MS)
+        self._hold_timer.timeout.connect(self._on_hold_timeout)
+        self._hold_fired = False
+        self.clicked.connect(self._on_clicked)
+
+    def _cancel_hold(self) -> None:
+        """Cancela un SET pendiente (gesto interrumpido, botón oculto, etc.)."""
+        self._hold_timer.stop()
+        self._hold_fired = False
+
+    def event(self, event):
+        # Un botón oculto/deshabilitado o sin grab de ratón puede no recibir
+        # nunca el release: cancela el timer y la pulsación pendiente.
+        if (event.type() in (QEvent.Hide, QEvent.UngrabMouse, QEvent.WindowDeactivate)
+                or (event.type() == QEvent.EnabledChange and not self.isEnabled())):
+            self._hold_timer.stop()
+            self._hold_fired = False
+            self.setDown(False)
+        return super().event(event)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._hold_fired = False
+            self._hold_timer.start()
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._hold_timer.stop()
+        super().mouseReleaseEvent(event)
+
+    def _on_clicked(self) -> None:
+        # Tap corto, clic de ratón y click() programático comparten esta vía;
+        # el release tras una pulsación larga llega con _hold_fired ya en True.
+        if not self._hold_fired:
+            self.tapped.emit()
+
+    def _on_hold_timeout(self) -> None:
+        self._hold_fired = True
+        self.setDown(False)
+        self.held.emit()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # PlatformPresetButton — botón de plataforma fija (icono + texto)
 # ─────────────────────────────────────────────────────────────────────────────
 

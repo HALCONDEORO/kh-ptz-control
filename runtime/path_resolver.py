@@ -188,6 +188,10 @@ class RuntimePathResolver:
         return self._data_dir / "chairman_presets.json"
 
     @property
+    def comments_home_file(self) -> Path:
+        return self._data_dir / "comments_home.json"
+
+    @property
     def seat_names_file(self) -> Path:
         return self._data_dir / "seat_names.json"
 

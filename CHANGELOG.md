@@ -10,6 +10,14 @@ This project uses a simple versioning approach while it is still in early produc
 
 ## Unreleased
 
+### Added
+
+- Editable Comments → Home position: holding the Comments → Home button for
+  five seconds asks for confirmation and saves the current Comments camera
+  framing to a dedicated VISCA preset slot in the camera's own memory. A tap
+  recalls the saved position from then on; installs that never save one keep
+  the previous mechanical-home behaviour.
+
 ## 1.2.4 - release preparation (2026-11-24)
 
 - Add a compact USER camera power toggle with pause/play and two-camera icons,

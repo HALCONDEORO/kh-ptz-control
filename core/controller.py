@@ -53,12 +53,17 @@ class Controller:
         preset_svc: 'PresetService',
         session_svc: 'SessionService',
         camera_port: 'CameraPort',
+        comments_home_svc=None,
     ) -> None:
         self._state        = state
         self._bus          = bus
         self._camera_port  = camera_port
         self._presets      = preset_svc
         self._session      = session_svc
+        if comments_home_svc is None:
+            from application.comments_home import CommentsHomeService
+            comments_home_svc = CommentsHomeService()
+        self._comments_home = comments_home_svc
         # Camera-confirmed slots survive a disk failure, but are not durable
         # until a later retry persists them. Track stable slots, not mutable names.
         self._pending_preset_persistence: set[int] = set()
@@ -77,6 +82,7 @@ class Controller:
         self._bus.subscribe(EventType.CHAIRMAN_ASSIGNED,     self._on_chairman_assigned)
         self._bus.subscribe(EventType.PRESET_SAVE_REQUESTED, self._on_preset_save_requested)
         self._bus.subscribe(EventType.PRESET_SAVE_SLOT,      self._on_preset_save_slot)
+        self._bus.subscribe(EventType.COMMENTS_HOME_SAVE,    self._on_comments_home_save)
         self._bus.subscribe(EventType.SESSION_START,         self._on_session_start)
         self._bus.subscribe(EventType.SESSION_END,           self._on_session_end)
 
@@ -223,7 +229,13 @@ class Controller:
         if self._no_session("camera_home", event.payload):
             return
         cam = event.payload["camera"]
-        result = self._camera_port.home(self._cam_id(cam))
+        # Cam2 con posición personalizada guardada → recall del slot dedicado;
+        # si nunca se guardó (o el archivo falta), home mecánico como siempre.
+        slot = self._comments_home.saved_slot() if cam == 2 else None
+        if slot is not None:
+            result = self._camera_port.recall_preset(self._cam_id(cam), slot)
+        else:
+            result = self._camera_port.home(self._cam_id(cam))
         # Home admission is not completion. Re-read observed zoom without
         # assuming a target value or changing the queued motion semantics.
         if self._result_ok(result) and self._commit_motion(event, lambda: None):
@@ -292,6 +304,28 @@ class Controller:
             logger.info("Preset slot %d guardado en Cam%d", slot, cam)
         else:
             logger.error("preset_save_slot: fallo VISCA cam%d slot=%d", cam, slot)
+
+    def _on_comments_home_save(self, event: Event) -> None:
+        """Pulsación larga (5 s) en Comments → Home: guarda el encuadre actual.
+
+        Solo Cam2 tiene home editable. Tras un save_preset confirmado se
+        persiste el slot para que CAMERA_HOME lo invoque a partir de entonces.
+        """
+        if self._no_session("comments_home_save", event.payload):
+            return
+        cam: int = event.payload.get("camera", 2)
+        if cam != 2:
+            logger.warning("comments_home_save: solo Cam2 tiene home editable (cam=%r)", cam)
+            return
+        from domain.preset import PRESET_COMMENTS_HOME
+        result = self._camera_port.save_preset(self._cam_id(cam), PRESET_COMMENTS_HOME)
+        if self._result_ok(result):
+            if self._comments_home.set_slot(PRESET_COMMENTS_HOME):
+                logger.info("Comments home personalizado guardado en Cam%d slot %d",
+                            cam, PRESET_COMMENTS_HOME)
+        else:
+            logger.error("comments_home_save: fallo VISCA cam%d slot=%d",
+                         cam, PRESET_COMMENTS_HOME)
 
     def _on_session_start(self, event: Event) -> None:
         self._session.start()

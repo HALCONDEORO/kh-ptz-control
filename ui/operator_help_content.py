@@ -45,6 +45,8 @@ TOPICS = (
          'choose Yes only if the target is correct. No is the default. '
          'Seat and person presets use their selection/confirmation flow. '
          'A hold alone does not approve a save.'),
+        ('Comments → Home', 'Hold Comments → Home for five seconds to save the current '
+         'Comments framing as the position the button returns to. Tap recalls it.'),
     )),
     ('Focus and exposure', (
         ('Focus', 'Auto Focus enables automatic focus. One Push AF focuses once and '
