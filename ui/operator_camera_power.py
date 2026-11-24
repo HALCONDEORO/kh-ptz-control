@@ -1,7 +1,7 @@
 """Operator session power action. Uses the existing standby/start session path."""
 from PyQt5.QtCore import QEvent, QRectF, Qt, QVariantAnimation
 from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPen
-from PyQt5.QtWidgets import QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 
 class PastelPowerButton(QPushButton):
@@ -135,18 +135,27 @@ class OperatorCameraPower(QWidget):
     def _request(self):
         if not self.button.isEnabled() or getattr(self.window, '_shutting_down', False):
             return
-        if self.window.session_active:
-            # Existing path owns its one confirmation and stale-session guard.
-            self.window._session.ToggleSession()
-            self._standby_requested = not self.window.session_active
-        else:
-            generation = self.window._session._session_generation
-            reply = QMessageBox.question(
-                self.window, 'Power on cameras',
-                'Power on both cameras and move them to their starting positions?',
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if (reply == QMessageBox.Yes and not self.window.session_active
+        if getattr(self, '_dialog', None) is not None:
+            return
+        from ui.camera_power_dialog import build_camera_power_dialog
+        active = bool(self.window.session_active)
+        generation = self.window._session._session_generation
+        box, yes = build_camera_power_dialog(self.window, power_on=not active)
+        self._dialog = box
+
+        def finished(_result):
+            self._dialog = None
+            if (box.clickedButton() is yes
                     and not getattr(self.window, '_shutting_down', False)
+                    and bool(self.window.session_active) == active
                     and self.window._session._session_generation == generation):
-                self.window._session.ToggleSession()
-        self.refresh()
+                if active:
+                    self.window._session.shutdown('manual')
+                    self._standby_requested = True
+                else:
+                    self.window._session.ToggleSession()
+            self.refresh()
+            box.deleteLater()
+
+        box.finished.connect(finished)
+        box.open()

@@ -19,22 +19,8 @@ def maybe_prompt_power_on(self) -> None:
 
     if getattr(self, '_startup_power_prompt', None) is not None:
         return
-    from PyQt5.QtWidgets import QMessageBox
-    box = QMessageBox(self)
-    box.setIcon(QMessageBox.Question)
-    box.setWindowTitle('Camera start-up')
-    box.setText('Turn on the cameras now?')
-    box.setInformativeText('Start the session and turn on the cameras, or leave them as they are.')
-    yes_btn = box.addButton('Turn on cameras', QMessageBox.AcceptRole)
-    no_btn = box.addButton('Not now', QMessageBox.RejectRole)
-    from ui.message_box_layout import fit_message_box_buttons
-    fit_message_box_buttons(box)
-    for button in (yes_btn, no_btn):
-        button.setMinimumHeight(max(52, button.minimumHeight()))
-        button.setMinimumWidth(max(220, button.minimumWidth()))
-    box.setStyleSheet('QMessageBox { font-size: 18px; } '
-                      'QPushButton { font-size: 16px; padding: 10px 16px; }')
-    box.setDefaultButton(no_btn)
+    from ui.camera_power_dialog import build_camera_power_dialog
+    box, yes_btn = build_camera_power_dialog(self, power_on=True)
     self._startup_power_prompt = box
 
     def finished(_result):
