@@ -10,6 +10,18 @@ This project uses a simple versioning approach while it is still in early produc
 
 ## Unreleased
 
+## 1.2.4 - release preparation (2026-11-24)
+
+- Add a compact USER camera power toggle with pause/play and two-camera icons,
+  pastel state colors, accessible labels and standby-only tooltips.
+- Reuse one nonblocking, touch-sized confirmation component for start-up,
+  operator power-on and operator standby. Not now is the safe default.
+- Keep the standalone PTZ panel self-test independent of session controls.
+- No target-Pi acceptance or stable/customer-ready status is implied. See
+  [1.2.4 release notes](docs/releases/1.2.4.md) for open release gates.
+
+### Other accumulated changes
+
 ### Added
 
 - Add offline user Help through a quiet corner question mark below Admin Mode,
