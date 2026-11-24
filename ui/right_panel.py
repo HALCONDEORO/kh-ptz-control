@@ -30,11 +30,12 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPainter
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtWidgets import (
-    QButtonGroup, QFrame, QHBoxLayout, QLabel,
+    QButtonGroup, QFrame, QHBoxLayout, QLabel, QMessageBox,
     QPushButton, QSlider, QVBoxLayout, QWidget,
 )
 
 from core.events import EventType
+from ui.widgets import CommentsHomeButton
 
 
 
@@ -353,10 +354,12 @@ class RightPanel:
         bl.addLayout(joy_right_row)
 
         # ── HOME manual (solo visible si ATEM no detectado) ──────────────
-        self._home_btn = QPushButton('Comments → Home', block)
+        # Tap → Comments camera a Home; mantener 5 s → guardar la posición
+        # actual como nuevo Home (editable, con confirmación).
+        self._home_btn = CommentsHomeButton('Comments → Home', block)
         self._home_btn.setFixedHeight(44)
         self._home_btn.setContentsMargins(0, 0, 0, 0)
-        self._home_btn.setStyleSheet(
+        self._home_btn_base_style = (
             "QPushButton {"
             "  background: qlineargradient(x1:0,y1:0,x2:0,y2:1,"
             "    stop:0 #E8A020, stop:1 #B06010);"
@@ -365,8 +368,24 @@ class RightPanel:
             "}"
             "QPushButton:pressed { background: #805010; }"
         )
-        self._home_btn.clicked.connect(lambda: mw._bus.emit(EventType.CAMERA_HOME, camera=2))
+        self._home_btn.setStyleSheet(self._home_btn_base_style)
+        self._home_btn.setToolTip(
+            'Tap: send the Comments camera to Home\n'
+            'Hold 5 seconds: save the current position as Home')
+        self._home_btn.tapped.connect(
+            lambda: mw._bus.emit(EventType.CAMERA_HOME, camera=2))
+        self._home_btn.held.connect(self._confirm_save_comments_home)
         self._home_btn.hide()
+        # El resultado del guardado llega confirmado por el bus; la UI no
+        # anuncia éxito solo por pedir el SET. Algunos arneses de test
+        # construyen el panel con una ventana mínima sin bus: se suscribe
+        # solo cuando hay bus real (sin feedback en esos arneses).
+        bus = getattr(mw, '_bus', None)
+        if bus is not None and hasattr(bus, 'subscribe_qt'):
+            bus.subscribe_qt(EventType.COMMENTS_HOME_SAVED,
+                             self._on_comments_home_saved)
+            bus.subscribe_qt(EventType.COMMENTS_HOME_SAVE_FAILED,
+                             self._on_comments_home_save_failed)
         bl.addSpacing(6)
         bl.addWidget(self._home_btn)
 
@@ -651,6 +670,49 @@ class RightPanel:
         self._on_air_label.setVisible(operative)
         self._home_btn.setVisible(not operative)
         QtCore.QTimer.singleShot(0, self._fit_container_height)
+
+    def _confirm_save_comments_home(self) -> None:
+        """Pulsación de 5 s en Comments → Home: confirmar y pedir el guardado.
+
+        La pulsación larga solo pide el SET; el operador confirma en el
+        diálogo (No por defecto), igual que en los presets de plataforma.
+        Aquí no se muestra éxito: el resultado real llega por
+        COMMENTS_HOME_SAVED / COMMENTS_HOME_SAVE_FAILED.
+        """
+        reply = QMessageBox.question(
+            self._home_btn, "Save Comments Home",
+            "Save the current Comments camera position as the new Home?\n\n"
+            "This overwrites preset slot 3 in the Comments camera's own memory. "
+            "Tapping Comments → Home will return to this position from now on.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        self._mw._bus.emit(EventType.COMMENTS_HOME_SAVE, camera=2)
+
+    def _on_comments_home_saved(self, event) -> None:
+        """Guardado confirmado por el controller (VISCA OK y slot persistido)."""
+        self._flash_home_result('Position saved ✓', ok=True)
+
+    def _on_comments_home_save_failed(self, event) -> None:
+        self._flash_home_result('Save failed', ok=False)
+
+    def _flash_home_result(self, text: str, ok: bool, duration_ms: int = 1500) -> None:
+        """Flash breve del botón con el resultado real del guardado."""
+        base_style = self._home_btn_base_style
+        self._home_btn.setText(text)
+        if not ok:
+            self._home_btn.setStyleSheet(
+                base_style + "QPushButton { background-color: #7a1a1a; }")
+        button_ref = weakref.ref(self._home_btn)
+
+        def restore():
+            button = button_ref()
+            if button is not None and not sip.isdeleted(button):
+                button.setText('Comments → Home')
+                button.setStyleSheet(base_style)
+
+        QtCore.QTimer.singleShot(duration_ms, restore)
 
     def set_atem_input_names(self, names: dict) -> None:
         """Actualiza los labels de los inputs con los nombres reales del ATEM.

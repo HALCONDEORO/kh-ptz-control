@@ -677,3 +677,35 @@ def test_zoom_readback_cannot_replace_newer_slider_intent(zoom_feedback_window, 
     assert window.ZoomSlider.value() == values[-1]
     window._camera_port.zoom_absolute.assert_not_called()
     window._zoom_timer.stop()
+
+
+def test_comments_home_button_only_flashes_on_confirmed_save(zoom_feedback_window, _qapp):
+    """Regresión: el botón Comments Home no anuncia éxito sin confirmación real.
+
+    Una petición de guardado sin sesión (rechazada por el controller) no debe
+    mover el botón; el éxito o el fallo solo aparecen cuando llega el evento
+    de resultado confirmado.
+    """
+    from core.events import EventType
+
+    window = zoom_feedback_window
+    btn = window._right_panel._home_btn
+    assert btn.text() == 'Comments → Home'
+
+    window._bus.emit(EventType.COMMENTS_HOME_SAVE, camera=2)
+    window._bus._queue.join()
+    _qapp.processEvents()
+    _qapp.processEvents()
+    assert btn.text() == 'Comments → Home'  # sin sesión: rechazado, sin feedback falso
+
+    window._bus.emit(EventType.COMMENTS_HOME_SAVE_FAILED, camera=2)
+    window._bus._queue.join()
+    _qapp.processEvents()
+    _qapp.processEvents()
+    assert btn.text() == 'Save failed'
+
+    window._bus.emit(EventType.COMMENTS_HOME_SAVED, camera=2, slot=3)
+    window._bus._queue.join()
+    _qapp.processEvents()
+    _qapp.processEvents()
+    assert btn.text() == 'Position saved ✓'

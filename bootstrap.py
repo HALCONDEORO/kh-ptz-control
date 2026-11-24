@@ -16,6 +16,7 @@ import logging
 from core.app_context import AppContext
 from core.state import SystemState
 from core.events import AsyncEventBus
+from application.comments_home import CommentsHomeService
 from application.preset_service import PresetService
 from application.session_service import SessionService
 from application.runtime_safety_service import RuntimeSafetyService
@@ -202,6 +203,7 @@ def build_app_context(cameras, flight_recorder=None) -> AppContext:
         preset_svc=preset_svc,
         session_svc=session_svc,
         camera_port=camera_port,
+        comments_home_svc=CommentsHomeService(),
     )
 
     app_ctrl = ApplicationController(
