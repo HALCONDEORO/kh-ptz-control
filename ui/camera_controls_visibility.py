@@ -42,3 +42,11 @@ def update_camera_controls_visibility(window):
         controller = CameraControlsVisibility(window)
         window._camera_controls_visibility = controller
     controller.update()
+
+    power = window.__dict__.get('_operator_camera_power')
+    if power is None and hasattr(window, 'BtnSession'):
+        from ui.operator_camera_power import OperatorCameraPower
+        power = OperatorCameraPower(window)
+        window._operator_camera_power = power
+    if power is not None:
+        power.refresh()

@@ -60,7 +60,7 @@ TOPICS = (
         ('During use', 'Make one deliberate change at a time. Do not experiment with '
          'presets or connection recovery during a live meeting.'),
         ('At the end', 'Review the close prompt: Keep cameras on leaves them powered; '
-         'Power off cameras requests standby. Ending a session also requests power off. '
+         'Use Power off cameras at the top left to request standby after confirmation. Ending a session also requests power off. '
          'Check the physical outcome and follow the local room procedure.'),
     )),
     ('If something fails', (
