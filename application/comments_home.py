@@ -27,7 +27,10 @@ from pathlib import Path
 from typing import Optional
 
 from core.json_io import load_json, save_json
-from config import PRESET_MAP
+from domain.preset import PRESET_COMMENTS_HOME
+
+# PRESET_MAP no basta como validación: solo el slot dedicado es aceptable (ver
+# _is_valid_slot), para que un archivo equivocado nunca invoque un asiento.
 
 from runtime.path_resolver import RuntimePathResolver as _R
 # Resuelto en importación, no por instancia (mismo patrón que
@@ -56,10 +59,8 @@ class CommentsHomeService:
         data = load_json(self._path, default=None)
         if data is None:
             return None
-        if isinstance(data, dict):
-            slot = data.get("slot")
-            if isinstance(slot, int) and not isinstance(slot, bool) and slot in PRESET_MAP:
-                return slot
+        if isinstance(data, dict) and _is_valid_slot(data.get("slot")):
+            return data["slot"]
         logger.warning("comments_home: entrada inválida en %s — ignorando", self._path)
         return None
 
@@ -70,8 +71,8 @@ class CommentsHomeService:
 
     def set_slot(self, slot: int) -> bool:
         """Persiste el slot tras un save_preset confirmado. True si quedó guardado."""
-        if slot not in PRESET_MAP:
-            logger.error("comments_home: slot %r fuera de PRESET_MAP", slot)
+        if not _is_valid_slot(slot):
+            logger.error("comments_home: slot %r no es el slot dedicado", slot)
             return False
         if not save_json(self._path, {"slot": slot}):
             logger.error("comments_home: no se pudo persistir %s", self._path)
@@ -79,3 +80,12 @@ class CommentsHomeService:
         with self._lock:
             self._slot = slot
         return True
+
+
+def _is_valid_slot(value) -> bool:
+    """Solo el slot dedicado es una posición Comments Home válida.
+
+    Cualquier otro slot del archivo (p.ej. el de un asiento) no debe invocarse
+    nunca desde el botón Home, y bool no es un slot aunque herede de int.
+    """
+    return type(value) is int and value == PRESET_COMMENTS_HOME

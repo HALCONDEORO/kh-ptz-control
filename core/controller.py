@@ -319,13 +319,19 @@ class Controller:
             return
         from domain.preset import PRESET_COMMENTS_HOME
         result = self._camera_port.save_preset(self._cam_id(cam), PRESET_COMMENTS_HOME)
-        if self._result_ok(result):
-            if self._comments_home.set_slot(PRESET_COMMENTS_HOME):
-                logger.info("Comments home personalizado guardado en Cam%d slot %d",
-                            cam, PRESET_COMMENTS_HOME)
+        visca_ok = self._result_ok(result)
+        if visca_ok and self._comments_home.set_slot(PRESET_COMMENTS_HOME):
+            logger.info("Comments home personalizado guardado en Cam%d slot %d",
+                        cam, PRESET_COMMENTS_HOME)
+            self._bus.emit(EventType.COMMENTS_HOME_SAVED,
+                           camera=cam, slot=PRESET_COMMENTS_HOME)
         else:
-            logger.error("comments_home_save: fallo VISCA cam%d slot=%d",
-                         cam, PRESET_COMMENTS_HOME)
+            if visca_ok:
+                logger.error("comments_home_save: no se pudo persistir el slot en disco")
+            else:
+                logger.error("comments_home_save: fallo VISCA cam%d slot=%d",
+                             cam, PRESET_COMMENTS_HOME)
+            self._bus.emit(EventType.COMMENTS_HOME_SAVE_FAILED, camera=cam)
 
     def _on_session_start(self, event: Event) -> None:
         self._session.start()

@@ -349,9 +349,26 @@ class CommentsHomeButton(QPushButton):
             self._hold_timer.start()
         super().mousePressEvent(event)
 
+    def mouseMoveEvent(self, event):
+        # Arrastrar el dedo fuera del botón cancela el SET pendiente: ya no es
+        # una pulsación mantenida sobre el botón.
+        if (event.buttons() & Qt.LeftButton) and not self.rect().contains(event.pos()):
+            self._cancel_hold()
+        super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event):
+        self._cancel_hold()
+        super().leaveEvent(event)
+
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             self._hold_timer.stop()
+            super().mouseReleaseEvent(event)
+            # El gesto mantenido termina aquí: el release tras un hold no dispara
+            # CALL (clicked llega con _hold_fired en True), pero un click nuevo,
+            # incluido el programático/accesibilidad, sí debe poder hacerlo.
+            self._hold_fired = False
+            return
         super().mouseReleaseEvent(event)
 
     def _on_clicked(self) -> None:
@@ -361,6 +378,12 @@ class CommentsHomeButton(QPushButton):
             self.tapped.emit()
 
     def _on_hold_timeout(self) -> None:
+        # Revalida que el gesto sigue activo sobre el botón antes de pedir SET:
+        # Qt levanta el estado down si el puntero sale del botón durante la
+        # pulsación, y un timer que sobrevive al gesto nunca debe disparar SET.
+        if not self.isDown():
+            self._hold_fired = False
+            return
         self._hold_fired = True
         self.setDown(False)
         self.held.emit()

@@ -38,6 +38,8 @@ class EventType(Enum):
     # ── Movimiento especial ───────────────────────────────────
     CAMERA_HOME           = auto()   # payload: camera  (PTZ mechanical home, or saved Comments home on Cam2)
     COMMENTS_HOME_SAVE    = auto()   # payload: camera  (save current position as editable Comments home)
+    COMMENTS_HOME_SAVED   = auto()   # payload: camera, slot  (editable Comments home confirmed saved + persisted)
+    COMMENTS_HOME_SAVE_FAILED = auto()  # payload: camera  (editable Comments home save failed)
 
     # ── Sesión ───────────────────────────────────────────────
     SESSION_START        = auto()

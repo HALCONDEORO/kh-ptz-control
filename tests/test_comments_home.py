@@ -46,10 +46,25 @@ class TestCommentsHomeService:
         path.write_text('[1, 2, 3]', encoding="utf-8")
         assert CommentsHomeService(path).saved_slot() is None
 
+    def test_other_valid_preset_slot_is_rejected(self, tmp_path):
+        # Un slot de asiento (12) es válido VISCA pero nunca es Comments Home:
+        # un archivo equivocado no puede redirigir el botón Home a un asiento.
+        path = tmp_path / "comments_home.json"
+        path.write_text('{"slot": 12}', encoding="utf-8")
+        assert CommentsHomeService(path).saved_slot() is None
+
+    def test_bool_is_not_a_slot(self, tmp_path):
+        path = tmp_path / "comments_home.json"
+        svc = CommentsHomeService(path)
+        assert svc.set_slot(True) is False  # bool hereda de int pero no es slot
+        assert svc.saved_slot() is None
+        assert not path.exists()
+
     def test_slot_outside_preset_map_is_rejected(self, tmp_path):
         path = tmp_path / "comments_home.json"
         svc = CommentsHomeService(path)
         assert svc.set_slot(9999) is False
+        assert svc.set_slot(12) is False  # slot de asiento, no el dedicado
         assert svc.saved_slot() is None
         assert not path.exists()
 
@@ -106,6 +121,13 @@ class _Harness:
         self.bus = AsyncEventBus()
         self.camera = _CameraPort()
         self.home_svc = CommentsHomeService(tmp_path / "comments_home.json")
+        self.outcome_events = []
+        self.bus.subscribe(
+            EventType.COMMENTS_HOME_SAVED,
+            lambda e: self.outcome_events.append((e.type, dict(e.payload))))
+        self.bus.subscribe(
+            EventType.COMMENTS_HOME_SAVE_FAILED,
+            lambda e: self.outcome_events.append((e.type, dict(e.payload))))
         self.controller = Controller(
             self.state, self.bus, _PresetSvc(), _SessionSvc(),
             camera_port=self.camera, comments_home_svc=self.home_svc,
@@ -152,23 +174,46 @@ class TestControllerCommentsHome:
             h.emit(EventType.CAMERA_HOME, camera=2)
         assert ("recall_preset", "cam2", PRESET_COMMENTS_HOME) in h.camera.calls
 
+    def test_save_success_emits_saved_event_for_ui_feedback(self, tmp_path):
+        with _Harness(tmp_path) as h:
+            h.emit(EventType.COMMENTS_HOME_SAVE, camera=2)
+        assert (EventType.COMMENTS_HOME_SAVED,
+                {"camera": 2, "slot": PRESET_COMMENTS_HOME}) in h.outcome_events
+        assert not any(t == EventType.COMMENTS_HOME_SAVE_FAILED
+                       for t, _ in h.outcome_events)
+
     def test_save_blocked_without_session(self, tmp_path):
         with _Harness(tmp_path, session_active=False) as h:
             h.emit(EventType.COMMENTS_HOME_SAVE, camera=2)
         assert h.camera.calls == []
         assert h.home_svc.saved_slot() is None
+        assert h.outcome_events == []
 
     def test_save_rejected_for_platform_camera(self, tmp_path):
         with _Harness(tmp_path) as h:
             h.emit(EventType.COMMENTS_HOME_SAVE, camera=1)
         assert not any(c[0] == "save_preset" for c in h.camera.calls)
         assert h.home_svc.saved_slot() is None
+        assert h.outcome_events == []
 
     def test_failed_visca_save_does_not_persist_slot(self, tmp_path):
         with _Harness(tmp_path) as h:
             h.camera.save_ok = False
             h.emit(EventType.COMMENTS_HOME_SAVE, camera=2)
         assert h.home_svc.saved_slot() is None
+        types = [t for t, _ in h.outcome_events]
+        assert EventType.COMMENTS_HOME_SAVE_FAILED in types
+        assert EventType.COMMENTS_HOME_SAVED not in types
+
+    def test_failed_disk_persist_emits_failure_not_saved(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("application.comments_home.save_json",
+                            lambda *a, **k: False)
+        with _Harness(tmp_path) as h:
+            h.emit(EventType.COMMENTS_HOME_SAVE, camera=2)
+        assert h.home_svc.saved_slot() is None
+        types = [t for t, _ in h.outcome_events]
+        assert EventType.COMMENTS_HOME_SAVE_FAILED in types
+        assert EventType.COMMENTS_HOME_SAVED not in types
 
 
 # ── CommentsHomeButton input handling (real Qt, forked child) ───────────────
@@ -264,3 +309,44 @@ def test_hide_during_hold_cancels_set(home_button):
     app.processEvents()
     assert held == []
     assert tapped == []
+
+
+@_only_in_child
+def test_drag_out_of_button_cancels_hold(home_button):
+    # Regresión: sacar el puntero del botón durante la pulsación cancela el SET.
+    # QTest.mouseMove con pos fuera del widget despacha por posición (no llega
+    # al botón), así que el move se entrega directo al botón.
+    from PyQt5.QtCore import QEvent, QPoint, QPointF, Qt
+    from PyQt5.QtGui import QMouseEvent
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtWidgets import QApplication
+    app, button, tapped, held = home_button
+    QTest.mousePress(button, Qt.LeftButton, pos=QPoint(5, 5))
+    outside = QPoint(250, 100)
+    move = QMouseEvent(QEvent.MouseMove, QPointF(outside), Qt.NoButton,
+                       Qt.LeftButton, Qt.NoModifier)
+    QApplication.sendEvent(button, move)
+    QTest.qWait(100)  # sobre el umbral (acortado) de hold
+    app.processEvents()
+    assert held == []
+    QTest.mouseRelease(button, Qt.LeftButton, pos=QPoint(5, 5))
+    app.processEvents()
+    assert tapped == []  # el gesto quedó cancelado: ni SET ni CALL
+
+
+@_only_in_child
+def test_programmatic_click_after_hold_still_recalls(home_button):
+    # Regresión: un click nuevo (programático/accesibilidad) tras un hold no
+    # debe quedar bloqueado por el gesto consumido anterior.
+    from PyQt5.QtCore import QPoint, Qt
+    from PyQt5.QtTest import QTest
+    app, button, tapped, held = home_button
+    QTest.mousePress(button, Qt.LeftButton, pos=QPoint(5, 5))
+    QTest.qWait(100)
+    QTest.mouseRelease(button, Qt.LeftButton, pos=QPoint(5, 5))
+    app.processEvents()
+    assert held == [1]
+    assert tapped == []  # el release del hold no dispara CALL
+    button.click()
+    app.processEvents()
+    assert tapped == [1]
