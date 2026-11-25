@@ -49,13 +49,13 @@ date and source claims when installation targets or ATEM gates change.
 
 ## Optional UI walkthrough
 
-`docs/site/ui-walkthrough.mp4` contains four captured `MainWindow` states from
-commit `306c17e6decb3940343e21f98eac07ce79ee4461`, captured on 10 November 2026:
-Platform selected, Comments selected, simulated disconnect, simulated recovery.
-It has no audio and is labelled as simulation on every frame. Temporary app,
-configuration and data directories were used, with loopback simulation targets;
-camera workers and background timers were stopped before capturing the states.
-The UI states were injected for illustration, not observed physical outcomes.
+`docs/site/ui-walkthrough.mp4` is a 14 second screen recording of the real
+`MainWindow` from commit `dade3ace92fbaceaad68126483f6a1270a4372b6`, recorded on 25 November 2026 against the
+built-in simulator (loopback simulated cameras, temporary data directory). It
+shows Platform selected, Comments selected, Platform again, the joystick held
+and released. It has no audio and every frame carries a caption saying it is the
+simulator and not the installed system. Camera motion and connection indicators
+are simulated, not observed physical outcomes.
 No camera movement or preset writes were requested.
 
 The website uses native manual video controls, `preload="none"`, no autoplay,
