@@ -114,6 +114,11 @@ def handle_visca(data: bytes, cam: SimCamera) -> bytes:
                 tilt_nibs = _nibbles_to_bytes(cam.tilt & 0xFFFF)
                 return bytes([0x90, 0x58]) + pan_nibs + tilt_nibs + bytes([0xFF])
 
+            if cat == 0x04 and cmd == 0x4E:   # Exposure compensation position
+                cam.last_cmd = "INQ:ExpComp"
+                # VISCA value 7 maps to level 0 (see ptz.visca.parser.exp_comp_level)
+                return bytes([0x90, 0x50, 0x00, 0x00, 0x00, 0x07, 0xFF])
+
             cam.last_cmd = f"INQ:?{cat:02X}{cmd:02X}"
             return bytes([0x90, 0x60, 0x02, 0xFF])
 

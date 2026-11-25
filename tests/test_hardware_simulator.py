@@ -385,3 +385,11 @@ class TestHandleViscaBroadcast:
         resp = handle_visca(b"\x88\x01\x01\x00\xFF", cam)
         assert resp == bytes([0x90, 0x01, 0xFF])
 
+
+
+class TestExposureCompensationInquiry:
+    def test_exp_comp_inquiry_answers_neutral_level(self):
+        from ptz.visca.parser import exp_comp_level
+        reply = handle_visca(bytes.fromhex("81 09 04 4E FF"), SimCamera("test"))
+        assert reply == bytes.fromhex("90 50 00 00 00 07 FF")
+        assert exp_comp_level(reply) == 0
