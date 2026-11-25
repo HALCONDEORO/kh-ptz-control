@@ -96,12 +96,12 @@ def test_demo_is_manual_local_and_transcribed():
     attrs = videos[0]
     assert 'controls' in attrs and 'preload="none"' in attrs
     assert 'autoplay' not in attrs and 'loop' not in attrs
-    assert 'width="1280"' in attrs and 'height="820"' in attrs
+    assert 'width="1280"' in attrs and 'height="790"' in attrs
     assert 'aria-describedby="demo-transcript"' in attrs
     assert 'poster="site/demo-poster.webp"' in attrs
     assert 'src="site/ui-walkthrough.mp4"' in text
     assert 'No physical camera test' in text
-    for label in ('Choose Platform', 'Choose Comments', 'Simulated disconnect', 'Simulated recovery'):
+    for label in ('Choose Platform', 'Choose Comments', 'Hold the joystick', 'Release the joystick'):
         assert label in text
     video = ROOT / 'docs/site/ui-walkthrough.mp4'
     assert video.is_file()
@@ -120,15 +120,16 @@ def test_operator_entry_points_do_not_promise_unwired_safety_buttons():
 
 
 def test_setup_scope_and_demo_age_are_visible():
-    """Setup has no layout editor; the older walkthrough is not current UI."""
+    """Setup has no layout editor; the walkthrough is a dated simulator recording."""
     readme = (ROOT / 'README.md').read_text()
     page = (ROOT / 'docs/index.html').read_text()
     assert 'wizard collects camera IPs, seat layout' not in readme
     assert 'wizard collects camera configuration, the layout' not in page
     assert 'room details, camera addresses and login settings' in readme
     assert 'room details, camera addresses and login settings' in page
-    assert 'Captured 10 November 2026' in page
-    assert 'Historical UI states' in page
+    assert 'recorded 25 November 2026' in page
+    assert 'built-in simulator' in page
+    assert 'It is not the installed system' in page
 
 
 def test_walkthrough_disclaimer_has_small_text_contrast():
