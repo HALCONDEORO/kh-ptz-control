@@ -96,15 +96,14 @@ wins:
 
 ## Operator screen
 
-The screenshot was generated from the current application in an isolated local
-USER-mode simulation on 11 November 2026, using the repository background.
-The main STOP ALL button is visible only in ADMIN. USER can open the quiet `?`
-below Admin Mode for offline guides and STOP BOTH CAMERAS, without confirmation.
-Joystick-release stopping remains unchanged. It contains no
-personal names or device addresses. Connection indicators are simulated, not a
-hardware-validation result. Later builds add the compact USER camera power
-toggle and the editable Comments → Home hold gesture; neither appears in this
-older screenshot.
+The screenshots were generated from the current application in an isolated local
+USER-mode simulation on 25 November 2026, using the repository background and
+loopback simulator cameras. They show the compact USER camera power toggle at the
+top left and the Comments → Home button. The main STOP ALL button is visible only
+in ADMIN. USER can open the quiet `?` below Admin Mode for offline guides and STOP
+BOTH CAMERAS, without confirmation. Joystick-release stopping remains unchanged.
+They contain no personal names or device addresses. Camera indicators come from the
+simulator, so they show the simulator state, not the state of the installed system.
 
 ## What this project does not do
 
