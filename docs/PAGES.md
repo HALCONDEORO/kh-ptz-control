@@ -21,7 +21,7 @@ python3 -m pytest tests/test_project_pages.py tests/test_markdown_links.py
 ```
 
 The screenshot is a real `MainWindow` capture in local USER-mode simulation,
-refreshed on 11 November 2026 with the quiet offline Help entry below Admin Mode.
+refreshed on 25 November 2026 with the light blue-gray auditorium background, the camera power toggle, Comments → Home and the quiet offline Help entry below Admin Mode. The README banner and docs/screenshots 01-03 were regenerated from the same simulation.
 It uses the repository background (`ui/khptz_background.jpg`) and is 1920 × 1080.
 The view contains numbered seats, no assigned names or device addresses.
 Temporary app/config/data directories and simulated connection indicators were

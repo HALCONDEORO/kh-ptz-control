@@ -57,7 +57,11 @@ def test_public_page_contract():
     import struct
     width, height = struct.unpack('<HH', data[marker:marker + 4])
     assert (int(image['width']), int(image['height'])) == (width & 0x3fff, height & 0x3fff)
-    assert 'Resumen en español' in (ROOT / 'README.md').read_text()
+    readme_text = (ROOT / 'README.md').read_text()
+    assert 'Resumen en español' not in readme_text
+    for code in ('es', 'pt', 'fr', 'de', 'it'):
+        assert f'docs/translations/README.{code}.md' in readme_text
+        assert (ROOT / 'docs' / 'translations' / f'README.{code}.md').is_file()
 
 
 def test_task_routes_checkpoints_and_limits():
