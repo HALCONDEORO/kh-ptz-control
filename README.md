@@ -24,13 +24,24 @@ taps a seat on a visual auditorium layout to recall its saved framing, with
 separate Platform and Comments camera roles and manual joystick, zoom, focus
 and exposure controls.
 
-Free and open-source (MIT). This is an installable application under active camera
-stability work. Automated tests and a successful install do not replace physical validation
-of both cameras, saved framing, STOP and recovery on your own equipment. The original application code is
+Free and open-source (MIT). It is installed and validated on the
+maintainer's own equipment (Raspberry Pi and two PTZ cameras). The screenshots in this
+repository come from the built-in simulator, not from that installation. Automated tests
+and a successful install do not replace validating both cameras, saved framing, STOP and
+recovery on your own equipment. The original application code is
 MIT-licensed. Required GUI dependencies and optional components have separate
 licences; see [third-party notices](THIRD_PARTY_NOTICES.md) and the
 [ATEM dependency gate](docs/ATEM_DEPENDENCY_DECISION.md) before sharing an installed
 system or deploying ATEM support.
+
+## Screenshots
+
+All images below come from the built-in simulator (local loopback cameras), not from a
+physical installation.
+
+| Operator screen | Joystick moving | Settings |
+| --- | --- | --- |
+| ![Operator screen with seat map, camera power toggle and Comments to Home](docs/screenshots/03-panel.png) | ![Joystick held right, pan command shown](docs/screenshots/09-moving.png) | ![Camera configuration, Session tab](docs/screenshots/05-config.png) |
 
 ## Start here
 
@@ -85,15 +96,14 @@ wins:
 
 ## Operator screen
 
-The screenshot was generated from the current application in an isolated local
-USER-mode simulation on 11 November 2026, using the repository background.
-The main STOP ALL button is visible only in ADMIN. USER can open the quiet `?`
-below Admin Mode for offline guides and STOP BOTH CAMERAS, without confirmation.
-Joystick-release stopping remains unchanged. It contains no
-personal names or device addresses. Connection indicators are simulated, not a
-hardware-validation result. Later builds add the compact USER camera power
-toggle and the editable Comments → Home hold gesture; neither appears in this
-older screenshot.
+The screenshots were generated from the current application in an isolated local
+USER-mode simulation on 25 November 2026, using the repository background and
+loopback simulator cameras. They show the compact USER camera power toggle at the
+top left and the Comments → Home button. The main STOP ALL button is visible only
+in ADMIN. USER can open the quiet `?` below Admin Mode for offline guides and STOP
+BOTH CAMERAS, without confirmation. Joystick-release stopping remains unchanged.
+They contain no personal names or device addresses. Camera indicators come from the
+simulator, so they show the simulator state, not the state of the installed system.
 
 ## What this project does not do
 
@@ -347,7 +357,7 @@ Do not move these into the source checkout. See the
 
 ## Status
 
-Installable MVP candidate under active stability work. Stop the GUI before
+Installed and validated by the maintainer; development continues. Stop the GUI before
 standalone camera diagnostics; do not run a second controller against live cameras.
 Rehearse safely, validate the physical equipment, and record results in
 `docs/MVP_VALIDATION_REPORT.md`. Simulation is not physical validation. See
