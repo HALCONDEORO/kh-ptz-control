@@ -39,6 +39,14 @@ system or deploying ATEM support.
 - **Two cameras.** A "Platform" camera and a "Comments" camera, selected on screen.
 - **Presets per seat.** Call mode for live operation; Set mode to store or update the
   framing for any seat in seconds.
+- **Camera power from the USER screen.** A compact pause/play toggle offers standby
+  while a session is active and power-on while inactive, with the same confirmation
+  dialog as startup. Standby is a software request, not a mains cut: confirm the
+  physical cameras. STOP remains a separate action.
+- **Editable Comments → Home.** A tap recalls the saved Home framing; holding the
+  button for five seconds asks for confirmation and stores the current Comments
+  framing in a dedicated preset slot in the camera's own memory. Installs that
+  never save one keep the previous mechanical-home behaviour.
 - **Session controls.** Meeting schedules and explicit session controls keep normal
   operation separate from setup and shutdown. Check the on-screen session state
   before using camera controls.
@@ -47,6 +55,10 @@ system or deploying ATEM support.
 - **ATEM integration (optional).** Camera status can follow the video switcher.
 - **Simulation mode.** Fake/demo components support operator UI rehearsal without
   camera hardware; they do not validate a full Raspberry Pi installation.
+- **Editable seat layout (test preview).** A native Qt editor and a loopback web
+  editor sandbox adapt the seat plan to rooms with different layouts. They run
+  from an explicit sandbox launcher with no production activation, no LAN exposure
+  and no camera commands; see [the staged plan](docs/WEB_LAYOUT_EDITOR_PLAN.md).
 
 ![Current operator screen in local simulation, with the repository background and no personal names or device addresses](docs/site/operator.webp)
 
@@ -70,7 +82,9 @@ The main STOP ALL button is visible only in ADMIN. USER can open the quiet `?`
 below Admin Mode for offline guides and STOP BOTH CAMERAS, without confirmation.
 Joystick-release stopping remains unchanged. It contains no
 personal names or device addresses. Connection indicators are simulated, not a
-hardware-validation result.
+hardware-validation result. Later builds add the compact USER camera power
+toggle and the editable Comments → Home hold gesture; neither appears in this
+older screenshot.
 
 ## What this project does not do
 
@@ -356,7 +370,10 @@ activate GitHub Pages or change repository permissions.
 
 Control táctil de cámaras PTZ VISCA-over-IP en Raspberry Pi. El plano numerado
 permite recuperar encuadres guardados. La captura anterior es una simulación local
-con el fondo actual del proyecto, no una prueba de cámaras físicas.
+con el fondo actual del proyecto, no una prueba de cámaras físicas. La pantalla de
+usuario añade un botón compacto para poner las cámaras en standby y encenderlas con
+confirmación (sin corte eléctrico), y Comments → Home guarda un encuadre propio
+manteniendo el botón cinco segundos.
 
 ### Seguridad: STOP primero
 
