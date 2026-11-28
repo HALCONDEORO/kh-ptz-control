@@ -74,6 +74,9 @@ sudo cmp -- "$WORK/previous-source.bundle" "$DEST/previous-source.bundle"
 sync
 git -C "$REPO" bundle verify "$WORK/previous-source.bundle"
 sudo bash "$REPO/runtime/installer/rollback.sh" --source "$REPO" --to khptz-recovery-before-update --dry-run
+# WORK is a private mktemp directory owned by the desktop user.
+# Keep this redirection unprivileged; only reading the protected files needs sudo.
+# shellcheck disable=SC2024
 sudo sha256sum /etc/khptz/secrets/admin.enc /var/lib/khptz/password.enc > "$WORK/credential-digests-before.private"
 printf '\nCopia local verificada en %s. No es una imagen completa de la SD.\n' "$DEST"
 PHASE=installation
