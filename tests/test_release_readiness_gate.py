@@ -167,9 +167,10 @@ class TestSchemaCoverage:
 
 class TestRealChecklist:
     def test_shipped_checklist_records_real_gaps(self, capsys):
-        """The shipped checklist is the real record: sections 3 (git-history
-        scrub, limitation 2), 5 (doctor never gated in CI) and 6 (network
-        never validated on target hardware) are open gaps, so the recorded
+        """The shipped checklist is the real record: section 3 has bounded
+        independent evidence recorded as WARN; sections 5 (doctor never gated
+        in CI) and 6 (network never validated on target hardware) remain open,
+        so the recorded
         DEMO ONLY decision is NOT yet backed. The gate must report those
         findings (exit 1) - the record may fail; rows must never be edited
         to make the gate pass without re-verification evidence."""
@@ -178,7 +179,7 @@ class TestRealChecklist:
         )
         out = capsys.readouterr().out
         assert rc == 1
-        assert "3.1" in out
+        assert "[FAIL] 3.1" not in out
         assert "5.2" in out
         assert "6.1" in out
 

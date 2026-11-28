@@ -19,10 +19,10 @@ been recorded for this candidate; sections 8, 9 and 12 stay NOT_TESTED
 until the real Raspberry Pi acceptance is run (#381).
 
 **Gate status for this candidate:** the automated gate currently reports
-blocking findings against the recorded DEMO ONLY decision - 3.1 FAIL
-(git-history scrub, known limitation 2), 5.2 NOT_TESTED (doctor never
-gated in CI) and 6.1 NOT_TESTED (network not validated on target
-hardware). The decision line records the published intent of the v1.2.3
+blocking findings against the recorded DEMO ONLY decision - 5.2 NOT_TESTED
+(doctor never gated in CI) and 6.1 NOT_TESTED (network not validated on target
+hardware). Section 3.1 was rechecked on 2026-11-28 against exact source,
+reachable heads/tags/PR refs and retained release assets, not inferred from CI. The decision line records the published intent of the v1.2.3
 prerelease; the gate fails until those rows are re-verified with real
 evidence. Never edit a row to make the gate pass without re-verification.
 
@@ -34,7 +34,7 @@ below and must not be carried forward without re-verification):
 |---|-------|--------|-------|
 | 1.1 | Section 1 - version and build metadata | ⚠️ WARN | VERSION file present in repo; v1.2.3 prerelease tag published 2026-11-14; VERSION-file and `khptz version` checks run only in the manual release-check workflow; annotated-tag requirement re-verified at release time |
 | 2.1 | Section 2 - tests and code quality | ⚠️ WARN | Full pytest suite and Ruff green in gated CI on main; no formal coverage report (archived item 2.5 stays NOT_TESTED) |
-| 3.1 | Section 3 - security and repo hygiene | ❌ FAIL | Secret values persist in git history, scrub pending (known limitation 2); bandit, secret-scan and repo-hygiene workflows green in CI |
+| 3.1 | Section 3 - security and repo hygiene | ⚠️ WARN | Bounded re-verification on 2026-11-28 of source 69516d7 (1.2.4), without renaming this 1.2.3 record, did not reproduce the old secret/history finding across reachable heads/tags, 368 PR head refs and all three retained release archives including embedded Git objects. Current-tree scans pass. This is not universal secret-detection or inaccessible-server-object assurance. See [exact evidence](releases/1.2.4-security-evidence.md). |
 | 4.1 | Section 4 - SBOM and checksum manifest | ⚠️ WARN | SBOM generation and validation automated in the release gate (#513; workflow_dispatch only; steps 7/8 exercised on reviewed candidate, release decision still blocked); candidate checksum preparation/verification automated (#514; temporary files only, no release approval); installed Python closure for the current requirements.txt/interpreter is available; exact-pin PyPI audit runs separately and blocks on any reported vulnerability; target/profile completeness and acceptance remain pending (items 4.3/4.4) |
 | 5.1 | Section 5 - CLI self-test | ✅ PASS | `khptz selftest --json` gated in the tests workflow on every push/PR |
 | 5.2 | Section 5 - doctor diagnostics | 🔲 NOT_TESTED | `khptz doctor` runs only in the manual release-check workflow and with `\|\| true` - never gated |
@@ -109,7 +109,7 @@ into a new release.
 |---|-------|--------|-------|
 | 3.1 | No secrets committed (passwords, tokens, private keys, IPs) | ✅ PASS | `scripts/check_secrets.py` — clean. Five legacy `.txt` files untracked from index in #760 |
 | 3.2 | `.gitignore` blocks `config.yaml`, `.env`, key files | ✅ PASS | `config.yaml`, `password.txt`, `PTZ1IP.txt`, `ATEMIP.txt`, `Contact.txt`, `sim_ip_backup.json` all covered |
-| 3.3 | No real customer site data in repo (names, IPs, installation IDs) | ✅ PASS | `password.txt`, `Contact.txt` and legacy site-IP artifacts were purged from the entire git history on 2026-09-11 (git filter-repo + force-push; exposed strings replaced). |
+| 3.3 | No real customer site data in repo (names, IPs, installation IDs) | ✅ PASS | Historical assertion, not independently verified: `password.txt`, `Contact.txt` and legacy site-IP artifacts were reportedly purged on 2026-09-11. See [bounded current evidence](releases/1.2.4-security-evidence.md); this archived status is not current-candidate acceptance. |
 | 3.4 | `config/examples/` contains only fake/safe sample data | ✅ PASS | `flat_lan_with_warning.yaml`, `standard_2_camera.yaml`, `starter_1_camera.yaml`, `minimal_valid.yaml` — no real site data |
 | 3.5 | `tests/fixtures/` contains only fake/safe test data | ✅ PASS | `tests/fixtures/config/` — verified safe |
 | 3.6 | Manual secret scan of diff since last release — clean | ✅ PASS | `scripts/check_secrets.py` and `scripts/check_repo_hygiene.py` both pass |
@@ -267,9 +267,11 @@ khptz version && khptz status && khptz doctor
    was published as a prerelease tag (2026-11-14); the annotated-tag requirement is
    re-verified when a release is tagged.
 
-2. git history contains password.txt and Contact.txt values from early development.
-   Files are untracked from index (PR #760) but values persist in git history.
-   Run git filter-repo to scrub history before any public or third-party repo share.
+2. Historical early-development secret/history finding, not reproduced in the
+   2026-11-28 bounded re-verification of current reachable refs and retained assets.
+   See docs/releases/1.2.4-security-evidence.md for exact scope and exclusions.
+   Do not infer that inaccessible GitHub objects/caches were purged. No history
+   rewrite was performed by this verification.
 
 3. SBOM generation and validation are automated in the release gate (#513); the
    candidate checksum integrity is automated (#514, temporary committed-source archive);
